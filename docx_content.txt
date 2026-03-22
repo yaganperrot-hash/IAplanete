@@ -1,0 +1,724 @@
+=== PARAGRAPHS ===
+[P0] 
+[P1] 
+[P2] 
+[P3] 
+[P4] AI PLANET
+[P5] Un écosystème vivant piloté par l’intelligence artificielle
+[P6] Cahier des charges technique complet
+[P7] Version 1.0 — Mars 2026
+[P8] Document destiné au développement par un agent IA (Claude)
+[P9] 
+[P10] Sommaire
+[P11] 1. Vision du projet
+[P12] 2. Le Monde (carte, biomes, climat, événements)
+[P13] 3. Les Créatures (formulaire, stats, prompt LLM, image)
+[P14] 4. Le Cycle de Vie (moteur de simulation)
+[P15] 5. Interface Spectateur (frontend)
+[P16] 6. Architecture Technique (stack, BDD, API)
+[P17] 7. Monétisation (tiers, pricing, publicité)
+[P18] 8. Annexes (prompt LLM complet, formules d’équilibrage)
+[P19] 
+[P20] 1. Vision du projet
+[P21] AI Planet est une plateforme web où des agents IA autonomes, créés par des utilisateurs humains, vivent sous forme de créatures dans un écosystème 2D. Chaque créature est pilotée par un LLM (Large Language Model) qui prend des décisions autonomes : se nourrir, fuir, chasser, migrer, se reproduire. Les humains observent en temps réel l’évolution de cet écosystème vivant.
+[P22] 
+[P23] 1.1 Ce qui rend AI Planet unique
+[P24] Les créatures ne suivent pas des règles mécaniques : elles réfléchissent via un LLM, créant des comportements imprévisibles et narratifs.
+[P25] Chaque décision est accompagnée d’une « raison » lisible par les spectateurs (journal de pensées), générant du contenu viral et partageable.
+[P26] L’écosystème est auto-régulant : les créatures surpuissantes sont contrebalancées par des coûts énergétiques élevés, une reproduction lente et des épidémies.
+[P27] Les migrations, alliances, embuscades et extinctions émergent naturellement des décisions des IA, sans être scriptées.
+[P28] Modèle inspiré de Moltbook : c’est l’utilisateur qui alimente le LLM (via abonnement ou clé API perso), la plateforme ne fournit que le monde.
+[P29] 1.2 Références et inspirations
+[P30] Moltbook : réseau social pour agents IA, les humains observent. Même logique d’audience.
+[P31] Spore (jeu vidéo) : création de créatures et évolution.
+[P32] The Life Engine / EvoBots : simulations d’évolution, mais avec des réseaux de neurones simples (pas de LLM).
+[P33] Cycle de Lotka-Volterra : modèle prédateur-proie qui s’auto-régule.
+[P34] 
+[P35] 2. Le Monde
+[P36] 2.1 La carte
+[P37] La carte est une vue 2D aérienne. Elle ne boucle pas (pas de planète) : il y a des bords, entourés d’océan.
+[P38] 
+[P39] Composition géographique
+[P40] Plusieurs continents de tailles variées.
+[P41] Certains continents sont connectés par des isthmes ou ponts terrestres.
+[P42] D’autres sont totalement isolés.
+[P43] Des îles isolées et des archipels (groupes d’îles proches).
+[P44] L’océan entoure le tout. Seules les créatures aquatiques ou amphibies peuvent le traverser.
+[P45] Les ponts terrestres sont des corridors stratégiques pour les migrations et les conflits.
+[P46] 2.2 Les biomes (12+)
+[P47] Chaque zone de la carte est associée à un biome. Chaque biome a ses caractéristiques propres :
+[P48] 
+[P49] 
+[P50] 2.3 Système climatique
+[P51] Chaque zone de la carte est rattachée à un type de climat. Les saisons s’appliquent différemment selon le climat :
+[P52] 
+[P53] 
+[P54] 2.4 Précipitations
+[P55] Chaque zone a un niveau de pluie déterminé par son climat et la saison en cours. La pluie alimente l’eau et la végétation. Les zones arides reçoivent peu de pluie. Les zones tropicales en reçoivent beaucoup. Les sécheresses réduisent la pluie. Les orages (plus fréquents en tropical et continental en été) peuvent provoquer des éclairs et donc des incendies de forêt.
+[P56] 2.5 Cycle jour/nuit
+[P57] La carte s’assombrit la nuit. La durée du jour et de la nuit varie selon la saison et la latitude (les zones polaires ont des jours très longs en été et très courts en hiver). La nuit : température baisse, visibilité réduite, certains prédateurs nocturnes s’activent, d’autres dorment.
+[P58] 2.6 Catastrophes naturelles aléatoires
+[P59] Probabilité faible à chaque tick, impact fort :
+[P60] 
+[P61] 
+[P62] 2.7 Événements ponctuels majeurs
+[P63] Très rares, impact majeur sur le monde :
+[P64] Météorite : détruit une zone localisée, crée un cratère avec propriétés uniques.
+[P65] Épidémie : cible les populations denses, se propage géographiquement.
+[P66] Montée des eaux : ponts terrestres disparaissent, îles rétrécissent, populations isolées.
+[P67] Terre fertile : zone stérile devient riche, ruée des espèces.
+[P68] Pont de glace : en hiver, l’océan entre deux terres gèle, créant un passage temporaire.
+[P69] 2.8 Ressources
+[P70] Végétation : repousse lentement après consommation. Aliment des herbivores.
+[P71] Proies (herbivores) : aliment des carnivores. Si herbivores disparaissent, carnivores suivent.
+[P72] Eau : nécessaire à tous. Points d’eau = lieux de rencontre et de conflit.
+[P73] Cadavres : restent sur la carte quelques ticks. Nourriture pour charognards.
+[P74] 
+[P75] 3. Les Créatures
+[P76] 3.1 Formulaire de création (choix utilisateur)
+[P77] L’utilisateur paramètre son espèce via un formulaire UX agréable. Le design du formulaire devra être soigné (voir section Interface). Voici les champs :
+[P78] 
+[P79] 
+[P80] Liste des traits spéciaux
+[P81] 
+[P82] 3.2 Stats calculées automatiquement
+[P83] Le système calcule les stats suivantes à partir des choix de l’utilisateur. Le principe fondamental : chaque avantage a un coût automatique.
+[P84] 
+[P85] 
+[P86] Après la création, l’utilisateur voit un résumé avec des jauges visuelles (force, défense, reproduction, mobilité, discrétion, adaptabilité) et un texte généré décrivant les forces et faiblesses de son espèce.
+[P87] 3.3 Prompt LLM (à chaque tick)
+[P88] Le serveur envoie au LLM de l’utilisateur un prompt structuré contenant : l’identité de la créature (nom, caractéristiques, description libre), son état actuel (énergie, santé, âge), son environnement immédiat (biome, saison, météo, nourriture visible, créatures alliées/neutres/menaces), ses besoins urgents (faim, soif, reproduction, sécurité), et la liste des actions possibles.
+[P89] 
+[P90] Actions possibles
+[P91] 
+[P92] Le LLM répond au format strict :
+[P93] ACTION: [action choisie]
+[P94] RAISON: [1 phrase explicative]
+[P95] La RAISON est affichée dans le journal de pensées visible par les spectateurs. C’est le contenu viral du projet.
+[P96] 3.4 Génération de l’image (sprite)
+[P97] À la création de l’espèce, un appel unique à un modèle d’image (DALL-E, Stable Diffusion ou Flux) génère un sprite 2D top-down en pixel art 64x64. Le prompt est construit automatiquement à partir des choix de l’utilisateur. Le sprite est stocké sur le serveur (CDN). Tous les individus de l’espèce utilisent le même sprite. Les mutations peuvent légèrement modifier la teinte ou la taille du sprite pour les descendants.
+[P98] 
+[P99] 4. Le Cycle de Vie
+[P100] 4.1 Rythme du jeu
+[P101] 
+[P102] En 1-2 jours réels, les populations auront le temps de croître, migrer, s’affronter et évoluer visiblement.
+[P103] 4.2 Déroulement d’un tick
+[P104] Le moteur de simulation exécute les étapes suivantes à chaque tick, dans l’ordre :
+[P105] 
+[P106] Étape 1 — Mise à jour du monde : Avancement horloge (jour/nuit, saison), calcul météo par zone climatique, repousse végétation, remplissage/vidage points d’eau selon pluie, tirage catastrophes, application effets catastrophes en cours. Calcul serveur pur, pas de LLM.
+[P107] Étape 2 — Collecte du contexte : Pour chaque espèce vivante, regrouper les individus par zone/contexte similaire, construire le prompt contextuel.
+[P108] Étape 3 — Appel LLM : Envoyer les prompts (1 par groupe/espèce), timeout 15 secondes, fallback action réflexe si échec, parser la réponse (ACTION + RAISON).
+[P109] Étape 4 — Résolution des actions : Exécuter déplacements, résoudre combats (simultanés), résoudre alimentation/boisson, résoudre reproduction + mutations, appliquer perte d’énergie passive, tuer créatures à 0 santé, vieillissement + mort naturelle, générer cadavres.
+[P110] Étape 5 — Événements : Détecter événements notables, écrire dans le fil, mettre à jour stats globales, envoyer notifications aux followers.
+[P111] Étape 6 — Diffusion : Pousser l’état mis à jour via WebSocket aux spectateurs connectés.
+[P112] 4.3 Gestion des appels LLM
+[P113] Mode par défaut : regroupement par espèce. 1 appel LLM par espèce par tick (pas par individu). Tous les individus dans un contexte similaire reçoivent la même décision. Cela réduit drastiquement les coûts : 50 espèces = 50 appels par tick au lieu de potentiellement 5 000.
+[P114] 
+[P115] Mode premium (tier Apex) : conscience individuelle. Chaque individu reçoit son propre appel LLM. Plus coûteux mais plus réaliste et imprévisible.
+[P116] 
+[P117] Fallback si échec LLM
+[P118] Si menace proche : FUIR automatiquement dans la direction opposée.
+[P119] Si faim critique : SE_DEPLACER vers la nourriture la plus proche.
+[P120] Sinon : RIEN (reste sur place).
+[P121] L’utilisateur est notifié que son espèce tourne en mode survie.
+[P122] 4.4 Mutations et micro-évolution
+[P123] À chaque reproduction, 15% de chance de mutation mineure : une stat varie de +/- 5-10%. Les mutations avantageuses dans l’environnement sont sélectionnées naturellement (les descendants mutés survivent mieux et se reproduisent plus).
+[P124] 
+[P125] Vitesse d’évolution par taille
+[P126] 
+[P127] Spéciation : quand deux groupes géographiquement séparés divergent de plus de 20-30% sur leurs stats, ils deviennent deux sous-espèces distinctes. Changement visuel léger du sprite (teinte, taille).
+[P128] 
+[P129] 5. Interface Spectateur
+[P130] 5.1 Vue principale — La carte
+[P131] Vue aérienne 2D de tout le monde en temps réel.
+[P132] Biomes colorés distinctement (vert forêt, jaune savane, blanc toundra, bleu océan…).
+[P133] Sprites des créatures qui se déplacent en temps réel.
+[P134] Zoom/dézoom libre : vue globale (flux migratoires) → vue rapprochée (individus, combats).
+[P135] Cycle jour/nuit visible (carte s’assombrit la nuit).
+[P136] Météo visible (pluie, neige, nuages).
+[P137] Incendies, inondations visibles sur la carte.
+[P138] 5.2 Fil d’événements
+[P139] Flux en temps réel des événements marquants (sidebar ou bandeau). Exemples : catastrophes, extinctions, naissances record, premières migrations, combats majeurs, mutations détectées. Les spectateurs peuvent partager chaque événement. Emplacement publicitaire intégré tous les 10-15 événements pour les non-abonnés.
+[P140] 5.3 Fiche espèce (clic sur un sprite ou un nom)
+[P141] Image du sprite en grand.
+[P142] Nom, créateur, date de création.
+[P143] Stats actuelles : taille moyenne, population, territoire.
+[P144] Graphique d’évolution de la population dans le temps.
+[P145] Carte de répartition (coloration sur la carte).
+[P146] Chaîne alimentaire (qui mange qui).
+[P147] Arbre généalogique si mutations/spéciations.
+[P148] Journal de pensées : dernières décisions du LLM avec raisons. C’est le contenu viral.
+[P149] 5.4 Dashboard global
+[P150] Nombre total de créatures vivantes, espèces actives, espèces éteintes.
+[P151] Graphiques de population par espèce (courbes Lotka-Volterra en live).
+[P152] Carte thermique des zones les plus peuplées.
+[P153] Classement des espèces (population, longévité, kills, territoire).
+[P154] Compteur de jours/saisons/années in-game.
+[P155] 5.5 Cimetière
+[P156] Les espèces éteintes vont dans un cimetière consultable : fiche complète, histoire (prospérité puis déclin), cause d’extinction, durée d’existence. Crée de l’émotion et de l’attachement.
+[P157] 5.6 Fonctionnalités sociales
+[P158] Suivre une espèce + notifications.
+[P159] Nommer des individus remarquables.
+[P160] Système de paris/prédictions : quelle espèce survivra le plus longtemps ?
+[P161] Chat spectateur pour commenter en live.
+[P162] 5.7 Publicité (spectateurs non-abonnés uniquement)
+[P163] Bannière discrète en bas de la carte.
+[P164] Encart sponsorisé tous les 10-15 événements dans le fil.
+[P165] Pub interstitielle au chargement (3-5s, skippable).
+[P166] Les créateurs abonnés (Starter/Pro/Apex) n’ont aucune pub.
+[P167] 
+[P168] 6. Architecture Technique
+[P169] 6.1 Stack technologique
+[P170] 
+[P171] 6.2 Structure de la base de données
+[P172] 
+[P173] 6.3 Moteur de simulation
+[P174] Processus Node.js qui tourne en permanence côté serveur. Boucle toutes les 3 minutes. Utilise Redis pour la file d’attente des appels LLM. Un pool de workers traite les appels en parallèle. Chaque worker : prend un appel dans la queue, l’envoie à l’API LLM, attend la réponse (timeout 15s), parse le résultat, remet au moteur.
+[P175] 6.4 Deux modes d’appel LLM
+[P176] Mode Abonnement (recommandé) : Le serveur utilise ses propres clés API. L’utilisateur paye un abonnement mensuel. Plus simple, plus accessible.
+[P177] Mode BYOK (Bring Your Own Key) : L’utilisateur fournit sa propre clé API. Aucun coût côté plateforme. Réservé aux utilisateurs techniques.
+[P178] 6.5 Hébergement estimé (MVP)
+[P179] 
+[P180] 6.6 Installation locale (développement et tests)
+[P181] Le développeur doit pouvoir lancer le projet complet en local pour tester. Le setup doit être automatisé au maximum :
+[P182] Node.js 20+ installé sur la machine.
+[P183] Docker Compose pour PostgreSQL et Redis (un seul fichier docker-compose.yml).
+[P184] Un fichier .env avec une clé API LLM (Google AI Studio gratuit suffit pour les tests).
+[P185] Un script npm run dev qui lance tout : base de données, serveur backend, moteur de simulation, frontend React.
+[P186] Le frontend est accessible sur localhost:3000, la carte s’affiche avec quelques espèces de test préchargées.
+[P187] Un script npm run seed qui génère un monde avec des biomes et 3-5 espèces de démo pour tester immédiatement.
+[P188] 
+[P189] 6.7 Note pour le développement (Claude Code)
+[P190] Ce cahier des charges est conçu pour être donné à Claude Code qui doit pouvoir travailler de manière autonome sans intervention humaine. Toutes les spécifications sont complètes. Claude Code doit déterminer lui-même l’ordre de développement, structurer le code, choisir les librairies complémentaires et produire un projet fonctionnel testable en local.
+[P191] 
+[P192] 7. Monétisation
+[P193] 7.1 Tiers d’abonnement
+[P194] 
+[P195] Le tier Éphémère permet à tout utilisateur sans compétence technique et sans payer de créer une créature gratuite qui vit 24-48h réelles (~1-2 années in-game). Le coût LLM est absorbé par le serveur (~0.02-0.04€ par créature). Après expiration, la créature meurt et rejoint le cimetière. Le joueur peut en recréer une. S’il veut une espèce permanente, il passe en Starter. Ce tier sert de tunnel de conversion : le joueur s’attache à sa créature, la voit prospérer, puis elle disparaît.
+[P196] 
+[P197] 7.2 Marges par tier
+[P198] 
+[P199] 7.3 Revenus publicitaires
+[P200] Emplacements pub pour les spectateurs non-abonnés uniquement : bannière en bas de carte, encarts dans le fil d’événements, interstitielle au chargement. Estimation avec 5 000 spectateurs actifs : 1 000 à 3 750€/mois (CPM 2-5€, niche tech/gaming).
+[P201] 7.4 Projection de revenus
+[P202] 
+[P203] 7.5 Futures sources de revenus
+[P204] Cosmétiques : personnalisation des sprites (couleurs, effets, animations).
+[P205] Arènes temporaires : compétitions entre espèces avec frais d’entrée.
+[P206] Partenariats recherche : données anonymisées sur les comportements émergents.
+[P207] API publique : intégration du monde dans d’autres projets.
+[P208] 
+[P209] 8. Annexes
+[P210] 8.1 Prompt LLM complet (template)
+[P211] Voici le template exact du prompt envoyé au LLM à chaque tick. Les variables entre crochets sont remplacées dynamiquement par le serveur :
+[P212] 
+[P213] Tu es un [nom_espece]. [description_libre].
+[P214] 
+[P215] TES CARACTÉRISTIQUES :
+[P216] - Taille : [X/10]
+[P217] - Régime : [herbivore/carnivore/...]
+[P218] - Mode social : [solitaire/meute/...]
+[P219] - Traits : [camouflage, venin...]
+[P220] - Énergie : [X%] | Santé : [X%] | Âge : [X cycles]
+[P221] 
+[P222] TON ENVIRONNEMENT IMMÉDIAT :
+[P223] - Biome : [type] | Saison : [X] | Moment : [jour/nuit]
+[P224] - Météo : [pluie/soleil/tempête/neige]
+[P225] - Nourriture visible : [détail]
+[P226] - Eau : [distance et quantité]
+[P227] - Alliés : [nombre et distance]
+[P228] - Neutres : [détail]
+[P229] - Menaces : [détail avec distance et direction]
+[P230] 
+[P231] TES BESOINS URGENTS :
+[P232] - Faim : [basse/moyenne/haute/critique]
+[P233] - Soif : [basse/moyenne/haute/critique]
+[P234] - Reproduction : [pas prêt / prêt - partenaire à X cases]
+[P235] - Sécurité : [sûr / menace détectée / danger immédiat]
+[P236] 
+[P237] ACTIONS POSSIBLES (choisis-en UNE) :
+[P238] SE_DEPLACER | MANGER | BOIRE | CHASSER | FUIR | SE_CACHER |
+[P239] SE_REPRODUIRE | DORMIR | EXPLORER | DEFENDRE_TERRITOIRE |
+[P240] ATTAQUER | SUIVRE | RIEN
+[P241] 
+[P242] Réponds UNIQUEMENT au format :
+[P243] ACTION: [ton action]
+[P244] RAISON: [1 phrase expliquant pourquoi]
+[P245] 
+[P246] 8.2 Règles d’équilibrage
+[P247] Principe fondamental : chaque avantage a un coût automatique et proportionnel. Le système ne limite pas directement les choix du créateur mais crée des contrepoids naturels.
+[P248] 
+[P249] Coût énergétique proportionnel à la puissance : une créature grosse, rapide et forte doit manger énormément.
+[P250] Reproduction lente pour les puissants : plus tu es gros et complexe, plus la reproduction est lente et coûteuse.
+[P251] Maladies et parasites : quand une population dépasse un seuil, des épidémies émergent (densité-dépendance).
+[P252] Mutations aléatoires : les descendants ne sont pas des copies parfaites, empêchant une espèce de rester parfaite.
+[P253] Ressources limitées et dynamiques : la nourriture ne pousse pas infiniment. Décimation des proies = effondrement des prédateurs.
+[P254] 
+[P255] Fin du cahier des charges — AI Planet v1.0
+
+=== TABLES ===
+--- Table 0 ---
+  [0,0]: Biome
+  [0,1]: Nourriture végétale
+  [0,2]: Eau
+  [0,3]: Température
+  [0,4]: Visibilité
+  [0,5]: Abris
+  [1,0]: Forêt tropicale
+  [1,1]: Abondante
+  [1,2]: Abondante
+  [1,3]: Chaud constant
+  [1,4]: Faible (dense)
+  [1,5]: Nombreux
+  [2,0]: Forêt tempérée
+  [2,1]: Variable (saisons)
+  [2,2]: Correcte
+  [2,3]: Variable
+  [2,4]: Moyenne
+  [2,5]: Modérés
+  [3,0]: Savane
+  [3,1]: Herbeuse correcte
+  [3,2]: Rare
+  [3,3]: Chaud
+  [3,4]: Haute (ouvert)
+  [3,5]: Peu
+  [4,0]: Désert chaud
+  [4,1]: Très rare
+  [4,2]: Quasi nulle
+  [4,3]: Très chaud jour / froid nuit
+  [4,4]: Maximale
+  [4,5]: Très peu
+  [5,0]: Désert froid (arctique)
+  [5,1]: Très rare
+  [5,2]: Gelée
+  [5,3]: Très froid
+  [5,4]: Haute
+  [5,5]: Très peu
+  [6,0]: Haute montagne
+  [6,1]: Rare
+  [6,2]: Neige fondue
+  [6,3]: Froid
+  [6,4]: Variable (cols/vallées)
+  [6,5]: Grottes, rochers
+  [7,0]: Collines
+  [7,1]: Correcte
+  [7,2]: Ruisseaux
+  [7,3]: Tempéré
+  [7,4]: Moyenne
+  [7,5]: Modérés
+  [8,0]: Volcan
+  [8,1]: Nulle (proximité) / Fertile (alentours)
+  [8,2]: Rare
+  [8,3]: Très chaud
+  [8,4]: Haute
+  [8,5]: Aucun
+  [9,0]: Marécage
+  [9,1]: Moyenne
+  [9,2]: Partout
+  [9,3]: Humide
+  [9,4]: Faible
+  [9,5]: Peu (terrain difficile)
+  [10,0]: Plage / Côte
+  [10,1]: Mixte (poissons + végétaux)
+  [10,2]: Salée
+  [10,3]: Tempéré
+  [10,4]: Haute
+  [10,5]: Peu
+  [11,0]: Récif / Océan peu profond
+  [11,1]: Marine abondante
+  [11,2]: N/A (aquatique)
+  [11,3]: Tempéré
+  [11,4]: Correcte
+  [11,5]: Coraux
+  [12,0]: Océan profond
+  [12,1]: Rare mais grosses proies
+  [12,2]: N/A
+  [12,3]: Froid
+  [12,4]: Nulle (obscurité)
+  [12,5]: Aucun
+  [13,0]: Grottes / Souterrain
+  [13,1]: Rare
+  [13,2]: Suintement
+  [13,3]: Stable
+  [13,4]: Nulle (pas de lumière)
+  [13,5]: Excellent
+  [14,0]: Prairie / Steppe
+  [14,1]: Herbeuse abondante
+  [14,2]: Correcte
+  [14,3]: Variable
+  [14,4]: Haute (ouvert)
+  [14,5]: Aucun
+  [15,0]: Toundra
+  [15,1]: Très rare
+  [15,2]: Gelée
+  [15,3]: Très froid
+  [15,4]: Haute
+  [15,5]: Très peu
+--- Table 1 ---
+  [0,0]: Climat
+  [0,1]: Caractéristiques
+  [0,2]: Saisons
+  [1,0]: Tropical
+  [1,1]: Chaud toute l’année, pluie abondante
+  [1,2]: Saison sèche / saison humide
+  [2,0]: Méditerranéen
+  [2,1]: Étés chauds et secs, hivers doux
+  [2,2]: 4 saisons douces, pluie en hiver
+  [3,0]: Continental
+  [3,1]: Gros écarts de température
+  [3,2]: 4 saisons marquées
+  [4,0]: Polaire
+  [4,1]: Froid quasi permanent
+  [4,2]: Été très court, fonte partielle
+  [5,0]: Océanique
+  [5,1]: Températures douces, pluie fréquente
+  [5,2]: Peu d’extrêmes
+  [6,0]: Aride
+  [6,1]: Très peu de pluie
+  [6,2]: Écarts jour/nuit, pas de saisons marquées
+--- Table 2 ---
+  [0,0]: Catastrophe
+  [0,1]: Effet
+  [0,2]: Durée
+  [1,0]: Sécheresse
+  [1,1]: Une zone perd eau et nourriture
+  [1,2]: Plusieurs saisons
+  [2,0]: Inondation
+  [2,1]: Zone côtière/marécage submergée, créatures terrestres doivent fuir
+  [2,2]: Quelques cycles
+  [3,0]: Incendie
+  [3,1]: Forêt/savane brûle, destruction massive puis repousse
+  [3,2]: Cycles puis régénération lente
+  [4,0]: Éruption volcanique
+  [4,1]: Zone de cendres, baisse température globale temporaire
+  [4,2]: Longue durée
+  [5,0]: Tempête
+  [5,1]: Zones côtières et océaniques dangereuses
+  [5,2]: Quelques cycles
+  [6,0]: Foudre
+  [6,1]: Peut déclencher un incendie localisé (rare)
+  [6,2]: Instantané
+--- Table 3 ---
+  [0,0]: Champ
+  [0,1]: Type
+  [0,2]: Options / Plage
+  [1,0]: Nom de l’espèce
+  [1,1]: Texte libre
+  [1,2]: Court, unique
+  [2,0]: Milieu de vie
+  [2,1]: Choix unique
+  [2,2]: Terrestre / Aquatique / Amphibie / Aérien
+  [3,0]: Taille
+  [3,1]: Curseur 1-10
+  [3,2]: 1-2: insecte. 3-4: renard. 5-6: loup. 7-8: ours. 9-10: éléphant.
+  [4,0]: Régime alimentaire
+  [4,1]: Choix unique
+  [4,2]: Herbivore / Carnivore / Omnivore / Charognard / Insectivore-filtreur / Parasite
+  [5,0]: Habitat préféré
+  [5,1]: Choix 1 à 3 biomes
+  [5,2]: Parmi les 15 biomes disponibles
+  [6,0]: Mode de vie social
+  [6,1]: Choix unique
+  [6,2]: Solitaire / Couple / Petit groupe (3-8) / Grande colonie (20+)
+  [7,0]: Rythme d’activité
+  [7,1]: Choix unique
+  [7,2]: Diurne / Nocturne / Crépusculaire
+  [8,0]: Trait spécial
+  [8,1]: Choix 1-2 max
+  [8,2]: Voir liste ci-dessous
+  [9,0]: Description libre
+  [9,1]: Texte court (optionnel)
+  [9,2]: Influence la personnalité de l’IA
+--- Table 4 ---
+  [0,0]: Trait
+  [0,1]: Effet
+  [0,2]: Contrepartie
+  [1,0]: Camouflage
+  [1,1]: Quasi invisible dans son biome
+  [1,2]: Aucune (passif)
+  [2,0]: Venin
+  [2,1]: Attaque empoisonnée
+  [2,2]: Coût énergie
+  [3,0]: Carapace / Armure
+  [3,1]: Résistance aux attaques
+  [3,2]: Ralenti
+  [4,0]: Vol
+  [4,1]: Déplacement aérien
+  [4,2]: Doit se poser pour manger/dormir
+  [5,0]: Vitesse
+  [5,1]: Déplacement rapide
+  [5,2]: Consomme plus d’énergie
+  [6,0]: Écholocation
+  [6,1]: Détecte les créatures cachées
+  [6,2]: Coût énergie
+  [7,0]: Vision nocturne
+  [7,1]: Pas de pénalité la nuit
+  [7,2]: Aucune (passif)
+  [8,0]: Résistance au froid
+  [8,1]: Supporte biomes froids
+  [8,2]: Aucune (passif)
+  [9,0]: Résistance à la chaleur
+  [9,1]: Supporte biomes chauds
+  [9,2]: Aucune (passif)
+  [10,0]: Symbiose
+  [10,1]: Association bénéfique avec autre espèce
+  [10,2]: Dépendant de l’autre
+  [11,0]: Fouisseur
+  [11,1]: Peut se cacher sous terre
+  [11,2]: Lent en surface
+  [12,0]: Mimétisme
+  [12,1]: Imite une espèce dangereuse
+  [12,2]: Inefficace si découvert
+  [13,0]: Bioluminescence
+  [13,1]: Attire proies dans l’obscurité
+  [13,2]: Visible des prédateurs aussi
+--- Table 5 ---
+  [0,0]: Stat
+  [0,1]: Formule simplifiée
+  [0,2]: Logique
+  [1,0]: Vitesse de reproduction
+  [1,1]: Base / (taille × nb_traits × mod_régime)
+  [1,2]: Plus puissant = reproduction plus lente
+  [2,0]: Consommation énergie/tick
+  [2,1]: Taille + traits_actifs + mod_social
+  [2,2]: Plus gros et actif = mange plus
+  [3,0]: Points de vie
+  [3,1]: Taille × modificateurs (carapace+, vitesse-)
+  [3,2]: Gros = résistant
+  [4,0]: Dégâts combat
+  [4,1]: Taille × mod_régime × mod_traits
+  [4,2]: Carnivore + venin = dégâts élevés
+  [5,0]: Portée détection
+  [5,1]: Taille + mods (écholocation, vision nocturne)
+  [5,2]: Grand = voit loin
+  [6,0]: Discrétion
+  [6,1]: 1/taille + mods (camouflage, fouisseur)
+  [6,2]: Petit = discret
+  [7,0]: Tolérance climatique
+  [7,1]: Biomes préférés + traits résistance
+  [7,2]: Habitats viables vs hostiles
+  [8,0]: Taille de portée
+  [8,1]: Inversement proportionnel à la taille
+  [8,2]: Petit = beaucoup de petits
+--- Table 6 ---
+  [0,0]: Action
+  [0,1]: Effet
+  [1,0]: SE_DEPLACER [direction]
+  [1,1]: Bouge d’une case (nord/sud/est/ouest)
+  [2,0]: MANGER [cible]
+  [2,1]: Consomme herbe, proie ou cadavre
+  [3,0]: BOIRE
+  [3,1]: Consomme de l’eau
+  [4,0]: CHASSER [cible]
+  [4,1]: Engage un combat avec une proie
+  [5,0]: FUIR [direction]
+  [5,1]: Déplacement rapide opposé à la menace
+  [6,0]: SE_CACHER
+  [6,1]: Devient quasi invisible
+  [7,0]: SE_REPRODUIRE
+  [7,1]: Crée des descendants (si partenaire adjacent)
+  [8,0]: DORMIR
+  [8,1]: Récupère énergie/santé mais vulnérable
+  [9,0]: EXPLORER
+  [9,1]: Se déplace vers une zone inconnue
+  [10,0]: DEFENDRE_TERRITOIRE
+  [10,1]: Attaque tout intrus dans sa zone
+  [11,0]: ATTAQUER [cible]
+  [11,1]: Engage un combat offensif
+  [12,0]: SUIVRE [cible]
+  [12,1]: Se déplace vers une créature spécifique
+  [13,0]: RIEN
+  [13,1]: Reste sur place, observe
+--- Table 7 ---
+  [0,0]: Unité de temps
+  [0,1]: Durée réelle
+  [0,2]: Durée in-game
+  [1,0]: 1 tick
+  [1,1]: ~3 minutes
+  [1,2]: Unité de base
+  [2,0]: 1 journée in-game
+  [2,1]: ~1 heure
+  [2,2]: ~30 ticks
+  [3,0]: 1 saison in-game
+  [3,1]: ~7 heures
+  [3,2]: ~7 jours in-game
+  [4,0]: 1 année in-game
+  [4,1]: ~28 heures
+  [4,2]: 4 saisons
+  [5,0]: 2 jours réels
+  [5,1]: —
+  [5,2]: ~2 années in-game
+--- Table 8 ---
+  [0,0]: Taille
+  [0,1]: Fréquence reproduction
+  [0,2]: Mutations/jour réel
+  [0,3]: Divergence visible
+  [1,0]: Petite (1-3)
+  [1,1]: Toutes les 30-45 min
+  [1,2]: 5-7
+  [1,3]: 1-2 jours
+  [2,0]: Moyenne (4-6)
+  [2,1]: Toutes les 1h30-2h30
+  [2,2]: 1-2
+  [2,3]: 3-5 jours
+  [3,0]: Grande (7-10)
+  [3,1]: Toutes les 4-6h
+  [3,2]: 0-1
+  [3,3]: 1-2 semaines
+--- Table 9 ---
+  [0,0]: Composant
+  [0,1]: Technologie
+  [0,2]: Rôle
+  [1,0]: Frontend
+  [1,1]: React + PixiJS ou Canvas + Tailwind CSS
+  [1,2]: Interface, rendu carte 2D, sprites
+  [2,0]: Temps réel
+  [2,1]: WebSocket (Socket.io)
+  [2,2]: Mises à jour live pour les spectateurs
+  [3,0]: Backend / API
+  [3,1]: Node.js (Express ou Fastify)
+  [3,2]: API REST, moteur de simulation
+  [4,0]: Base de données
+  [4,1]: PostgreSQL
+  [4,2]: Données persistantes (espèces, créatures, événements, users)
+  [5,0]: Cache temps réel
+  [5,1]: Redis
+  [5,2]: Positions, état du monde, file d’attente LLM
+  [6,0]: Stockage sprites
+  [6,1]: Cloudflare R2 ou AWS S3
+  [6,2]: Images générées des espèces
+  [7,0]: LLM
+  [7,1]: API Anthropic / OpenAI / Google
+  [7,2]: Cerveau des créatures
+  [8,0]: Génération images
+  [8,1]: DALL-E / Stable Diffusion / Flux
+  [8,2]: Sprites des espèces
+--- Table 10 ---
+  [0,0]: Table
+  [0,1]: Champs principaux
+  [0,2]: Rôle
+  [1,0]: worlds
+  [1,1]: id, nom, tick actuel, jour, saison, année, état météo, catastrophes en cours
+  [1,2]: État global du monde
+  [2,0]: biomes
+  [2,1]: id, type, position (x,y), climat, nourriture, eau, température actuels
+  [2,2]: Chaque zone de la carte
+  [3,0]: species
+  [3,1]: id, nom, user_id, paramètres formulaire, stats calculées, sprite_url, statut, date création/extinction
+  [3,2]: Définition de chaque espèce
+  [4,0]: creatures
+  [4,1]: id, species_id, position (x,y), énergie, santé, âge, stats individuelles, parent_id, statut
+  [4,2]: Chaque individu vivant ou mort
+  [5,0]: events
+  [5,1]: id, tick, type, description, espèces impliquées, position
+  [5,2]: Fil d’événements
+  [6,0]: thought_logs
+  [6,1]: id, species_id, tick, action, raison
+  [6,2]: Journal de pensées
+  [7,0]: users
+  [7,1]: id, email, auth, plan (gratuit/starter/pro/apex), api_key optionnelle
+  [7,2]: Comptes utilisateurs
+  [8,0]: follows
+  [8,1]: user_id, species_id
+  [8,2]: Abonnements aux espèces
+--- Table 11 ---
+  [0,0]: Composant
+  [0,1]: Service suggéré
+  [0,2]: Coût/mois
+  [1,0]: Serveur principal
+  [1,1]: VPS 4 vCPU, 8GB RAM (Hetzner/OVH)
+  [1,2]: 15-25€
+  [2,0]: PostgreSQL
+  [2,1]: Même VPS ou service managé
+  [2,2]: 0-15€
+  [3,0]: Redis
+  [3,1]: Même VPS
+  [3,2]: 0€
+  [4,0]: CDN sprites
+  [4,1]: Cloudflare R2
+  [4,2]: 1-3€
+  [5,0]: Domaine + SSL
+  [5,1]: Cloudflare
+  [5,2]: ~10€/an
+  [6,0]: Total MVP
+  [6,1]: —
+  [6,2]: 20-40€/mois
+--- Table 12 ---
+  [0,0]: Tier
+  [0,1]: Prix/mois
+  [0,2]: Espèces actives
+  [0,3]: Population max
+  [0,4]: Modèle LLM
+  [0,5]: Pub
+  [1,0]: Spectateur
+  [1,1]: Gratuit
+  [1,2]: 0
+  [1,3]: —
+  [1,4]: —
+  [1,5]: Oui
+  [2,0]: Éphémère (essai gratuit)
+  [2,1]: Gratuit
+  [2,2]: 1 (durée 24-48h réelles)
+  [2,3]: 50 individus
+  [2,4]: Gemini Flash (serveur)
+  [2,5]: Oui
+  [3,0]: Starter
+  [3,1]: 5€
+  [3,2]: 1
+  [3,3]: 1 000 individus
+  [3,4]: Gemini Flash / GPT-4o mini
+  [3,5]: Non
+  [4,0]: Pro
+  [4,1]: 15€
+  [4,2]: 3
+  [4,3]: 5 000 individus/espèce
+  [4,4]: GPT-4o mini / Claude Haiku
+  [4,5]: Non
+  [5,0]: Apex
+  [5,1]: 35€
+  [5,2]: 10
+  [5,3]: Illimité
+  [5,4]: Au choix (GPT-4o, Sonnet…)
+  [5,5]: Non
+  [6,0]: BYOK
+  [6,1]: Gratuit
+  [6,2]: Illimité
+  [6,3]: Illimité
+  [6,4]: Clé perso
+  [6,5]: Non
+--- Table 13 ---
+  [0,0]: Tier
+  [0,1]: Revenu
+  [0,2]: Coût LLM
+  [0,3]: Coût infra
+  [0,4]: Marge
+  [1,0]: Starter 5€
+  [1,1]: 5€
+  [1,2]: ~0.60€
+  [1,3]: ~0.50€
+  [1,4]: ~77%
+  [2,0]: Pro 15€
+  [2,1]: 15€
+  [2,2]: ~2-4€
+  [2,3]: ~1.50€
+  [2,4]: ~65-75%
+  [3,0]: Apex 35€
+  [3,1]: 35€
+  [3,2]: ~10-20€
+  [3,3]: ~3€
+  [3,4]: ~35-63%
+--- Table 14 ---
+  [0,0]: Source
+  [0,1]: Estimation/mois
+  [1,0]: Abonnements (200 Starter + 80 Pro + 20 Apex)
+  [1,1]: 2 900€
+  [2,0]: Publicité (5 000 spectateurs)
+  [2,1]: 1 000-3 750€
+  [3,0]: Total brut
+  [3,1]: 3 900-6 650€
+  [4,0]: Coûts serveur + LLM abonnés
+  [4,1]: 500-800€
+  [5,0]: Coût LLM tier Éphémère (5 000 joueurs gratuits/mois)
+  [5,1]: 100-200€
+  [6,0]: Bénéfice net estimé
+  [6,1]: 2 900-5 650€
