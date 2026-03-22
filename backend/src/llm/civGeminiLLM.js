@@ -97,9 +97,13 @@ function buildPrompt(ctx) {
     ? `SITUATION CRITIQUE :\n${tensions.slice(0, 3).map(t => `⚠️ ${t}`).join('\n')}\n\nEn tant que dirigeant de ${ctx.nom} (${valeurs}), que décides-tu ?`
     : `En tant que dirigeant de ${ctx.nom} (valeurs: ${valeurs}), que souhaites-tu entreprendre ce tour ?`;
 
+  const capLine = ctx.territory_capacity
+    ? ` | Capacité du territoire : ${ctx.pop_vs_capacity}${ctx.is_overpopulated ? ' ⚠️ SURPOPULÉ' : ''}`
+    : '';
+
   return `Tu es le dirigeant de "${ctx.nom}" (${ctx.gouvernement}, âge: ${ctx.age_tech}).
 Valeurs fondamentales : ${valeurs}${ctx.description ? ` | ${ctx.description}` : ''}
-Population : ${ctx.population} (${ctx.population_trend}) | Territoire : ${ctx.territory_count} cases | Main-d'œuvre libre : ${ctx.free_workforce} pers.
+Population : ${ctx.population} (${ctx.population_trend}) | Territoire : ${ctx.territory_count} cases${capLine} | Main-d'œuvre libre : ${ctx.free_workforce} pers.
 
 ${moralBlock}
 

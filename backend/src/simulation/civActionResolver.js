@@ -48,6 +48,49 @@ const BIOME_BONUS = {
   volcano:          { pierre: 1.2 },
 };
 
+// ─── Capacité de charge par biome (personnes max par case, cueillette seule) ──
+const BIOME_CARRYING_CAPACITY = {
+  tropical_forest:  15,
+  temperate_forest: 12,
+  prairie:          10,
+  coast:             8,
+  reef:              8,
+  savanna:           6,
+  river:            10,
+  hills:             5,
+  swamp:             4,
+  mountain:          3,
+  cave:              3,
+  tundra:            2,
+  volcano:           1,
+  desert_hot:        1,
+  desert_cold:       1,
+  ocean_deep:        0,
+  ocean:             0,
+};
+
+/**
+ * Calcule la capacité de charge totale du territoire d'une civ.
+ * Avec agriculture → ×3, avec irrigation → ×5.
+ */
+function getTerritoryCapacity(civ, biomesMap) {
+  const buildings    = normalizeBuildings(civ.buildings);
+  const hasAgriculture = buildings.some(b => b.category === 'agriculture' && (b.workers || 0) > 0);
+  const hasIrrigation  = buildings.some(b => /irrigation|canal/i.test(b.name) && (b.workers || 0) > 0);
+  const multiplier     = hasIrrigation ? 5 : hasAgriculture ? 3 : 1;
+
+  const terrCells = db.prepare('SELECT x, y FROM territories WHERE civ_id=? AND world_id=?')
+    .all(civ.id, civ.world_id || 1);
+
+  let capacity = 0;
+  for (const cell of terrCells) {
+    const biome = biomesMap ? biomesMap[`${cell.x},${cell.y}`] : null;
+    const base  = biome ? (BIOME_CARRYING_CAPACITY[biome.biome_type] ?? 3) : 3;
+    capacity += base * multiplier;
+  }
+  return capacity;
+}
+
 // ─── Coûts de construction multi-ressources ───────────────────────────────────
 const CREATION_COSTS = {
   agriculture:  { bois: 10 },
@@ -163,14 +206,23 @@ function updateResources(civ, biomesMap) {
   const isFamine = resources.nourriture <= 0;
   const surplus  = (production.nourriture || 0) - (consumption.nourriture || 0);
 
-  const pop = civ.population || 0;
-  // Naissances : basées sur le STOCK (pas le surplus) pour éviter 0 naissances avec grenier plein
-  const births = (resources.nourriture > 0 && surplus >= 0 && (civ.moral || 0) > 40)
-    ? Math.max(1, Math.round(pop * 0.015)) : 0;
+  const pop      = civ.population || 0;
+  const capacity = getTerritoryCapacity(civ, biomesMap);
+  const overPop  = capacity > 0 && pop > capacity;   // surpopulation
+  const overRatio = capacity > 0 ? pop / capacity : 1; // ex: 1.5 = 50% au-dessus de la capacité
+
+  // Naissances bloquées si surpopulation (>100% capacité) ou nourriture insuffisante
+  const canBirth = resources.nourriture > 0 && surplus >= 0 && (civ.moral || 0) > 40 && !overPop;
+  const births = canBirth ? Math.max(1, Math.round(pop * 0.015)) : 0;
+
   const naturalDeaths = Math.max(0, Math.round(pop * 0.003));
+
+  // Famine ou déclin par surpopulation (les gens partent / meurent de maladie)
   const famineDelta = isFamine
     ? -Math.max(1, Math.round(pop * 0.05))
-    : surplus < 0 ? -Math.max(1, Math.round(pop * 0.01)) : 0;
+    : overPop
+      ? -Math.max(1, Math.round(pop * Math.min(0.03, (overRatio - 1) * 0.05)))  // pression surpopulation
+      : surplus < 0 ? -Math.max(1, Math.round(pop * 0.01)) : 0;
 
   return {
     newResources: resources,
@@ -178,6 +230,8 @@ function updateResources(civ, biomesMap) {
     deaths: naturalDeaths + Math.abs(famineDelta),
     births,
     isFamine,
+    capacity,
+    overPop,
   };
 }
 
@@ -1046,6 +1100,13 @@ function buildCivContext(civ, allCivs, worldId, currentTick, biomesMap) {
   const army_equipment = getEquipmentLabel(civ.age_tech);
   const army_power     = getMilitaryPower(army_soldiers, civ.age_tech);
 
+  // Capacité de charge du territoire
+  const territory_capacity = getTerritoryCapacity(civ, biomesMap);
+  const pop_vs_capacity    = territory_capacity > 0
+    ? `${civ.population}/${territory_capacity} (${Math.round(civ.population / territory_capacity * 100)}%)`
+    : `${civ.population}/∞`;
+  const is_overpopulated   = territory_capacity > 0 && (civ.population || 0) > territory_capacity;
+
   return {
     nom: civ.nom, valeurs, gouvernement: civ.gouvernement, description: civ.description,
     age_tech: civ.age_tech, population: civ.population, population_trend: popTrend,
@@ -1061,12 +1122,14 @@ function buildCivContext(civ, allCivs, worldId, currentTick, biomesMap) {
     is_in_decline: foodStatus === 'famine' || civ.moral < 30 || civ.population < 30,
     has_coastal: !!coastalTile,
     free_workforce,
+    territory_capacity, pop_vs_capacity, is_overpopulated,
   };
 }
 
 module.exports = {
   resolveEffect, parseEffets, advanceProcesses, buildCivContext,
   initTerritory, computeFoodRegen, expandTerritory, discoverAdjacentCivs,
+  getTerritoryCapacity, BIOME_CARRYING_CAPACITY,
   normalizeBuildings, categorizeStructure, calculateProduction, updateResources,
   getEquipmentLabel, getMilitaryPower,
   CATEGORY_EFFECTS, CATEGORY_EMOJI, TECH_AGES, RESOURCES, ZERO_RESOURCES,

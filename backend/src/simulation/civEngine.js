@@ -135,7 +135,9 @@ class CivEngine {
           : ` (+${newResources[res] - prev})`;
         console.log(`  [RESOURCES] ${res}: ${prev}→${newResources[res]}${bilanStr}${warn}`);
       }
-      console.log(`  [DEMO] pop: ${pop}→${newPop} (naiss:+${births}, morts_nat:-${naturalDeaths}, famine:${famineDelta})`);
+      const cap = consequences.capacity || 0;
+      const overStr = consequences.overPop ? ' ⚠️ SURPOP' : '';
+      console.log(`  [DEMO] pop: ${pop}→${newPop} (naiss:+${births}, morts_nat:-${naturalDeaths}, famine:${famineDelta}) | capacité: ${cap}${overStr}`);
       console.log(`  [MORAL] ${newMoral}/100 (${moralLabel})`);
       if (satisfactions.length) console.log(`    ✅ ${satisfactions.join(' | ')}`);
       if (frustrations.length)  console.log(`    ⚠️  ${frustrations.join(' | ')}`);
