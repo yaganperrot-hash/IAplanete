@@ -12,7 +12,7 @@ const parseCiv = r => r ? {
 } : null;
 
 function getCivWorld() {
-  return db.prepare("SELECT id FROM worlds WHERE world_type='civilisations' LIMIT 1").get();
+  return db.prepare("SELECT id FROM worlds WHERE world_type='civilisations' ORDER BY id DESC LIMIT 1").get();
 }
 
 module.exports = function createCivRouter(civEngine) {

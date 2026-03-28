@@ -183,6 +183,50 @@ CREATE TABLE IF NOT EXISTS diplomacy (
   relation TEXT NOT NULL DEFAULT 'neutre',
   UNIQUE(world_id, civ_a_id, civ_b_id)
 );
+
+CREATE TABLE IF NOT EXISTS relics (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  world_id INTEGER REFERENCES worlds(id) ON DELETE CASCADE,
+  name TEXT NOT NULL,
+  description TEXT NOT NULL,
+  type TEXT NOT NULL CHECK (type IN ('objet', 'art', 'construction')),
+  domain TEXT NOT NULL CHECK (domain IN ('outil', 'arme', 'art', 'ruines')),
+  x INTEGER NOT NULL,
+  y INTEGER NOT NULL,
+  discovered_by INTEGER REFERENCES civilizations(id) ON DELETE SET NULL,
+  discovered_at_tick INTEGER,
+  taken INTEGER NOT NULL DEFAULT 0 CHECK (taken IN (0, 1)),
+  used INTEGER NOT NULL DEFAULT 0 CHECK (used IN (0, 1)),
+  UNIQUE(world_id, x, y)
+);
+
+CREATE INDEX IF NOT EXISTS idx_relics_world ON relics(world_id);
+CREATE INDEX IF NOT EXISTS idx_relics_discovered ON relics(discovered_by);
+CREATE INDEX IF NOT EXISTS idx_relics_position ON relics(x, y);
+
+CREATE TABLE IF NOT EXISTS animal_groups (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  world_id INTEGER REFERENCES worlds(id) ON DELETE CASCADE,
+  nom TEXT NOT NULL,
+  species TEXT NOT NULL,
+  type TEXT NOT NULL CHECK (type IN ('agressif', 'peureux', 'oiseau')),
+  size INTEGER NOT NULL DEFAULT 1,
+  x INTEGER NOT NULL,
+  y INTEGER NOT NULL,
+  respawn_x INTEGER NOT NULL,
+  respawn_y INTEGER NOT NULL,
+  dangerosite INTEGER NOT NULL DEFAULT 2 CHECK (dangerosite BETWEEN 1 AND 5),
+  is_migratory INTEGER NOT NULL DEFAULT 0 CHECK (is_migratory IN (0, 1)),
+  migration_direction TEXT CHECK (migration_direction IN ('nord', 'sud')),
+  discovered_by TEXT NOT NULL DEFAULT '[]',
+  last_attack_tick INTEGER NOT NULL DEFAULT 0,
+  UNIQUE(world_id, x, y)
+);
+
+CREATE INDEX IF NOT EXISTS idx_animal_groups_world ON animal_groups(world_id);
+CREATE INDEX IF NOT EXISTS idx_animal_groups_type ON animal_groups(type);
+CREATE INDEX IF NOT EXISTS idx_animal_groups_position ON animal_groups(x, y);
+CREATE INDEX IF NOT EXISTS idx_animal_groups_migratory ON animal_groups(is_migratory);
 `;
 
 // Migrations incrémentales pour les BDs existantes (idempotentes)
@@ -214,6 +258,18 @@ const ALTER_MIGRATIONS = [
   "ALTER TABLE civilizations ADD COLUMN active_trade_routes INTEGER NOT NULL DEFAULT 0",
   // Travailleurs demandés vs affectés (pour processus)
   "ALTER TABLE civ_processes ADD COLUMN requested_workers INTEGER NOT NULL DEFAULT 0",
+  // V3 — Rôle et capacité logement des bâtiments
+  "ALTER TABLE civ_processes ADD COLUMN role TEXT NOT NULL DEFAULT ''",
+  "ALTER TABLE civ_processes ADD COLUMN capacity INTEGER NOT NULL DEFAULT 0",
+  // V3 — Moral cumulatif + conséquences du dernier tick
+  "ALTER TABLE civilizations ADD COLUMN frustration_ticks TEXT NOT NULL DEFAULT '{}'",
+  "ALTER TABLE civilizations ADD COLUMN last_consequences TEXT NOT NULL DEFAULT '[]'",
+  // V3 — Événements actifs (épidémie, sécheresse, etc.)
+  "ALTER TABLE civilizations ADD COLUMN active_events TEXT NOT NULL DEFAULT '[]'",
+  // V4 — Mémoire stratégique (cap inter-ticks)
+  "ALTER TABLE civilizations ADD COLUMN memoire TEXT NOT NULL DEFAULT ''",
+  // V5 — Reliques : bonus temporaire
+  "ALTER TABLE relics ADD COLUMN bonus_remaining INTEGER NOT NULL DEFAULT 0",
 ];
 
 function migrate() {

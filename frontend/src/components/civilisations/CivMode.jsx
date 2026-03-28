@@ -14,7 +14,7 @@ const AGE_LABELS = {
 };
 
 export default function CivMode({ onBack }) {
-  const { connected, worldData, biomes, civs, territories, events, thoughtLogs, tick, year, season, dayOfYear, refreshCivs } = useCivSocket();
+  const { connected, worldData, biomes, civs, territories, events, thoughtLogs, tick, year, season, monthName, dayOfYear, refreshCivs } = useCivSocket();
 
   const [selectedCiv, setSelectedCiv] = useState(null);
   const [rightPanel, setRightPanel] = useState('journal'); // 'journal' | 'form' | 'civ-card'
@@ -86,7 +86,7 @@ export default function CivMode({ onBack }) {
           <span className="text-amber-400 font-semibold">🏛️ WorldIA Civilisations</span>
           {worldData && (
             <span className="text-xs text-gray-500">
-              An {year} · {season} · Jour {dayOfYear}
+              {monthName || 'Juin'}, An {year} · {season}
               <span className="ml-1 text-gray-600">(t{tick})</span>
             </span>
           )}
@@ -125,7 +125,7 @@ export default function CivMode({ onBack }) {
                   <div className="flex items-center gap-2">
                     <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: civ.color }} />
                     <span className="text-xs text-white font-medium truncate flex-1">{civ.nom}</span>
-                    <span className="text-xs">{AGE_LABELS[civ.age_tech] || '?'}</span>
+                    <span className="text-xs text-gray-500">{civ.gouvernement || ''}</span>
                   </div>
                   <div className="text-xs text-gray-500 mt-0.5 pl-4">
                     Pop {civ.population || 0} · {civ.territory_count || 0} cases

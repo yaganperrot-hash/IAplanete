@@ -75,9 +75,9 @@ export default function CivCard({ civ, allCivs, thoughtLogs, onClose }) {
       <div className="flex-1 overflow-y-auto px-4 py-3 space-y-4">
         {/* Badges */}
         <div className="flex flex-wrap gap-1">
-          <span className="text-xs bg-gray-800 text-gray-300 px-2 py-0.5 rounded">
-            {AGE_LABELS[civ.age_tech] || civ.age_tech}
-          </span>
+          {(civ.buildings || []).filter(b => b.role === 'habitation').length > 0 && (
+            <span className="text-xs bg-blue-900/40 text-blue-300 px-2 py-0.5 rounded">🏠 Logements</span>
+          )}
           <span className="text-xs bg-gray-800 text-gray-300 px-2 py-0.5 rounded">
             {GOV_LABELS[civ.gouvernement] || civ.gouvernement}
           </span>
@@ -150,22 +150,54 @@ export default function CivCard({ civ, allCivs, thoughtLogs, onClose }) {
           <div>
             <div className="text-xs text-gray-500 mb-1">Structures</div>
             <div className="flex flex-col gap-1">
-              {civ.buildings.map((b, i) => {
-                const name    = typeof b === 'string' ? b : b.name;
-                const workers = typeof b === 'string' ? 0  : (b.workers || 0);
-                const status  = typeof b === 'string' ? 'active' : (b.status || 'active');
-                return (
+              {(() => {
+                // Regrouper les bâtiments par nom et sommer les travailleurs
+                const grouped = civ.buildings.reduce((acc, b) => {
+                  const name = typeof b === 'string' ? b : b.name;
+                  const workers = typeof b === 'string' ? 0 : (b.workers || 0);
+                  if (!acc[name]) {
+                    acc[name] = { count: 0, workers: 0 };
+                  }
+                  acc[name].count += 1;
+                  acc[name].workers += workers;
+                  return acc;
+                }, {});
+
+                return Object.entries(grouped).map(([name, { count, workers }], i) => (
                   <div key={i} className="flex items-center justify-between bg-gray-800 rounded px-1.5 py-0.5">
-                    <span className="text-xs text-gray-300 truncate max-w-[140px]">{name}</span>
+                    <span className="text-xs text-gray-300 truncate max-w-[140px]">
+                      {name} {count > 1 ? `×${count}` : ''}
+                    </span>
                     {workers > 0 && (
                       <span className="text-xs text-amber-400 shrink-0 ml-1">{workers} 👤</span>
                     )}
-                    {status === 'task' && (
-                      <span className="text-xs text-blue-400 shrink-0 ml-1">tâche</span>
-                    )}
                   </div>
-                );
-              })}
+                ));
+              })()}
+            </div>
+          </div>
+        )}
+
+        {/* Reliques découvertes */}
+        {civ.relics?.length > 0 && (
+          <div>
+            <div className="text-xs text-gray-500 mb-1">Reliques découvertes</div>
+            <div className="space-y-1">
+              {civ.relics.map(r => (
+                <div key={r.id} className="flex items-start justify-between bg-gray-800 rounded px-2 py-1">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-1">
+                      <span className="text-xs text-white font-medium">{r.name}</span>
+                      <span className="text-xs text-gray-400">({r.type}/{r.domain})</span>
+                    </div>
+                    <p className="text-xs text-gray-500 truncate">{r.description}</p>
+                  </div>
+                  <div className="flex flex-col items-end">
+                    {r.taken === 1 && <span className="text-xs text-amber-400" title="Portée">👜</span>}
+                    {r.used === 1 && <span className="text-xs text-green-400" title="Utilisée">✨</span>}
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
         )}
@@ -200,7 +232,7 @@ export default function CivCard({ civ, allCivs, thoughtLogs, onClose }) {
                     <span className="w-2 h-2 rounded-full" style={{ background: n.color }} />
                     <span className="text-gray-300 truncate max-w-[100px]">{n.nom}</span>
                   </div>
-                  <span className="text-gray-600">{AGE_LABELS[n.age_tech]?.split(' ')[0] || '?'}</span>
+                  <span className="text-gray-600">{n.gouvernement?.split('_')[0] || '?'}</span>
                 </div>
               ))}
             </div>

@@ -9,8 +9,8 @@ const TECH_AGES    = ['primitif', 'neolithique', 'bronze', 'fer', 'classique', '
 
 const parseJ = (v, fb) => { try { return JSON.parse(v != null ? v : JSON.stringify(fb)); } catch { return fb; } };
 
-// ─── 12 ressources ───────────────────────────────────────────────────────────
-const RESOURCES = ['nourriture', 'bois', 'pierre', 'glaise', 'silex', 'sable', 'sel', 'cuivre', 'etain', 'fer', 'or', 'charbon'];
+// ─── 14 ressources (ajout peaux et os) ───────────────────────────────────────
+const RESOURCES = ['nourriture', 'bois', 'pierre', 'glaise', 'silex', 'sable', 'sel', 'cuivre', 'etain', 'fer', 'or', 'charbon', 'peaux', 'os'];
 const ZERO_RESOURCES = Object.fromEntries(RESOURCES.map(r => [r, 0]));
 
 // ─── Taux de production par catégorie de structure ───────────────────────────
@@ -27,6 +27,7 @@ const PRODUCTION_RATES = {
   mine_charbon: { resource: 'charbon',    rate: 0.3 },
   production:   { resource: 'fer',        rate: 0.5 },
   commerce:     { resource: 'or',         rate: 0.2 },
+  habitation:   { resource: null,         rate: 0 },   // logement, pas de ressource
   autre:        { resource: 'nourriture', rate: 0.3 },
   // intangibles : militaire, religieux, defense, savoir, surveillance → null
 };
@@ -69,6 +70,33 @@ const BIOME_CARRYING_CAPACITY = {
   ocean:             0,
 };
 
+// ─── Modificateurs saisonniers sur la production ──────────────────────────────
+const SEASON_MODS = {
+  agriculture: { printemps: 1.2, ete: 1.0, automne: 1.5, hiver: 0.0 },
+  chasse:      { printemps: 1.0, ete: 0.8, automne: 1.2, hiver: 0.5 },
+  peche:       { printemps: 1.2, ete: 1.0, automne: 1.0, hiver: 0.6 },
+  maritime:    { printemps: 1.2, ete: 1.0, automne: 1.0, hiver: 0.6 },
+  bois:        { printemps: 1.0, ete: 1.0, automne: 1.2, hiver: 0.7 },
+  extraction:  { printemps: 1.0, ete: 1.0, automne: 1.0, hiver: 0.8 },
+  mine_cuivre: { printemps: 1.0, ete: 1.0, automne: 1.0, hiver: 0.8 },
+  mine_fer:    { printemps: 1.0, ete: 1.0, automne: 1.0, hiver: 0.8 },
+  mine_or:     { printemps: 1.0, ete: 1.0, automne: 1.0, hiver: 0.8 },
+  mine_charbon:{ printemps: 1.0, ete: 1.0, automne: 1.0, hiver: 0.8 },
+};
+function getSeasonMod(category, season) {
+  const mods = SEASON_MODS[category];
+  if (!mods) return 1.0;
+  return mods[season ?? 'ete'] ?? 1.0;
+}
+
+// ─── Capacité logement ─────────────────────────────────────────────────────────
+// Retourne 0 si aucune habitation construite (= abri naturel, tout le monde est "abrité")
+function calculateHoused(buildings) {
+  const habitBldgs = buildings.filter(b => b.role === 'habitation' || b.category === 'habitation');
+  if (habitBldgs.length === 0) return 0;  // 0 = abri naturel total, pas de morts de froid
+  return habitBldgs.reduce((sum, b) => sum + (b.capacity || 20), 0);
+}
+
 /**
  * Calcule la capacité de charge totale du territoire d'une civ.
  * Avec agriculture → ×3, avec irrigation → ×5.
@@ -98,7 +126,7 @@ const CREATION_COSTS = {
   defense:      { bois: 25, pierre: 20 },
   maritime:     { bois: 40 },
   bois:         { pierre: 5 },
-  extraction:   { bois: 15, pierre: 10 },
+  extraction:   { bois: 20 },
   mine_cuivre:  { bois: 20, pierre: 15 },
   mine_fer:     { bois: 20, pierre: 20 },
   mine_or:      { bois: 25, pierre: 20 },
@@ -108,6 +136,7 @@ const CREATION_COSTS = {
   religieux:    { bois: 20, pierre: 10 },
   savoir:       { bois: 20, pierre: 10 },
   surveillance: { bois: 10 },
+  habitation:   { bois: 15 },
   autre:        { bois: 10 },
 };
 
@@ -158,44 +187,42 @@ function calculateProduction(structure, biomesMap) {
 }
 
 // ─── Mise à jour des ressources d'une civ (tick) ─────────────────────────────
-function updateResources(civ, biomesMap) {
+function updateResources(civ, biomesMap, season = 'ete') {
   const stored    = parseJ(civ.resources, {});
   const resources = { ...ZERO_RESOURCES, ...stored };
   const buildings = normalizeBuildings(civ.buildings);
+  const pop       = civ.population || 0;
 
   const production  = {};
   const consumption = {
-    nourriture: Math.round(((civ.population || 0) + (civ.army_soldiers || 0) * 0.5) * 0.15),
+    nourriture: Math.round((pop + (civ.army_soldiers || 0) * 0.5) * 0.15),
   };
 
-  // Production via travailleurs affectés à des structures
+  // ── Production via travailleurs affectés (avec modificateur saisonnier) ──────
   for (const struct of buildings) {
     if (!(struct.workers > 0)) continue;
     const { resource, amount } = calculateProduction(struct, biomesMap);
-    if (resource && amount > 0) production[resource] = (production[resource] || 0) + amount;
+    if (!resource || amount <= 0) continue;
+    const mod = getSeasonMod(struct.category, season);
+    const modAmount = Math.round(amount * mod);
+    if (modAmount > 0) production[resource] = (production[resource] || 0) + modAmount;
   }
+  // NOTE : plus de cueillette automatique — 0 production sans travailleurs affectés
 
-  // ── Cueillette de subsistance des travailleurs libres ──────────────────────
-  // Les gens sans tâche affectée cueillent/chassent automatiquement selon le biome
-  const activeWorkerCount = buildings.reduce((s, b) => s + (b.workers || 0), 0);
-  const totalLabor        = Math.floor((civ.population || 0) * 0.6);
-  const freeWorkers       = Math.max(0, totalLabor - activeWorkerCount);
-  if (freeWorkers > 0 && biomesMap) {
-    const capitalBiome  = biomesMap[`${civ.capital_x || 128},${civ.capital_y || 96}`];
-    const biomeType     = capitalBiome?.biome_type || 'prairie';
-    const foodMult      = (BIOME_BONUS[biomeType] || {}).nourriture || 0.8;
-    const gathered      = Math.round(freeWorkers * 0.5 * foodMult);
-    if (gathered > 0) production.nourriture = (production.nourriture || 0) + gathered;
-    // Ramassage de bois en forêt
-    if (['temperate_forest', 'tropical_forest'].includes(biomeType)) {
-      const woodGather = Math.round(freeWorkers * 0.2);
-      if (woodGather > 0) production.bois = (production.bois || 0) + woodGather;
-    }
+  // ── Consommation de bois en hiver ─────────────────────────────────────────────
+  const housed = calculateHoused(buildings);
+  if (season === 'hiver') {
+    // Seuls les abrités consomment du bois pour se chauffer
+    // Si housed = 0, tout le monde est en abri naturel, pas de conso bois
+    const houseCapacity = housed > 0 ? housed : 0;
+    const actuallyHoused = Math.min(pop, houseCapacity > 0 ? houseCapacity : pop);
+    const woodConso = Math.round(actuallyHoused * 0.5);
+    if (woodConso > 0) consumption.bois = woodConso;
   }
 
   // Appliquer production
   for (const [res, amt] of Object.entries(production)) {
-    resources[res] = Math.min(9999, (resources[res] || 0) + amt);
+    resources[res] = (resources[res] || 0) + amt;
   }
 
   // Appliquer consommation
@@ -203,33 +230,43 @@ function updateResources(civ, biomesMap) {
     resources[res] = Math.max(0, (resources[res] || 0) - amt);
   }
 
-  const isFamine = resources.nourriture <= 0;
-  const surplus  = (production.nourriture || 0) - (consumption.nourriture || 0);
+  const isFamine  = resources.nourriture <= 0;
+  const isWoodOut = season === 'hiver' && (consumption.bois || 0) > 0 && resources.bois <= 0;
+  const surplus   = (production.nourriture || 0) - (consumption.nourriture || 0);
 
-  const pop      = civ.population || 0;
-  const capacity = getTerritoryCapacity(civ, biomesMap);
-  const overPop  = capacity > 0 && pop > capacity;   // surpopulation
-  const overRatio = capacity > 0 ? pop / capacity : 1; // ex: 1.5 = 50% au-dessus de la capacité
+  const capacity  = getTerritoryCapacity(civ, biomesMap);
+  const overPop   = capacity > 0 && pop > capacity;
+  const overRatio = capacity > 0 ? pop / capacity : 1;
 
-  // Naissances bloquées si surpopulation (>100% capacité) ou nourriture insuffisante
+  // ── Morts de froid (sans-abris en hiver) ─────────────────────────────────────
+  // Toute la population est sans‑abri si le logement est insuffisant
+  const homeless       = Math.max(0, pop - housed);
+  const homelessDeaths = (season === 'hiver' && homeless > 0)
+    ? Math.ceil(homeless * (isWoodOut ? 0.20 : 0.10))  // grand froid si bois épuisé
+    : 0;
+
+  // Naissances bloquées si famine/surpop
   const canBirth = resources.nourriture > 0 && surplus >= 0 && (civ.moral || 0) > 40 && !overPop;
-  const births = canBirth ? Math.max(1, Math.round(pop * 0.015)) : 0;
+  const births   = canBirth ? Math.max(1, Math.round(pop * 0.015)) : 0;
 
   const naturalDeaths = Math.max(0, Math.round(pop * 0.003));
 
-  // Famine ou déclin par surpopulation (les gens partent / meurent de maladie)
   const famineDelta = isFamine
     ? -Math.max(1, Math.round(pop * 0.05))
     : overPop
-      ? -Math.max(1, Math.round(pop * Math.min(0.03, (overRatio - 1) * 0.05)))  // pression surpopulation
+      ? -Math.max(1, Math.round(pop * Math.min(0.03, (overRatio - 1) * 0.05)))
       : surplus < 0 ? -Math.max(1, Math.round(pop * 0.01)) : 0;
 
   return {
     newResources: resources,
-    consequences: { births, naturalDeaths, famineDelta, surplus, production, consumption, freeWorkers },
-    deaths: naturalDeaths + Math.abs(famineDelta),
+    consequences: {
+      births, naturalDeaths, famineDelta, surplus, production, consumption,
+      homelessDeaths, homeless, housed, isWoodOut,
+    },
+    deaths: naturalDeaths + Math.abs(famineDelta) + homelessDeaths,
     births,
     isFamine,
+    isWoodOut,
     capacity,
     overPop,
   };
@@ -265,6 +302,7 @@ const CATEGORY_EFFECTS = {
 // ─── Classification automatique ─────────────────────────────────────────────
 function categorizeStructure(name, description) {
   const t = (name + ' ' + description).toLowerCase();
+  if (/maison|hutte|cabane|abri|logement|habitation|longue.*maison|refuge|igloo|palafite|terrier|foyer|dortoir|tente/.test(t)) return 'habitation';
   if (/ferme|champ|culti|récolte|agricol|potager|verger|rizière|blé|maïs/.test(t))   return 'agriculture';
   if (/caserne|entraîn|combat|milit|guerr|arène|soldat|armée/.test(t))                return 'militaire';
   if (/march|comptoir|échang|bazar|commerce|boutique|bourse|négoce/.test(t))          return 'commerce';
@@ -448,6 +486,41 @@ function expandTerritory(civ, direction, biomesMap, worldId, amount = 5) {
   return toAdd.length;
 }
 
+// ─── Découverte de reliques dans le territoire ─────────────────────────────────
+function discoverRelicsInTerritory(civId, worldId, tick, events) {
+  const relics = db.prepare(`
+    SELECT r.* FROM relics r
+    JOIN territories t ON r.x = t.x AND r.y = t.y
+    WHERE r.world_id = ? AND t.civ_id = ? AND r.discovered_by IS NULL
+  `).all(worldId, civId);
+
+  for (const relic of relics) {
+    // Marquer comme découverte par cette civ
+    const taken = (relic.type === 'objet' || relic.type === 'art') ? 1 : 0;
+    db.prepare('UPDATE relics SET discovered_by = ?, discovered_at_tick = ?, taken = ? WHERE id = ?')
+      .run(civId, tick, taken, relic.id);
+    // Ajouter à last_consequences de la civ
+    const civ = db.prepare('SELECT last_consequences FROM civilizations WHERE id = ?').get(civId);
+    const lastConsequences = parseJ(civ.last_consequences, []);
+    lastConsequences.push({
+      type: 'relique_decouverte',
+      nom: relic.name,
+      description: relic.description,
+      domain: relic.domain,
+      relic_id: relic.id
+    });
+    db.prepare('UPDATE civilizations SET last_consequences = ? WHERE id = ?')
+      .run(JSON.stringify(lastConsequences), civId);
+    // Ajouter un événement
+    events.push({
+      type: 'relique_decouverte',
+      description: `${relic.name} a été découverte par une civilisation !`,
+      civ_ids: [civId]
+    });
+  }
+  return relics.length;
+}
+
 // ─── Résoudre un conflit ─────────────────────────────────────────────────────
 function resolveWar(attacker, defender, worldId, events) {
   const defBuildings = normalizeBuildings(defender.buildings);
@@ -557,31 +630,8 @@ function resolveEffect(effect, civ, allCivs, worldId, biomesMap, events, current
 
       console.log(`[PARSE] CRÉER ${effect.name} | cat: ${category} | coûts: ${JSON.stringify(costs)} | personnes: ${cWorkers} | durée: ${ticks} ticks`);
 
-      // Vérification prérequis technologiques
-      for (const [keywords, reqAge] of Object.entries(TECH_REQUIREMENTS)) {
-        if (!new RegExp(keywords, 'i').test(effect.name)) continue;
-        const hasTech = TECH_AGES.indexOf(civ.age_tech) >= TECH_AGES.indexOf(reqAge);
-        if (!hasTech) {
-          console.log(`[ECHEC] Technologie requise: ${reqAge} (actuel: ${civ.age_tech})`);
-          events.push({ type: 'echec', description: `${civ.nom}: technologie insuffisante pour "${effect.name}" (requiert âge ${reqAge}).`, civ_ids: [civ.id] });
-          break;
-        }
-      }
-
-      // --- Bug 8 : Détection de doublon ---
-      const nameParts = effect.name.toLowerCase().split(' ').slice(0, 2).join(' ');
-      const existingIdx = buildings.findIndex(b =>
-        b.name.toLowerCase().includes(nameParts) ||
-        nameParts.includes(b.name.toLowerCase().split(' ').slice(0, 2).join(' '))
-      );
-      if (existingIdx >= 0) {
-        const existing = buildings[existingIdx];
-        const addW = Math.min(cWorkers, freeWorkforce);
-        if (addW > 0) { buildings[existingIdx].workers = (existing.workers || 0) + addW; updates.buildings = JSON.stringify(buildings); }
-        console.log(`[DOUBLON] "${effect.name}" → renforcement de "${existing.name}" (+${addW} personnes)`);
-        events.push({ type: 'renforcement', description: `${civ.nom} renforce "${existing.name}" (+${addW} personnes) au lieu d'en créer un doublon.`, civ_ids: [civ.id] });
-        break;
-      }
+      // V3 : plus de prérequis tech — l'IA invente librement selon ses ressources
+      // Chaque CRÉER = bâtiment indépendant sur sa propre case (pas de fusion de doublons)
 
       // Vérification des ressources multi
       const resources = parseJ(civ.resources, ZERO_RESOURCES);
@@ -631,10 +681,27 @@ function resolveEffect(effect, civ, allCivs, worldId, biomesMap, events, current
         }
       }
 
-      db.prepare('INSERT INTO civ_processes (civ_id, world_id, type, target, progress, max_ticks, workers) VALUES (?,?,?,?,?,?,?)')
-        .run(civ.id, worldId, 'construction', effect.name, 0, finalTicks, cWorkers);
+      // Parser rôle et capacité (V3 : habitation avec capacité explicite)
+      const buildRole = (
+        effect.params['rôle'] || effect.params['role'] || effect.params['rôle:'] || ''
+      ).trim().toLowerCase();
+      const buildCap = parseInt(
+        effect.params['capacité'] || effect.params['capacite'] || effect.params['capacity'] || '0'
+      ) || 0;
 
-      events.push({ type: 'construction', description: `${civ.nom} commence la construction de "${effect.name}" (${finalTicks} ticks, ${cWorkers} constructeurs).`, civ_ids: [civ.id] });
+      const activeConstructions = db.prepare(
+        "SELECT COUNT(*) as n FROM civ_processes WHERE civ_id=? AND type='construction' AND state='en_cours'"
+      ).get(civ.id);
+      if (activeConstructions.n >= 2) {
+        console.log(`[ECHEC] Déjà ${activeConstructions.n} constructions en cours — max 2 simultanées`);
+        break;
+      }
+
+      db.prepare('INSERT INTO civ_processes (civ_id, world_id, type, target, progress, max_ticks, workers, role, capacity) VALUES (?,?,?,?,?,?,?,?,?)')
+        .run(civ.id, worldId, 'construction', effect.name, 0, finalTicks, cWorkers, buildRole, buildCap);
+
+      const roleInfo = buildRole ? ` [${buildRole}${buildCap ? ', cap:' + buildCap : ''}]` : '';
+      events.push({ type: 'construction', description: `${civ.nom} commence la construction de "${effect.name}"${roleInfo} (${finalTicks} ticks, ${cWorkers} constructeurs).`, civ_ids: [civ.id] });
       break;
     }
 
@@ -658,7 +725,10 @@ function resolveEffect(effect, civ, allCivs, worldId, biomesMap, events, current
           updates.population = Math.max(50, (civ.population || 0) - count);
           const dirMatch = dest.match(/nord|sud|est|ouest/i);
           const dir = dirMatch ? dirMatch[0].toLowerCase() : 'nord';
-          expandTerritory({ ...civ, ...updates }, dir, biomesMap, worldId, 10);
+          const added = expandTerritory({ ...civ, ...updates }, dir, biomesMap, worldId, 10);
+          if (added > 0) {
+            discoverRelicsInTerritory(civ.id, worldId, currentTick, events);
+          }
           events.push({ type: 'colonisation', description: `${civ.nom} fonde une colonie vers ${dest} avec ${count} colons.`, civ_ids: [civ.id] });
         }
       } else {
@@ -842,6 +912,81 @@ function resolveEffect(effect, civ, allCivs, worldId, biomesMap, events, current
       break;
     }
 
+    case 'CHASSER': {
+      const cible = effect.target_name || '';
+      const askedHunters = parseInt(effect.params.personnes || '5') || 5;
+      const hunters = Math.min(askedHunters, freeWorkforce);
+      if (hunters <= 0) {
+        events.push({ type: 'echec', description: `${civ.nom} : pas assez de main-d'œuvre libre pour chasser "${cible}".`, civ_ids: [civ.id] });
+        break;
+      }
+
+      // Trouver le groupe animal le plus proche correspondant au nom
+      const groups = db.prepare('SELECT * FROM animal_groups WHERE world_id = ? AND nom LIKE ?').all(worldId, `%${cible}%`);
+      if (groups.length === 0) {
+        events.push({ type: 'echec', description: `${civ.nom} : aucun groupe animal nommé "${cible}" n'a été trouvé.`, civ_ids: [civ.id] });
+        break;
+      }
+      // Choix du groupe le plus proche (distance Manhattan minimale)
+      const territories = db.prepare('SELECT x, y FROM territories WHERE civ_id = ? AND world_id = ?').all(civ.id, worldId);
+      let bestGroup = null;
+      let minDist = Infinity;
+      for (const g of groups) {
+        for (const t of territories) {
+          const dist = Math.abs(t.x - g.x) + Math.abs(t.y - g.y);
+          if (dist < minDist) {
+            minDist = dist;
+            bestGroup = g;
+          }
+        }
+      }
+      if (!bestGroup) {
+        events.push({ type: 'echec', description: `${civ.nom} : impossible de localiser "${cible}".`, civ_ids: [civ.id] });
+        break;
+      }
+
+      // Vérifier armement
+      const resources = parseJ(civ.resources, ZERO_RESOURCES);
+      const hasWeapons = (civ.army_soldiers > 0) || (resources.fer > 10) || (resources.silex > 20);
+      let deaths = 0;
+      let success = false;
+      if (!hasWeapons && bestGroup.dangerosite >= 3) {
+        deaths = Math.floor(bestGroup.dangerosite * hunters * 0.1);
+        updates.population = Math.max(0, (civ.population || 0) - deaths);
+        events.push({ type: 'echec', description: `${civ.nom} a attaqué ${bestGroup.nom} sans armes suffisantes : ${deaths} chasseurs ont péri.`, civ_ids: [civ.id] });
+      } else {
+        success = true;
+        // Gains
+        const foodGain = bestGroup.size * bestGroup.dangerosite * 2;
+        const peauxGain = bestGroup.size * 1;
+        const osGain = bestGroup.size * 1;
+        resources.nourriture = (resources.nourriture || 0) + foodGain;
+        resources.peaux = (resources.peaux || 0) + peauxGain;
+        resources.os = (resources.os || 0) + osGain;
+        updates.resources = JSON.stringify(resources);
+        // Réduire la taille du groupe
+        const newSize = Math.max(0, bestGroup.size - hunters);
+        db.prepare('UPDATE animal_groups SET size = ? WHERE id = ?').run(newSize, bestGroup.id);
+        events.push({ type: 'chasse', description: `${civ.nom} a chassé ${bestGroup.nom} avec succès : +${foodGain} nourriture, +${peauxGain} peaux, +${osGain} os.`, civ_ids: [civ.id] });
+      }
+
+      // Ajouter dans last_consequences
+      const lastConsequences = parseJ(civ.last_consequences, []);
+      lastConsequences.push({
+        type: 'chasse',
+        nom: bestGroup.nom,
+        succes: success,
+        morts: deaths,
+        gains: success ? { nourriture: bestGroup.size * bestGroup.dangerosite * 2, peaux: bestGroup.size, os: bestGroup.size } : null,
+        description: success
+          ? `Vos chasseurs ont abattu ${bestGroup.nom} et rapporté de la nourriture, des peaux et des os.`
+          : `Vos chasseurs ont été repoussés par ${bestGroup.nom}, ${deaths} ont péri.`
+      });
+      updates.last_consequences = JSON.stringify(lastConsequences);
+
+      break;
+    }
+
     case 'RIEN':
     default:
       break;
@@ -929,11 +1074,16 @@ function advanceProcesses(civId, worldId, currentBuildingsRaw, biomesMap, civRow
         const pos = pickBorderCell(civId, worldId);
         const cat = categorizeStructure(proc.target, '');
         // Les constructeurs deviennent automatiquement les premiers travailleurs du bâtiment
-        const autoWorkers = proc.workers || 0;
+        const ROLES_SANS_WORKERS = ['habitation', 'defense', 'religieux', 'surveillance'];
+        const structRole = proc.role || (cat === 'habitation' ? 'habitation' : '');
+        const autoWorkers = ROLES_SANS_WORKERS.includes(structRole) ? 0 : (proc.workers || 0);
+        // V3 : conserver rôle et capacité (habitation, etc.)
+        const structCap  = proc.capacity || (cat === 'habitation' ? 20 : 0);
         const newStruct = {
           name: proc.target, category: cat, workers: autoWorkers,
           status: 'active', created_tick: proc.progress,
           x: pos?.x, y: pos?.y,
+          role: structRole, capacity: structCap,
         };
         buildings.push(newStruct);
         updates.buildings = JSON.stringify(buildings);
@@ -986,7 +1136,7 @@ function advanceProcesses(civId, worldId, currentBuildingsRaw, biomesMap, civRow
 }
 
 // ─── Construire le contexte pour le LLM ──────────────────────────────────────
-function buildCivContext(civ, allCivs, worldId, currentTick, biomesMap) {
+function buildCivContext(civ, allCivs, worldId, currentTick, biomesMap, season = 'ete', monthName = 'Juin', year = 1) {
   const valeurs   = parseJ(civ.valeurs, []);
   const buildings = normalizeBuildings(civ.buildings);
 
@@ -1107,14 +1257,51 @@ function buildCivContext(civ, allCivs, worldId, currentTick, biomesMap) {
     : `${civ.population}/∞`;
   const is_overpopulated   = territory_capacity > 0 && (civ.population || 0) > territory_capacity;
 
+  // V3 — Logement
+  const housed   = calculateHoused(buildings);
+  const homeless = Math.max(0, (civ.population || 0) - housed);
+
+  // V3 — Utilisation du territoire (1 bâtiment par case)
+  const territory_used = buildings.length;
+  const territory_free = Math.max(0, (civ.territory_count || 0) - territory_used);
+
+  // V3 — Conséquences du dernier tick (events récents pour ce civ)
+  const last_consequences = parseJ(civ.last_consequences, []);
+// V3 — Événements actifs
+const active_events = parseJ(civ.active_events, []);
+
+// V4 — Reliques découvertes
+const reliques_decouvertes = db.prepare('SELECT id, name, description, type, domain, x, y, taken, used FROM relics WHERE world_id=? AND discovered_by=?').all(worldId, civ.id);
+
+// Groupes animaux découverts
+const animal_groups = db.prepare('SELECT * FROM animal_groups WHERE world_id = ?').all(worldId)
+  .filter(g => {
+    const discovered = parseJ(g.discovered_by, []);
+    return discovered.includes(civ.id);
+  })
+  .map(g => ({
+    nom: g.nom,
+    species: g.species,
+    type: g.type,
+    size: g.size,
+    dangerosite: g.dangerosite,
+    x: g.x,
+    y: g.y,
+    is_migratory: g.is_migratory,
+    migration_direction: g.migration_direction,
+  }));
+
+
   return {
     nom: civ.nom, valeurs, gouvernement: civ.gouvernement, description: civ.description,
-    age_tech: civ.age_tech, population: civ.population, population_trend: popTrend,
+    population: civ.population, population_trend: popTrend,
     moral: civ.moral, food_status: foodStatus,
-    // Compat ancienne API
+    // Calendrier
+    season, month_name: monthName, year,
+    // Compat
     food_stock: nb.stock, food_production: nb.production, food_consumption: nb.consumption, food_bilan: nb.balance, food_famine_in,
     materials_level: currentResources.bois || 0, mat_production: productionByRes.bois || 0,
-    // Nouveau système de ressources
+    // Ressources
     resourceBilan, army_soldiers, army_equipment, army_power,
     military_power: army_power,
     territory_count: civ.territory_count, territory_biomes, known_deposits,
@@ -1123,15 +1310,19 @@ function buildCivContext(civ, allCivs, worldId, currentTick, biomesMap) {
     has_coastal: !!coastalTile,
     free_workforce,
     territory_capacity, pop_vs_capacity, is_overpopulated,
+    // V3
+    housed, homeless, territory_used, territory_free,
+    last_consequences, active_events,
+    reliques_decouvertes, animal_groups,
   };
 }
 
 module.exports = {
   resolveEffect, parseEffets, advanceProcesses, buildCivContext,
-  initTerritory, computeFoodRegen, expandTerritory, discoverAdjacentCivs,
+  initTerritory, computeFoodRegen, expandTerritory, discoverAdjacentCivs, discoverRelicsInTerritory,
   getTerritoryCapacity, BIOME_CARRYING_CAPACITY,
   normalizeBuildings, categorizeStructure, calculateProduction, updateResources,
-  getEquipmentLabel, getMilitaryPower,
+  getEquipmentLabel, getMilitaryPower, calculateHoused, getSeasonMod,
   CATEGORY_EFFECTS, CATEGORY_EMOJI, TECH_AGES, RESOURCES, ZERO_RESOURCES,
-  PRODUCTION_RATES, BIOME_BONUS, CREATION_COSTS,
+  PRODUCTION_RATES, BIOME_BONUS, CREATION_COSTS, SEASON_MODS,
 };

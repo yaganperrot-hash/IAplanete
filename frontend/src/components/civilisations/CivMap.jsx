@@ -11,6 +11,12 @@ const CATEGORY_EMOJI = {
   surveillance: '👁️', autre: '🏠',
 };
 
+const ANIMAL_EMOJI = {
+  agressif: '🐺',
+  peureux: '🦌',
+  oiseau: '🦅',
+};
+
 const BIOME_COLORS = {
   prairie: '#4a7c3f', tropical_forest: '#2d6a2d', temperate_forest: '#3a6b3a',
   savanna: '#8b7355', desert_hot: '#c8a96e', desert_cold: '#9b9b7a',
@@ -129,7 +135,31 @@ export default function CivMap({ biomes, civs, territories, onClickMap, spawnMod
       }
     }
 
-    // 6. Aperçu spawn
+    // 6. Reliques
+    ctx.font = `${CELL_SIZE * 2}px serif`;
+    for (const civ of civs) {
+      if (civ.status !== 'alive') continue;
+      for (const r of (civ.relics || [])) {
+        if (r.x == null || r.y == null) continue;
+        const px = r.x * CELL_SIZE + CELL_SIZE / 2;
+        const py = r.y * CELL_SIZE + CELL_SIZE / 2;
+        ctx.fillText('🏺', px, py);
+      }
+    }
+
+    // 7. Groupes animaux
+    ctx.font = `${CELL_SIZE * 2}px serif`;
+    for (const civ of civs) {
+      if (civ.status !== 'alive') continue;
+      for (const ag of (civ.animal_groups || [])) {
+        if (ag.x == null || ag.y == null) continue;
+        const px = ag.x * CELL_SIZE + CELL_SIZE / 2;
+        const py = ag.y * CELL_SIZE + CELL_SIZE / 2;
+        ctx.fillText(ANIMAL_EMOJI[ag.type] || '❓', px, py);
+      }
+    }
+
+    // 8. Aperçu spawn
     if (spawnMode && spawnCoords) {
       ctx.strokeStyle = '#fff';
       ctx.lineWidth = 1;

@@ -68,13 +68,34 @@ function initSocketManager(io) {
         if (!civWorld) { socket.emit('civ:world:init', { error: 'Monde Civilisations non initialisé' }); return; }
 
         const biomes = db.prepare('SELECT x, y, biome_type, food_level, water_level, precipitation FROM biomes WHERE world_id=? ORDER BY y, x').all(civWorld.id);
-        const civs = db.prepare('SELECT * FROM civilizations WHERE world_id=?').all(civWorld.id)
-          .map(c => ({ ...c, valeurs: parseJ(c.valeurs, []), buildings: parseJ(c.buildings, []) }));
         const territories = db.prepare('SELECT civ_id, x, y FROM territories WHERE world_id=?').all(civWorld.id);
         const events = db.prepare('SELECT * FROM events WHERE world_id=? ORDER BY id DESC LIMIT 50').all(civWorld.id)
           .map(e => ({ ...e, civ_ids: parseJ(e.species_ids, []) }));
         const thoughts = db.prepare('SELECT * FROM civ_thought_logs WHERE world_id=? ORDER BY id DESC LIMIT 30').all(civWorld.id)
           .map(t => ({ ...t, actions: parseJ(t.actions, []) }));
+        // Reliques découvertes par chaque civilisation
+        const relics = db.prepare('SELECT * FROM relics WHERE world_id=?').all(civWorld.id);
+        const relicsByCiv = {};
+        for (const r of relics) {
+            const civId = r.discovered_by;
+            if (civId !== null) {
+                if (!relicsByCiv[civId]) relicsByCiv[civId] = [];
+                relicsByCiv[civId].push(r);
+            }
+        }
+        // Groupes animaux découverts par chaque civilisation
+        const animalGroups = db.prepare('SELECT * FROM animal_groups WHERE world_id=?').all(civWorld.id);
+        const animalGroupsByCiv = {};
+        for (const ag of animalGroups) {
+          const discovered = parseJ(ag.discovered_by, []);
+          for (const civId of discovered) {
+            if (!animalGroupsByCiv[civId]) animalGroupsByCiv[civId] = [];
+            animalGroupsByCiv[civId].push(ag);
+          }
+        }
+
+        const civs = db.prepare('SELECT * FROM civilizations WHERE world_id=?').all(civWorld.id)
+          .map(c => ({ ...c, valeurs: parseJ(c.valeurs, []), buildings: parseJ(c.buildings, []), relics: relicsByCiv[c.id] || [], animal_groups: animalGroupsByCiv[c.id] || [] }));
 
         socket.emit('civ:world:init', {
           world: { tick: civWorld.tick, nom: civWorld.nom },

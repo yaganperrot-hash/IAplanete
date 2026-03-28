@@ -13,7 +13,8 @@ export function useCivSocket() {
   const [thoughtLogs, setThoughtLogs] = useState([]);
   const [tick, setTick] = useState(0);
   const [year, setYear] = useState(1);
-  const [season, setSeason] = useState('Printemps');
+  const [season, setSeason] = useState('ete');
+  const [monthName, setMonthName] = useState('Juin');
   const [dayOfYear, setDayOfYear] = useState(1);
   const socketRef = useRef(null);
 
@@ -45,6 +46,7 @@ export function useCivSocket() {
       setTick(data.tick || 0);
       if (data.year)      setYear(data.year);
       if (data.season)    setSeason(data.season);
+      if (data.monthName) setMonthName(data.monthName);
       if (data.dayOfYear) setDayOfYear(data.dayOfYear);
       if (data.new_events?.length) {
         setEvents(prev => [...data.new_events, ...prev].slice(0, 100));
@@ -63,5 +65,5 @@ export function useCivSocket() {
       .catch(() => {});
   }, []);
 
-  return { connected, worldData, biomes, civs, territories, events, thoughtLogs, tick, year, season, dayOfYear, refreshCivs };
+  return { connected, worldData, biomes, civs, territories, events, thoughtLogs, tick, year, season, monthName, dayOfYear, refreshCivs };
 }
