@@ -268,8 +268,14 @@ const ALTER_MIGRATIONS = [
   "ALTER TABLE civilizations ADD COLUMN active_events TEXT NOT NULL DEFAULT '[]'",
   // V4 — Mémoire stratégique (cap inter-ticks)
   "ALTER TABLE civilizations ADD COLUMN memoire TEXT NOT NULL DEFAULT ''",
+  "ALTER TABLE civilizations ADD COLUMN civ_memory TEXT DEFAULT '{}'",
   // V5 — Reliques : bonus temporaire
   "ALTER TABLE relics ADD COLUMN bonus_remaining INTEGER NOT NULL DEFAULT 0",
+  "ALTER TABLE relics ADD COLUMN era TEXT DEFAULT 'primitif'",
+  // V6 — Événements de tension par valeur
+  "ALTER TABLE civilizations ADD COLUMN value_event_ticks TEXT DEFAULT '{}'",
+  "ALTER TABLE civilizations ADD COLUMN energy REAL DEFAULT 0",
+  "ALTER TABLE civilizations ADD COLUMN current_wish TEXT DEFAULT NULL",
 ];
 
 function migrate() {

@@ -34,7 +34,6 @@ const VALUE_SATISFACTION = {
     satisfied:    (c, tick) => (c.last_combat_tick || 0) > 0 && tick - (c.last_combat_tick || 0) < 20,
     frustrated:   (c, tick) => (c.last_combat_tick || 0) === 0 && (c._known_count || 0) > 0,
     satisfiedText:  'Ton armée a prouvé sa valeur au combat',
-    frustratedText: 'Ton peuple guerrier n\'a jamais connu le combat alors que des voisins existent',
     moralBonus: +8, moralMalus: -10,
   },
 
@@ -161,10 +160,8 @@ function calculateMoral(civ, currentTick = 0) {
     } else if (check.frustrated(ext, currentTick)) {
       // Frustration cumulative : malus croissant
       newFrustTicks[valeur] = (newFrustTicks[valeur] || 0) + 1;
-      const cumulMalus = -Math.round(newFrustTicks[valeur] * 0.5);
-      // Le malus est borné à moralMalus×4 pour éviter la mort instantanée
-      const effectiveMalus = Math.max(check.moralMalus * 4, cumulMalus);
-      moral += effectiveMalus;
+      const cumulMalus = -Math.round(newFrustTicks[valeur] * 1.0);
+      moral += cumulMalus;
       frustrations.push(`${check.frustratedText} (tick ${newFrustTicks[valeur]})`);
     }
   }

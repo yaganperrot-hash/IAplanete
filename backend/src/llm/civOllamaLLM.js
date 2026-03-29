@@ -74,25 +74,25 @@ function getTextePopulation(ctx) {
 
   let t = '';
   if (libres === 0) {
-    t += `Tous tes sujets sont occupés — pas un seul bras disponible. Si tu veux entreprendre quelque chose de nouveau, tu dois d'abord ABANDONNER une tâche existante pour libérer de la main-d'œuvre. `;
+    t += `Toute ta population est occupée. Aucune main-d'œuvre disponible. Pour lancer une nouvelle action, des travailleurs doivent être libérés d'une tâche existante (ABANDONNER). `;
   } else if (libres < total * 0.1) {
     t += `Presque toute ta population est mobilisée. Il reste ${libres} personnes disponibles — à peine assez pour une nouvelle initiative. `;
   } else if (libres > total * 0.5) {
-    t += `Une grande partie de ton peuple est sans occupation (${libres} personnes sur ${total}). Des bras qui ne travaillent pas, c'est du gaspillage — ou une opportunité. `;
+    t += `${libres} personnes sur ${total} sont sans occupation. `;
   } else {
     t += `Tu disposes de ${libres} personnes disponibles sur une population de ${total}. `;
   }
 
   // Avertissement sans-abri (PRIORITÉ ABSOLUE)
   const homeless = ctx.homeless || 0;
-  const homelessDeaths = ctx.last_consequences?.homelessDeaths || 0;
+  const homelessDeaths = ctx.homeless_deaths || 0;
 
   if (homelessDeaths > 0) {
-    t += `⚠️ URGENCE : ${homelessDeaths} de tes sujets sont morts de froid ce mois-ci faute d'abri. `;
+    t += `${homelessDeaths} personnes sont mortes de froid ce mois-ci. `;
   }
   if (homeless > 0) {
     const pct = Math.round((homeless / total) * 100);
-    t += `${homeless} personnes (${pct}% de la population) dorment dehors sans abri. En hiver, cela tue. Construire une Habitation (rôle: habitation) est une question de survie. `;
+    t += `${homeless} personnes (${pct}%) dorment dehors sans abri. `;
   }
 
   if (trend === 'croissance') t += 'Les naissances sont nombreuses. Le peuple est en expansion. ';
@@ -120,14 +120,14 @@ function getTexteRessources(ctx) {
   } else if (nourriStock < 50) {
     lines.push(`Tes greniers sont presque vides (${nourriStock} unités). La famine approche.`);
   } else if (nourriStock < 200) {
-    lines.push(`Les réserves alimentaires sont maigres (${nourriStock}). Une mauvaise récolte suffirait à provoquer la famine.`);
+    lines.push(`Les réserves alimentaires sont maigres (${nourriStock}).`);
   } else if (nourriStock < 600) {
     lines.push(`La nourriture est suffisante (${nourriStock}), mais les surplus sont modestes.`);
   } else {
     lines.push(`Les greniers débordent (${nourriStock}). Ton peuple est bien nourri.`);
   }
   if (nourriBalance < 0 && ctx.food_famine_in != null) {
-    lines.push(`⚠️ ALERTE : au rythme actuel, famine dans ${ctx.food_famine_in} mois si rien ne change !`);
+    lines.push(`Au rythme actuel, les réserves s'épuisent dans ${ctx.food_famine_in} mois.`);
   }
 
   // Bois — critique en automne/hiver
@@ -135,9 +135,9 @@ function getTexteRessources(ctx) {
   if (saison === 'hiver' || saison === 'automne') {
     const boisNeed = Math.round((ctx.population || 0) * 1.5);
     if (boisStock < 50) {
-      lines.push(`⚠️ Bois très bas (${boisStock}). En cette saison froide, cela peut tuer les sans-abri.`);
+      lines.push(`Bois très bas (${boisStock}) en pleine saison froide.`);
     } else if (boisStock < boisNeed) {
-      lines.push(`Bois disponible : ${boisStock} (besoin estimé pour l'hiver : ${boisNeed}). Insuffisant.`);
+      lines.push(`Bois disponible : ${boisStock}. Besoin estimé pour l'hiver : ${boisNeed}.`);
     } else {
       lines.push(`Bois en bonne quantité (${boisStock}). Le froid ne vous surprendra pas.`);
     }
@@ -157,17 +157,17 @@ function getTexteRessources(ctx) {
   if (glaiseStock > 0) matos.push(`glaise (${glaiseStock})`);
   else matos.push(`glaise : aucun stock`);
   if (matos.length > 0) lines.push(`Matériaux de construction : ${matos.join(', ')}.`);
-  else if (saison !== 'hiver') lines.push('Peu de matériaux disponibles. Construire coûtera des ressources que vous n\'avez pas.');
+  else if (saison !== 'hiver') lines.push('Peu de matériaux disponibles.');
 
   // Ressources animales
   const peauxStock = rb.peaux?.stock || 0;
   const osStock = rb.os?.stock || 0;
-  if (peauxStock > 0 || osStock > 0) {
-    const ressourcesAnim = [];
-    if (peauxStock > 0) ressourcesAnim.push(`peaux (${peauxStock})`);
-    if (osStock > 0) ressourcesAnim.push(`os (${osStock})`);
-    lines.push(`Ressources animales : ${ressourcesAnim.join(', ')}.`);
-  }
+  const ressourcesAnim = [];
+  if (peauxStock > 0) ressourcesAnim.push(`peaux (${peauxStock})`);
+  else ressourcesAnim.push(`peaux : aucun stock`);
+  if (osStock > 0) ressourcesAnim.push(`os (${osStock})`);
+  else ressourcesAnim.push(`os : aucun stock`);
+  lines.push(`Ressources animales : ${ressourcesAnim.join(', ')}.`);
 
   // Minéraux
   const mineraux = [];
@@ -199,10 +199,16 @@ function getTexteMoral(ctx) {
   else                  t = "Le peuple est au bord de la révolte. La confiance est rompue. Des déserteurs peuvent partir.";
 
   if (frustreesActives.length > 0) {
-    const top = frustreesActives[0];
-    t += ` Ce qui pèse le plus : la valeur "${top.valeur}" est bafouée depuis ${top.score} ticks sans réponse.`;
-    if (frustreesActives.length > 1) {
-      t += ` La valeur "${frustreesActives[1].valeur}" commence aussi à faire l'objet de critiques.`;
+    for (const { valeur, score } of frustreesActives.slice(0, 3)) {
+      if (score >= 20) {
+        t += ` 💀 CRISE (${score} mois) — la valeur "${valeur}" est bafouée depuis trop longtemps. Sans action radicale, le chaos est imminent.`;
+      } else if (score >= 10) {
+        t += ` 🔥 TENSION PROFONDE (${score} mois) — la valeur "${valeur}" ronge le peuple. La pression monte.`;
+      } else if (score >= 5) {
+        t += ` ⚠️ TENSION (${score} mois) — la valeur "${valeur}" commence à faire l'objet de critiques.`;
+      } else {
+        t += ` La valeur "${valeur}" est légèrement bafouée (${score} mois).`;
+      }
     }
   }
   return t;
@@ -261,6 +267,18 @@ function getTexteReliques(ctx) {
   return lines.join(' ');
 }
 
+function getTexteReliquesPossedees(ctx) {
+  const relics = ctx.relics || [];
+  const nonUtilisees = relics.filter(r => r.taken === 1 && r.used === 0);
+  if (nonUtilisees.length === 0) return '';
+  const lines = [];
+  lines.push('OBJETS EN VOTRE POSSESSION :');
+  for (const r of nonUtilisees) {
+    lines.push(`- ${r.name} : ${r.description}`);
+  }
+  return lines.join('\n');
+}
+
 function getTexteConsequencesReliques(ctx) {
   const conseqs = ctx.last_consequences || [];
   const lines = [];
@@ -270,6 +288,21 @@ function getTexteConsequencesReliques(ctx) {
     }
     if (c.type === 'relique_utilisee') {
       lines.push(`Votre peuple a utilisé la relique ${c.data?.relicName || 'une relique'} pour ${c.data?.effet || 'obtenir un bonus'}. Cela pourrait ouvrir de nouvelles possibilités.`);
+    }
+    if (c.type === 'relique_incomprise') {
+      lines.push(
+        `Vos explorateurs ont ramené quelque chose d'étrange : ${c.data?.relicName || c.nom || 'un objet mystérieux'}. ` +
+        `Personne dans votre peuple ne comprend à quoi cela sert. Les artisans l'observent avec curiosité.`
+      );
+    }
+    if (c.type === 'animal_decouvert') {
+      lines.push(`Vos éclaireurs ont repéré un groupe : ${c.nom}. ${c.description || ''}`);
+    }
+    if (c.type === 'chasse' && c.succes) {
+      lines.push(`Chasse de ${c.nom} réussie : +${c.gains?.nourriture || 0} nourriture, +${c.gains?.peaux || 0} peaux, +${c.gains?.os || 0} os.`);
+    }
+    if (c.type === 'chasse' && !c.succes) {
+      lines.push(`Chasse de ${c.nom} échouée : ${c.morts || 0} chasseurs tués.`);
     }
   }
   return lines.join(' ');
@@ -327,57 +360,45 @@ function getRoleIntro(ctx) {
 }
 
 function buildDynamicQuestion(ctx) {
-  // Vérifier les urgences vitales
-  const homeless = ctx.homeless || 0;
-  const homelessDeaths = ctx.last_consequences?.homelessDeaths || 0;
-  const foodFamineIn = ctx.food_famine_in;
-  const rb = ctx.resourceBilan || {};
-  const boisStock = rb.bois?.stock || 0;
-  const boisNeed = (ctx.season === 'hiver' || ctx.season === 'automne') ? Math.round((ctx.population || 0) * 1.5) : 0;
-  const peauxStock = rb.peaux?.stock || 0;
-  const osStock = rb.os?.stock || 0;
-  const hasHomelessUrgency = homeless > 0 || homelessDeaths > 0;
-  const hasFamineUrgency = foodFamineIn != null && foodFamineIn < 10;
-  const hasWoodUrgency = (ctx.season === 'hiver' || ctx.season === 'automne') && boisStock < boisNeed;
+  const homeless      = ctx.homeless || 0;
+  const homelessDeaths = ctx.homeless_deaths || 0;
+  const foodFamineIn  = ctx.food_famine_in;
+  const rb            = ctx.resourceBilan || {};
+  const boisStock     = rb.bois?.stock || 0;
+  const boisNeed      = (ctx.season === 'hiver' || ctx.season === 'automne')
+                          ? Math.round((ctx.population || 0) * 1.5) : 0;
+  const peauxStock    = rb.peaux?.stock || 0;
+  const osStock       = rb.os?.stock || 0;
+  const silexStock    = rb.silex?.stock || 0;
+  const glaiseStock   = rb.glaise?.stock || 0;
 
-  if (hasHomelessUrgency || hasFamineUrgency || hasWoodUrgency) {
-    // Urgence vitale présente : retourner la phrase générique
-    return "Analyse la situation selon tes valeurs et tes instincts. Tu es libre : construire, explorer, déclarer la guerre, créer de l'art, réorganiser.";
-  }
+  const faits = [];
 
-  // Pas d'urgence vitale, vérifier silex/glaise
-  const silexStock = rb.silex?.stock || 0;
-  const glaiseStock = rb.glaise?.stock || 0;
+  // Urgences vitales — faits secs, sans prescription
+  if (homelessDeaths > 0)
+    faits.push(`${homelessDeaths} personnes sont mortes de froid ce mois-ci.`);
+  if (homeless > 0)
+    faits.push(`${homeless} personnes dorment dehors.`);
+  if (foodFamineIn != null && foodFamineIn < 10)
+    faits.push(`Les réserves alimentaires s'épuisent dans ${foodFamineIn} mois.`);
+  if (boisNeed > 0 && boisStock < boisNeed)
+    faits.push(`Le bois disponible (${boisStock}) est inférieur au besoin estimé pour l'hiver (${boisNeed}).`);
 
-  if (silexStock > 80 && glaiseStock > 80) {
-    // Les deux dépassent le seuil, choisir celui avec le stock le plus élevé
-    if (silexStock >= glaiseStock) {
-      return "Tes stocks de silex s'accumulent. C'est une roche dure, tranchante, que tes artisans connaissent. Qu'en fait ton peuple ?";
-    } else {
-      return "La glaise s'entasse dans tes entrepôts, souple et malléable. Tes potiers, tes bâtisseurs pourraient en faire usage. Qu'en décides-tu ?";
-    }
-  } else if (silexStock > 80) {
-    return "Tes stocks de silex s'accumulent. C'est une roche dure, tranchante, que tes artisans connaissent. Qu'en fait ton peuple ?";
-  } else if (glaiseStock > 80) {
-    return "La glaise s'entasse dans tes entrepôts, souple et malléable. Tes potiers, tes bâtisseurs pourraient en faire usage. Qu'en décides-tu ?";
-  }
+  // Ressources abondantes — opportunités sans jugement
+  if (silexStock > 80)
+    faits.push(`Les stocks de silex s'accumulent (${silexStock}).`);
+  else if (glaiseStock > 80)
+    faits.push(`La glaise s'entasse dans les réserves (${glaiseStock}).`);
+  else if (peauxStock > 50)
+    faits.push(`Des peaux s'accumulent dans les réserves (${peauxStock}).`);
+  else if (osStock > 50)
+    faits.push(`Des os s'entassent depuis la dernière chasse (${osStock}).`);
 
-  // Vérifier les stocks de peaux et os
-  if (peauxStock > 50 && osStock > 50) {
-    // Les deux dépassent le seuil, choisir celui avec le stock le plus élevé
-    if (peauxStock >= osStock) {
-      return "Des peaux s'accumulent dans tes réserves, souples et résistantes. Tes artisans les regardent avec intérêt. Qu'en fais-tu ?";
-    } else {
-      return "Des os s'entassent depuis la dernière chasse. Solides, légers, tranchants selon la taille. Qu'en fait ton peuple ?";
-    }
-  } else if (peauxStock > 50) {
-    return "Des peaux s'accumulent dans tes réserves, souples et résistantes. Tes artisans les regardent avec intérêt. Qu'en fais-tu ?";
-  } else if (osStock > 50) {
-    return "Des os s'entassent depuis la dernière chasse. Solides, légers, tranchants selon la taille. Qu'en fait ton peuple ?";
-  }
+  const contexte = faits.length
+    ? faits.join(' ') + '\n\n'
+    : '';
 
-  // Aucun déclencheur spécial
-  return "Analyse la situation selon tes valeurs et tes instincts. Tu es libre : construire, explorer, déclarer la guerre, créer de l'art, réorganiser.";
+  return `${contexte}Que décides-tu ?`;
 }
 
 // ─── Construction du prompt (3 couches) ───────────────────────────────────────
@@ -387,6 +408,47 @@ const DEFAULT_MEMOIRE = {
   posture_diplomatique: 'Le monde autour est inconnu. Nous restons sur nos gardes.',
   inquietude_majeure:   'Nous ne savons pas ce qui nous entoure.',
 };
+
+function getUrgentTensions(ctx) {
+  const frustTicks = ctx.frustration_ticks || {};
+  const urgentes = Object.entries(frustTicks)
+    .filter(([, v]) => v >= 10)
+    .sort((a, b) => b[1] - a[1]);
+  if (urgentes.length === 0) return '';
+  const lines = urgentes.map(([valeur, score]) =>
+    score >= 20
+      ? `💀 CRISE — "${valeur}" bafouée depuis ${score} mois. Conséquences imminentes.`
+      : `🔥 TENSION — "${valeur}" sous pression depuis ${score} mois.`
+  );
+  return `⚡ PRESSIONS INTERNES URGENTES :\n${lines.map(l => `  ${l}`).join('\n')}\n`;
+}
+
+function formatMemory(memory, ctx) {
+  if (!memory) return '';
+  const mem = typeof memory === 'string' ? JSON.parse(memory) : memory;
+
+  // Chargement sélectif
+  const domains = [];
+  domains.push({ key: 'identite',   label: 'Identité',   entries: mem.identite   || [] });
+  domains.push({ key: 'savoir',     label: 'Savoir',     entries: mem.savoir     || [] });
+  domains.push({ key: 'histoire',   label: 'Histoire',   entries: mem.histoire   || [] });
+
+  // Diplomatie : seulement si voisins connus
+  if ((ctx._known_count || 0) > 0 || (mem.diplomatie || []).length > 0) {
+    domains.push({ key: 'diplomatie', label: 'Diplomatie', entries: mem.diplomatie || [] });
+  }
+
+  // Pressions : seulement si entrées non vides
+  if ((mem.pressions || []).length > 0) {
+    domains.push({ key: 'pressions', label: 'Pressions',  entries: mem.pressions  || [] });
+  }
+
+  const lines = domains
+    .filter(d => d.entries.length > 0)
+    .map(d => `  [${d.label}] ${d.entries.join(' | ')}`);
+
+  return lines.length ? `MÉMOIRE :\n${lines.join('\n')}` : '';
+}
 
 function buildPrompt(ctx) {
   const memoire = ctx.memoire || DEFAULT_MEMOIRE;
@@ -411,10 +473,11 @@ function buildPrompt(ctx) {
       ? `\n(1 chantier en cours — 1 de plus maximum)`
       : '';
   const structNote = existantes.length > 0
-    ? `Constructions existantes (NE PAS RECONSTRUIRE CE QUI EXISTE DÉJÀ) :\n${structLines.join('\n')}${chantierNote}`
+    ? `Constructions existantes :\n${structLines.join('\n')}${chantierNote}`
     : `(aucune construction)${chantierNote}`;
 
-  const reliquesText = (ctx.reliques_decouvertes || []).length > 0 ? getTexteReliques(ctx) : '';
+  const reliquesText = '';
+  const reliquesPossedeesText = getTexteReliquesPossedees(ctx);
   const conseqText = getTexteConsequencesReliques(ctx);
   const animauxText = (ctx.animal_groups || []).length > 0 ? getTexteAnimaux(ctx) : '';
   const rapportEclaireurs = getTexteExploration(ctx) +
@@ -429,9 +492,9 @@ function buildPrompt(ctx) {
 #### COUCHE 1 : TON IDENTITÉ ET TA PSYCHOLOGIE
 
 ${ctx.description ? ctx.description + '\n' : ''}Valeurs fondamentales : ${(ctx.valeurs || []).join(', ')}.
-Gouvernement : ${ctx.gouvernement}.
+${formatMemory(ctx.civ_memory, ctx) ? formatMemory(ctx.civ_memory, ctx) + '\n' : ''}Gouvernement : ${ctx.gouvernement}.
 
-Ton peuple perçoit le monde à travers ces prismes :
+${getUrgentTensions(ctx)}Ton peuple perçoit le monde à travers ces prismes :
 
 1. **Instinct de Survie :** ${getJaugeSecurite(ctx)}
 2. **Instinct face à l'Inconnu :** ${getJaugeOuverture(ctx)}
@@ -461,11 +524,14 @@ ${processusSection}
 
 **${structNote}**
 
+**État militaire :**
+ARMÉE : ${ctx.army_soldiers || 0} soldats, équipement: ${ctx.army_equipment || 'aucun'} (puissance: ${ctx.army_power || 0})${ctx.last_combat_tick ? ` — dernier combat : tick ${ctx.last_combat_tick}` : ' — aucun combat enregistré'}
+
 ---
 
 #### COUCHE 3 : TA DÉCISION
 
-${buildDynamicQuestion(ctx)}
+${reliquesPossedeesText ? reliquesPossedeesText + '\n\n' : ''}${buildDynamicQuestion(ctx)}
 
 Verbes disponibles pour ACTIONS_MECANIQUES :
 - AFFECTER N travailleurs à [bâtiment existant ou nouvelle tâche]
@@ -492,7 +558,8 @@ Réponds UNIQUEMENT avec ce JSON (aucun texte avant ou après) :
     "projet_principal": "Ton grand objectif pour les prochains mois.",
     "posture_diplomatique": "Ta vision actuelle de tes voisins.",
     "inquietude_majeure": "Le problème ou mystère que tu cherches à résoudre."
-  }
+  },
+  "SOUHAIT": "[un besoin ou désir de ta civilisation en une phrase]"
 }`;
 }
 
@@ -558,14 +625,14 @@ function parseLLMResponse(text) {
   const cleaned = text.replace(/```json\s*/gi, '').replace(/```\s*/gi, '').trim();
   const jsonMatch = cleaned.match(/\{[\s\S]*\}/);
   if (!jsonMatch) {
-    return { analyseInterne: '', parsedActions: [], nouveauCap: null, parseError: 'Aucun JSON trouvé' };
+    return { analyseInterne: '', parsedActions: [], nouveauCap: null, souhait: null, parseError: 'Aucun JSON trouvé' };
   }
 
   let parsed;
   try {
     parsed = JSON.parse(jsonMatch[0]);
   } catch (e) {
-    return { analyseInterne: '', parsedActions: [], nouveauCap: null, parseError: `JSON invalide : ${e.message}` };
+    return { analyseInterne: '', parsedActions: [], nouveauCap: null, souhait: null, parseError: `JSON invalide : ${e.message}` };
   }
 
   const analyseInterne = typeof parsed.ANALYSE_INTERNE === 'string' ? parsed.ANALYSE_INTERNE : '';
@@ -586,7 +653,9 @@ function parseLLMResponse(text) {
     };
   }
 
-  return { analyseInterne, parsedActions, nouveauCap, parseError: null };
+  const souhait = typeof parsed.SOUHAIT === 'string' ? parsed.SOUHAIT.trim() : null;
+
+  return { analyseInterne, parsedActions, nouveauCap, souhait, parseError: null };
 }
 
 // ─── Traduction vers l'ancien format texte (compat resolveEffect) ─────────────
@@ -709,12 +778,12 @@ async function decide(context) {
     const rawText = response.message.content.trim();
     console.log('[OLLAMA CIV RAW]', rawText.slice(0, 300));
 
-    const { analyseInterne, parsedActions, nouveauCap, parseError } = parseLLMResponse(rawText);
+    const { analyseInterne, parsedActions, nouveauCap, souhait, parseError } = parseLLMResponse(rawText);
 
     if (parseError) {
       console.warn(`[LLM Parser] ${parseError} — fallback mock`);
       const r = mockDecide(context);
-      return { ...r, nouveauCap: null, analyseInterne: r.strategie };
+      return { ...r, nouveauCap: null, souhait: null, analyseInterne: r.strategie };
     }
 
     const effets_text = parsedActions.map(a => actionToEffetLine(a)).join('\n') || 'RIEN';
@@ -727,12 +796,13 @@ async function decide(context) {
       actions:      actions.length ? actions : ['RIEN'],
       raison:       analyseInterne,
       nouveauCap,
+      souhait,
       analyseInterne,
     };
   } catch (err) {
     console.warn(`Ollama civ → mock (${err.message})`);
     const r = mockDecide(context);
-    return { ...r, nouveauCap: null, analyseInterne: r.strategie };
+    return { ...r, nouveauCap: null, souhait: null, analyseInterne: r.strategie };
   }
 }
 

@@ -39,6 +39,18 @@ const RELATION_LABELS = {
   guerre: { label: 'Guerre', color: 'text-red-400' },
 };
 
+const INTERVENTIONS = [
+  { key: 'manne_nourriture',  label: '🍞 Nourriture', cost: 20 },
+  { key: 'manne_bois',        label: '🪵  Bois',       cost: 15 },
+  { key: 'manne_glaise',      label: '🧱  Glaise',     cost: 15 },
+  { key: 'vision_outils',     label: '👁  Outils',     cost: 30 },
+  { key: 'vision_peaux',      label: '👁  Peaux',      cost: 30 },
+  { key: 'vision_glaise',     label: '👁  Poterie',    cost: 30 },
+  { key: 'foudre',            label: '⚡ Foudre',     cost: 10 },
+  { key: 'montee_eaux',       label: '🌊 Eaux',       cost: 15 },
+  { key: 'epidemie',          label: '☠️ Épidémie',   cost: 15 },
+];
+
 function StatBar({ label, value, max = 100, color = 'bg-amber-500' }) {
   const pct = Math.max(0, Math.min(100, Math.round((value / max) * 100)));
   return (
@@ -54,8 +66,27 @@ function StatBar({ label, value, max = 100, color = 'bg-amber-500' }) {
   );
 }
 
-export default function CivCard({ civ, allCivs, thoughtLogs, onClose }) {
+export default function CivCard({ civ, allCivs, thoughtLogs, onClose, onRefresh }) {
   const recentThoughts = thoughtLogs.filter(t => t.civ_id === civ.id).slice(0, 3);
+
+  const handleIntervene = async (civId, action_type) => {
+    try {
+      const res = await fetch(`/api/civs/${civId}/intervene`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ type: action_type }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        console.warn('Intervention échouée:', data.error);
+        return;
+      }
+      // Rafraîchir les données si une callback est fournie
+      if (onRefresh) onRefresh();
+    } catch (err) {
+      console.error('Erreur intervention:', err);
+    }
+  };
 
   // Trouver les relations diplomatiques (depuis les logs d'événements ou données passées)
   // Pour l'instant on affiche juste les voisins connus (autres civs)
@@ -238,6 +269,42 @@ export default function CivCard({ civ, allCivs, thoughtLogs, onClose }) {
             </div>
           </div>
         )}
+
+        {/* Section Puissance Divine */}
+        <div className="mt-3 border-t pt-2">
+          <div className="text-xs font-bold text-yellow-500 mb-1">⚡ Puissance divine</div>
+
+          {/* Barre énergie */}
+          <div className="flex items-center gap-2 mb-1">
+            <span className="text-xs text-gray-400">Énergie : {Math.floor(civ.energy || 0)} / 200</span>
+            <div className="flex-1 bg-gray-700 rounded h-2">
+              <div
+                className="bg-yellow-400 h-2 rounded transition-all"
+                style={{ width: `${Math.min(100, ((civ.energy || 0) / 200) * 100)}%` }}
+              />
+            </div>
+          </div>
+
+          {/* Souhait actuel */}
+          {civ.current_wish && (
+            <div className="text-xs text-purple-300 italic mb-2">💭 {civ.current_wish}</div>
+          )}
+
+          {/* Boutons interventions */}
+          <div className="grid grid-cols-3 gap-1">
+            {INTERVENTIONS.map(({ key, label, cost }) => (
+              <button
+                key={key}
+                onClick={() => handleIntervene(civ.id, key)}
+                disabled={(civ.energy || 0) < cost}
+                className="text-xs px-1 py-1 rounded bg-gray-700 hover:bg-gray-600 disabled:opacity-30 disabled:cursor-not-allowed"
+                title={`Coût : ${cost} énergie`}
+              >
+                {label} ({cost})
+              </button>
+            ))}
+          </div>
+        </div>
       </div>
     </div>
   );

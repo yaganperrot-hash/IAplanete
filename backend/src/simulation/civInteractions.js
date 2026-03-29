@@ -1,8 +1,13 @@
 // Système d'information et d'interactions entre civilisations
 
 const { db } = require('../config/db');
+const { addMemoryEntry } = require('./civActionResolver');
 
 const parseJ = (v, fb) => { try { return JSON.parse(v != null ? v : JSON.stringify(fb)); } catch { return fb; } };
+
+function getCurrentYear(tick) {
+  return Math.floor((tick - 1) / 12) + 1;
+}
 
 // ─── Gestion du knowledge_about ──────────────────────────────────────────────
 
@@ -87,8 +92,12 @@ function resolveSpying(civ, targetCivId, allCivs, currentTick) {
   const targetCiv = allCivs.find(c => c.id === targetCivId || String(c.id) === String(targetCivId));
   if (!targetCiv) return { success: false, message: 'Cible introuvable' };
 
+  const year = getCurrentYear(currentTick);
+  const targetName = targetCiv.nom;
+
   // Risque de capture : 20%
   if (Math.random() < 0.2) {
+    addMemoryEntry(civ.id, 'diplomatie', `An ${year} — Espionnage de ${targetName} : échec`);
     return {
       success: false,
       captured: true,
@@ -113,6 +122,8 @@ function resolveSpying(civ, targetCivId, allCivs, currentTick) {
   }
   knowledge[key].spyReports.push({ tick: currentTick, text: report });
   saveKnowledge(civ.id, knowledge);
+
+  addMemoryEntry(civ.id, 'diplomatie', `An ${year} — Espionnage de ${targetName} : réussi`);
 
   return {
     success: true,

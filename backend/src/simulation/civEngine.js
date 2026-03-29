@@ -5,8 +5,8 @@ const { migrate } = require('../../scripts/migrate');
 const civLLM = require('../llm/civOllamaLLM');
 const {
   resolveEffect, parseEffets, advanceProcesses, buildCivContext,
-  initTerritory, discoverAdjacentCivs, discoverRelicsInTerritory, updateResources, getMilitaryPower,
-  normalizeBuildings, expandTerritory, calculateHoused,
+  initTerritory, discoverAdjacentCivs, discoverRelicsInTerritory, addMemoryEntry, updateResources, getMilitaryPower,
+  normalizeBuildings, calculateProduction, expandTerritory, calculateHoused,
 } = require('./civActionResolver');
 const { calculateMoral, checkWorkerConsistency } = require('./moralSystem');
 const { checkFrontierContact, resolveSpying, resolveTradeExpedition, buildNeighborInfo } = require('./civInteractions');
@@ -381,6 +381,219 @@ function updateAnimalGroups(worldId, currentTick, allCivs, biomesMap) {
   }
 }
 
+function checkValueTensionEvents(civ, frustTicks, currentTick, worldId, events, biomesMap, freeLabor) {
+  const valueEventTicks = parseJ(civ.value_event_ticks, {});
+  const valeurs = parseJ(civ.valeurs, []);
+  let armyDelta = 0;
+  let resourceDelta = {};
+  let gouvernement = null;
+  let newBuilding = null;
+  const consequences = [];
+  let moralDelta = 0;
+  let popDelta = 0;
+  let doubleRevoltRisk = false;
+  let rationingActive = false;
+
+  for (const valeur of valeurs) {
+    const ticks = frustTicks[valeur] || 0;
+    if (ticks < 15) continue;
+
+    const lastTick = valueEventTicks[valeur] || 0;
+    const cooldown = currentTick - lastTick;
+    const triggerLight = ticks >= 15 && cooldown >= 10;
+    const triggerStrong = ticks >= 30 && cooldown >= 10;
+
+    if (triggerLight) {
+      // Événement léger
+      if (valeur === 'guerre') {
+        const rand = Math.floor(Math.random() * 3);
+        if (rand === 0) {
+          const added = Math.floor((civ.population || 0) * 0.05);
+          armyDelta += added;
+          consequences.push('Vos guerriers s\'entraînent entre eux, impatients d\'action.');
+        } else if (rand === 1) {
+          const deaths = Math.floor(2 + Math.random() * 3);
+          popDelta -= deaths;
+          armyDelta += Math.floor((civ.population || 0) * 0.03);
+          consequences.push('Des rixes éclatent dans les rues. La frustration se transforme en violence.');
+        } else {
+          moralDelta += 4;
+          armyDelta += Math.floor((civ.population || 0) * 0.02);
+          consequences.push('Un tournoi de combat est organisé spontanément. La foule acclame ses champions.');
+        }
+      } else if (valeur === 'commerce') {
+        const rand = Math.floor(Math.random() * 2);
+        if (rand === 0) {
+          // créer civ_processes de type commerce_expedition vers un voisin connu
+          const knownCivs = parseJ(civ.discovered_civ_ids, []);
+          if (knownCivs.length > 0) {
+            const targetCivId = knownCivs[Math.floor(Math.random() * knownCivs.length)];
+            db.prepare(
+              `INSERT INTO civ_processes (civ_id, world_id, type, target, workers, ticks_remaining, state) VALUES (?, ?, ?, ?, ?, ?, ?)`
+            ).run(civ.id, worldId, 'commerce_expedition', targetCivId, 3, 5, 'en_cours');
+            consequences.push('Des marchands partent d\'eux-mêmes vers les terres voisines.');
+          }
+        } else {
+          const foodGain = Math.floor((civ.population || 0) * 0.5);
+          resourceDelta.nourriture = (resourceDelta.nourriture || 0) + foodGain;
+          consequences.push('Un marché intérieur spontané s\'organise. Les surplus circulent entre habitants.');
+        }
+      } else if (valeur === 'expansion') {
+        const directions = ['nord', 'sud', 'est', 'ouest'];
+        const dir = directions[Math.floor(Math.random() * directions.length)];
+        expandTerritory(civ, dir, biomesMap, worldId, 2);
+        consequences.push('Des familles quittent le centre et s\'établissent aux frontières.');
+      } else if (valeur === 'exploration') {
+        // Vérifier si une exploration est déjà en cours
+        const existing = db.prepare('SELECT id FROM civ_processes WHERE civ_id = ? AND type = ? AND state = ?').get(civ.id, 'exploration', 'en_cours');
+        if (!existing) {
+          const workers = Math.max(3, Math.floor(freeLabor * 0.15));
+          const ticksRemaining = Math.floor(workers / 2) + 2;
+          const directions = ['nord', 'sud', 'est', 'ouest'];
+          const direction = directions[Math.floor(Math.random() * directions.length)];
+          db.prepare(
+            `INSERT INTO civ_processes (civ_id, world_id, type, target, workers, ticks_remaining, state) VALUES (?, ?, ?, ?, ?, ?, ?)`
+          ).run(civ.id, worldId, 'exploration', direction, workers, ticksRemaining, 'en_cours');
+          consequences.push(`Un groupe de ${workers} personnes part explorer vers le ${direction} pour ${ticksRemaining} mois, sans ordre du dirigeant.`);
+        }
+      } else if (valeur === 'savoir' || valeur === 'connaissance') {
+        // Vérifier si bâtiment savoir existe
+        const buildings = parseJ(civ.buildings, []);
+        const hasSavoir = buildings.some(b => b.category === 'savoir');
+        if (!hasSavoir) {
+          newBuilding = { name: 'Cercle de savants', category: 'savoir', workers: 0, status: 'active' };
+          consequences.push('Des érudits s\'organisent en cercle de savoirs sans attendre qu\'on les y autorise.');
+        }
+      } else if (valeur === 'spiritualite') {
+        moralDelta += 5;
+        consequences.push('Des rites spontanés s\'organisent. Le peuple cherche un sens à sa souffrance.');
+      } else if (valeur === 'isolationnisme') {
+        if (civ.active_trade_routes > 0) {
+          // réduire une route
+          db.prepare('UPDATE civilizations SET active_trade_routes = active_trade_routes - 1 WHERE id = ?').run(civ.id);
+          consequences.push('Des militants isolationnistes sabotent une route commerciale étrangère.');
+        } else {
+          // annuler un process emissaire en cours
+          db.prepare('DELETE FROM civ_processes WHERE civ_id = ? AND type LIKE ?').run(civ.id, '%emissaire%');
+          consequences.push('Des émeutiers chassent les émissaires étrangers hors des murs.');
+        }
+      } else if (valeur === 'liberte') {
+        const loss = Math.floor((civ.population || 0) * 0.02);
+        popDelta -= loss;
+        consequences.push('Des dissidents fuient la dictature ou sont emprisonnés. Le peuple gronde.');
+      } else if (valeur === 'ordre') {
+        // Redistribuer les travailleurs libres sur les bâtiments existants qui ont 0 workers
+        const buildings = parseJ(civ.buildings, []);
+        let workersAssigned = 0;
+        let remainingFreeLabor = freeLabor;
+        for (const b of buildings) {
+          if (b.workers === 0 && remainingFreeLabor > 0) {
+            const assign = Math.min(3, remainingFreeLabor);
+            b.workers = assign;
+            workersAssigned += assign;
+            remainingFreeLabor -= assign;
+            if (remainingFreeLabor <= 0) break;
+          }
+        }
+        if (workersAssigned > 0) {
+          db.prepare('UPDATE civilizations SET buildings = ? WHERE id = ?').run(JSON.stringify(buildings), civ.id);
+          consequences.push('Des chefs de quartier s\'auto-organisent et remettent le peuple au travail.');
+        }
+      } else if (valeur === 'survie') {
+        const foodGain = Math.floor((civ.population || 0) * 0.3);
+        resourceDelta.nourriture = (resourceDelta.nourriture || 0) + foodGain;
+        consequences.push('Des habitants partent chasser et cueillir dans la nature environnante. Les réserves augmentent légèrement.');
+      } else if (valeur === 'art') {
+        moralDelta += 6;
+        consequences.push('Un festival de rue spontané éclate. Musiciens et conteurs envahissent les places.');
+      }
+      // Mettre à jour le cooldown
+      valueEventTicks[valeur] = currentTick;
+    }
+
+    if (triggerStrong) {
+      // Événement fort
+      if (valeur === 'guerre') {
+        if (civ.gouvernement !== 'dictature_militaire') {
+          gouvernement = 'dictature_militaire';
+          consequences.push('La faction militaire prend le contrôle. Le dirigeant civil est renversé.');
+        }
+      } else if (valeur === 'commerce') {
+        const buildings = parseJ(civ.buildings, []);
+        const hasCommerce = buildings.some(b => b.category === 'commerce');
+        if (!hasCommerce) {
+          newBuilding = { name: 'Place du marché', category: 'commerce', workers: 0, status: 'active' };
+          consequences.push('Les guildes marchandes s\'imposent et construisent une place de marché.');
+        }
+      } else if (valeur === 'expansion') {
+        const directions = ['nord', 'sud', 'est', 'ouest'];
+        for (let i = 0; i < 4; i++) {
+          const dir = directions[Math.floor(Math.random() * directions.length)];
+          expandTerritory(civ, dir, biomesMap, worldId, 1);
+        }
+        consequences.push('Une vague migratoire pousse les frontières de la civilisation.');
+      } else if (valeur === 'exploration') {
+        // Ajouter un deuxième groupe dans une direction différente
+        const existing = db.prepare('SELECT id FROM civ_processes WHERE civ_id = ? AND type = ? AND state = ?').all(civ.id, 'exploration', 'en_cours');
+        if (existing.length > 0) {
+          const directions = ['nord', 'sud', 'est', 'ouest'];
+          const usedDirections = existing.map(p => p.target);
+          const available = directions.filter(d => !usedDirections.includes(d));
+          if (available.length > 0) {
+            const direction = available[Math.floor(Math.random() * available.length)];
+            const workers = Math.max(3, Math.floor(freeLabor * 0.15));
+            const ticksRemaining = Math.floor(workers / 2) + 2;
+            db.prepare(
+              `INSERT INTO civ_processes (civ_id, world_id, type, target, workers, ticks_remaining, state) VALUES (?, ?, ?, ?, ?, ?, ?)`
+            ).run(civ.id, worldId, 'exploration', direction, workers, ticksRemaining, 'en_cours');
+            consequences.push('Une second groupe d\'explorateurs part, refusant d\'attendre.');
+          }
+        }
+      } else if (valeur === 'savoir' || valeur === 'connaissance') {
+        resourceDelta.silex = (resourceDelta.silex || 0) + 30;
+        consequences.push('Les savants expérimentent avec les matériaux disponibles et font une découverte.');
+      } else if (valeur === 'spiritualite') {
+        const buildings = parseJ(civ.buildings, []);
+        const hasReligious = buildings.some(b => b.category === 'religieux');
+        if (!hasReligious) {
+          newBuilding = { name: 'Lieu de culte rudimentaire', category: 'religieux', workers: 0, status: 'active' };
+          consequences.push('Une figure religieuse émerge du peuple et érige un premier lieu sacré.');
+        }
+      } else if (valeur === 'isolationnisme') {
+        db.prepare('UPDATE civilizations SET active_trade_routes = 0 WHERE id = ?').run(civ.id);
+        consequences.push('Le mouvement isolationniste triomphe : toutes les routes étrangères sont fermées.');
+      } else if (valeur === 'liberte') {
+        doubleRevoltRisk = true;
+        consequences.push('La frustration éclate, doublant le risque de révolte ce tick.');
+      } else if (valeur === 'ordre') {
+        const added = Math.floor((civ.population || 0) * 0.02);
+        armyDelta += added;
+        consequences.push('Une milice citoyenne se forme spontanément pour maintenir l\'ordre.');
+      } else if (valeur === 'survie') {
+        rationingActive = true;
+        consequences.push('Le rationnement s\'impose de lui-même. Le peuple serre la ceinture.');
+      } else if (valeur === 'art') {
+        const buildings = parseJ(civ.buildings, []);
+        const hasArt = buildings.some(b => /atelier|art|sculpt|musique/i.test(b.name));
+        if (!hasArt) {
+          newBuilding = { name: 'Atelier collectif', category: 'art', workers: 0, status: 'active' };
+          consequences.push('Des artistes construisent leur propre atelier, las d\'attendre une décision.');
+        }
+      }
+      // Mettre à jour le cooldown aussi pour l'événement fort (même tick)
+      valueEventTicks[valeur] = currentTick;
+    }
+  }
+
+  // Sauvegarder value_event_ticks
+  if (Object.keys(valueEventTicks).length > 0) {
+    db.prepare('UPDATE civilizations SET value_event_ticks = ? WHERE id = ?').run(JSON.stringify(valueEventTicks), civ.id);
+  }
+
+  return { armyDelta, resourceDelta, gouvernement, newBuilding, consequences, moralDelta, popDelta, doubleRevoltRisk, rationingActive };
+}
+
+
 class CivEngine {
   constructor(io) {
     this.io = io;
@@ -465,7 +678,7 @@ class CivEngine {
       // Événements aléatoires
       const eventResults = rollEvents(civ, season, events, currentTick);
       const baseNewPop = Math.max(0, pop + births - naturalDeaths - homelessDeaths + famineDelta);
-      const { pop: newPop, res: finalResources } = applyEvents(civ, eventResults, newResources, baseNewPop);
+      let { pop: newPop, res: finalResources } = applyEvents(civ, eventResults, newResources, baseNewPop);
 
       // Bonus des reliques
       const { militaryBonus, moralBonus } = applyRelicBonuses(civ.id, this.worldId, finalResources);
@@ -478,7 +691,8 @@ class CivEngine {
 
       // Moral composite
       const civForMoral = { ...civ, population: newPop, resources: JSON.stringify(finalResources) };
-      const { moral: newMoral, frustrations, satisfactions, moralLabel, frustration_ticks } = calculateMoral(civForMoral, currentTick);
+      let { moral: newMoral, frustrations, satisfactions, moralLabel, frustration_ticks } = calculateMoral(civForMoral, currentTick);
+      const newEnergy = Math.min(200, (civ.energy || 0) + satisfactions.length * 3);
 
       // Révolte si moral < 20
       let revoltLoss = 0;
@@ -489,10 +703,84 @@ class CivEngine {
         }
       }
 
+      // Mémoire structurée — Étape 1
+      const year = getCurrentYear(currentTick);
+
+      // — HISTOIRE : famine
+      if (isFamine) {
+        addMemoryEntry(civ.id, 'histoire', `An ${year} — Famine : réserves épuisées`);
+      }
+
+      // — HISTOIRE : révolte
+      if (revoltLoss > 0) {
+        addMemoryEntry(civ.id, 'histoire', `An ${year} — Révolte : -${revoltLoss} hab, 2 cases perdues`);
+      }
+
+      // — HISTOIRE : événements graves (morts > 15)
+      for (const ev of eventResults) {
+        if (ev.deaths >= 15) {
+          addMemoryEntry(civ.id, 'histoire', `An ${year} — ${ev.type} : -${ev.deaths} habitants`);
+        }
+      }
+
+      // — PRESSIONS : frustrations profondes
+      for (const [valeur, ticks] of Object.entries(frustration_ticks || {})) {
+        if (ticks === 10) { // seulement au tick 10 (pas à chaque tick)
+          addMemoryEntry(civ.id, 'pressions', `An ${year} — Tension ${valeur} (${ticks} mois sans satisfaction)`);
+        }
+      }
+
+      // — PRESSIONS : reset si valeur satisfaite
+      for (const [valeur, ticks] of Object.entries(frustration_ticks || {})) {
+        if (ticks === 0 && (parseJ(civ.frustration_ticks, {})[valeur] || 0) > 5) {
+          // était frustrée, maintenant satisfaite → retirer l'entrée pressions
+          const mem = parseJ(
+            db.prepare('SELECT civ_memory FROM civilizations WHERE id=?').get(civ.id)?.civ_memory, {}
+          );
+          if (mem.pressions) {
+            mem.pressions = mem.pressions.filter(e => !e.includes(`Tension ${valeur}`));
+            db.prepare('UPDATE civilizations SET civ_memory=? WHERE id=?')
+              .run(JSON.stringify(mem), civ.id);
+          }
+        }
+      }
+
       // Travailleurs libres
       const processesRow = db.prepare("SELECT COALESCE(SUM(workers),0) as total FROM civ_processes WHERE civ_id=? AND world_id=? AND state='en_cours'").get(civ.id, this.worldId);
       const procWorkers  = processesRow?.total || 0;
       const freeLabor    = checkWorkerConsistency({ ...civ, population: newPop }, procWorkers);
+
+      // Événements de tension de valeur
+      const tensionResult = checkValueTensionEvents(
+        { ...civ, population: newPop, resources: JSON.stringify(finalResources) },
+        frustration_ticks,
+        currentTick, this.worldId, events, biomesMap, freeLabor
+      );
+
+      // Appliquer les deltas retournés
+      if (tensionResult.armyDelta)
+        civ.army_soldiers = (civ.army_soldiers || 0) + tensionResult.armyDelta;
+      if (tensionResult.resourceDelta)
+        for (const [r, v] of Object.entries(tensionResult.resourceDelta))
+          finalResources[r] = Math.max(0, (finalResources[r] || 0) + v);
+      if (tensionResult.gouvernement)
+        db.prepare('UPDATE civilizations SET gouvernement=? WHERE id=?').run(tensionResult.gouvernement, civ.id);
+      if (tensionResult.newBuilding) {
+        const bldgs = parseJ(civ.buildings, []);
+        bldgs.push(tensionResult.newBuilding);
+        db.prepare('UPDATE civilizations SET buildings=? WHERE id=?').run(JSON.stringify(bldgs), civ.id);
+      }
+      if (tensionResult.consequences?.length)
+        eventMsgs.push(...tensionResult.consequences);
+      // moral bonus depuis tension (fêtes, festivals...)
+      if (tensionResult.moralDelta)
+        newMoral = Math.min(100, newMoral + tensionResult.moralDelta);
+      if (tensionResult.popDelta)
+        newPop = Math.max(0, newPop + tensionResult.popDelta);
+
+      // Limiter l'armée à 60% de la population
+      const newSoldiers = Math.min(civ.army_soldiers || 0, Math.floor(newPop * 0.6));
+      civ.army_soldiers = newSoldiers;
 
       // Puissance militaire
       const baseMilitary = getMilitaryPower(civ.army_soldiers || 0, civ.age_tech);
@@ -510,14 +798,19 @@ class CivEngine {
       if (frustrations.length)  console.log(`    ⚠️  ${frustrations.join(' | ')}`);
       console.log(`  [WORKERS] pop:${newPop} | proc:${procWorkers} | armée:${civ.army_soldiers || 0} | libre:${freeLabor}`);
 
+      // Fusionner last_consequences existant avec les nouveaux messages
+      const current = db.prepare('SELECT last_consequences FROM civilizations WHERE id=?').get(civ.id);
+      const existing = parseJ(current.last_consequences, []);
+      const mergedConsequences = [...existing, ...eventMsgs];
+
       db.prepare(`UPDATE civilizations SET
-        resources=?, army_soldiers=?, population=?, moral=?,
+        resources=?, energy=?, army_soldiers=?, population=?, moral=?,
         military_power=?, frustration_ticks=?, last_consequences=?
         WHERE id=?`).run(
-        JSON.stringify(finalResources), civ.army_soldiers || 0,
+        JSON.stringify(finalResources), newEnergy, newSoldiers,
         Math.max(0, newPop - revoltLoss), Math.max(0, Math.min(100, newMoral + moralBonus)), newMilitary,
         JSON.stringify(frustration_ticks || {}),
-        JSON.stringify(eventMsgs),
+        JSON.stringify(mergedConsequences),
         civ.id
       );
 
@@ -568,11 +861,13 @@ class CivEngine {
           const roleInfo = proc.role ? ` [${proc.role}]` : '';
           events.push({ type: 'construction', description: `${civ.nom} a terminé "${proc.target}"${roleInfo} — ${autoW > 0 ? autoW + ' pers. affectées' : 'construction achevée'}.`, civ_ids: [civ.id] });
           console.log(`  [PROC] construction terminée: ${proc.target}${roleInfo} | auto-workers: ${autoW}`);
+          addMemoryEntry(civ.id, 'savoir', `An ${year} — ${proc.target} construit`);
         } else if (proc.type === 'exploration') {
           const added = proc.territory_added || 0;
           events.push({ type: 'exploration', description: `Les éclaireurs de ${civ.nom} rentrent (${proc.target}) : +${added} territoires.`, civ_ids: [civ.id] });
           // Découverte de reliques sur les nouveaux territoires
           discoverRelicsInTerritory(civ.id, this.worldId, currentTick, events);
+          addMemoryEntry(civ.id, 'savoir', `An ${year} — Territoire exploré : +${added} cases`);
         } else if (proc.type === 'mission') {
           if (proc.workers > 0)
             events.push({ type: 'mission', description: `${civ.nom} : mission "${proc.target}" terminée — ${proc.workers} personnes de retour.`, civ_ids: [civ.id] });
@@ -586,6 +881,10 @@ class CivEngine {
           const latestCiv = db.prepare('SELECT * FROM civilizations WHERE id=?').get(civ.id);
           const result = resolveTradeExpedition(latestCiv, proc.target_civ_id, aliveCivs, currentTick);
           events.push({ type: result.success ? 'commerce' : 'echec', description: `${civ.nom} : ${result.message}`, civ_ids: [civ.id] });
+          if (result.success) {
+            const targetName = aliveCivs.find(c => c.id === proc.target_civ_id)?.nom || 'inconnu';
+            addMemoryEntry(civ.id, 'diplomatie', `An ${year} — Route commerciale ouverte avec ${targetName}`);
+          }
         } else if (proc.resolve_type === 'emissaire') {
           const targetId = proc.target_civ_id;
           if (targetId) {
@@ -594,6 +893,7 @@ class CivEngine {
               .run(this.worldId, pairMin, pairMax, 'neutre');
             const targetName = aliveCivs.find(c => c.id === targetId)?.nom || 'inconnu';
             events.push({ type: 'diplomatie', description: `${civ.nom} établit un contact avec ${targetName}.`, civ_ids: [civ.id, targetId] });
+            addMemoryEntry(civ.id, 'diplomatie', `An ${year} — Émissaire envoyé à ${targetName}`);
           }
         }
       }
@@ -606,9 +906,26 @@ class CivEngine {
       for (const foundId of newlyFound) {
         const foundCiv = aliveCivs.find(c => c.id === foundId);
         if (foundCiv) {
-          checkFrontierContact(civ, foundCiv, this.worldId, currentTick);
+          const isNew = checkFrontierContact(civ, foundCiv, this.worldId, currentTick);
           events.push({ type: 'decouverte', description: `${civ.nom} découvre : "${foundCiv.nom}" !`, civ_ids: [civ.id, foundId] });
+          // AJOUTER : écrire dans last_consequences pour déclencher l'appel LLM
+          const civRow = db.prepare('SELECT last_consequences FROM civilizations WHERE id=?').get(civ.id);
+          const lc = parseJ(civRow?.last_consequences, []);
+          lc.push({ type: 'premier_contact', nom: foundCiv.nom, civ_id: foundId });
+          db.prepare('UPDATE civilizations SET last_consequences=? WHERE id=?')
+            .run(JSON.stringify(lc), civ.id);
+
+          // Mémoire
+          addMemoryEntry(civ.id, 'diplomatie', `An ${year} — Premier contact : ${foundCiv.nom}`);
           console.log(`  [FOG] ${civ.nom} découvre ${foundCiv.nom} !`);
+          if (isNew) {
+            // Relation diplomatique actuelle
+            const pairMin = Math.min(civ.id, foundCiv.id);
+            const pairMax = Math.max(civ.id, foundCiv.id);
+            const relRow = db.prepare('SELECT relation FROM diplomacy WHERE world_id=? AND civ_a_id=? AND civ_b_id=?').get(this.worldId, pairMin, pairMax);
+            const relation = relRow?.relation || 'neutre';
+            addMemoryEntry(civ.id, 'diplomatie', `An ${year} — Premier contact : ${foundCiv.nom} (${relation})`);
+          }
         }
       }
     }
@@ -633,15 +950,29 @@ class CivEngine {
       const hasNoHousing = normalizeBuildings(civ.buildings).filter(b => b.role === 'habitation' || b.category === 'habitation').length === 0;
       const isWinter     = season === 'hiver';
 
+      // Calcul du surplus alimentaire
+      const buildings = normalizeBuildings(civ.buildings);
+      let foodProduction = 0;
+      for (const struct of buildings) {
+        if (!(struct.workers > 0)) continue;
+        const { resource, amount } = calculateProduction(struct, biomesMap);
+        if (resource === 'nourriture' && amount > 0) foodProduction += amount;
+      }
+      const foodConsumption = Math.round(((civ.population || 0) + (civ.army_soldiers || 0) * 0.5) * 0.15);
+      const foodSurplus = foodProduction - foodConsumption;
+
       // Appel LLM si: idle, famine, sous attaque, pas de logement en automne/hiver, ou urgent
-      const needsDecision = isIdle || isFamine || isUnderAttack || (hasNoHousing && ['automne', 'hiver'].includes(season));
+      const lastConseqs = parseJ(civ.last_consequences, []);
+      const hasRelicDiscovered = lastConseqs.some(c => c.type === 'relique_decouverte' || c.type === 'relique_incomprise');
+      const hasFirstContact = lastConseqs.some(c => c.type === 'premier_contact');
+      const needsDecision = isIdle || isFamine || isUnderAttack || (hasNoHousing && ['automne', 'hiver'].includes(season)) || hasRelicDiscovered || hasFirstContact || foodSurplus < 0;
 
       if (!needsDecision) {
         console.log(`  [CIV] ${civ.nom}: en cours (${activeCount} processus) → pas d'appel LLM`);
         continue;
       }
 
-      const reason = isIdle ? 'idle' : isFamine ? 'FAMINE' : isUnderAttack ? 'SOUS_ATTAQUE' : 'URGENT_LOGEMENT';
+      const reason = isIdle ? 'idle' : isFamine ? 'FAMINE' : isUnderAttack ? 'SOUS_ATTAQUE' : foodSurplus < 0 ? 'DEFICIT' : hasRelicDiscovered ? 'RELIQUE' : hasFirstContact ? 'PREMIER_CONTACT' : 'URGENT_LOGEMENT';
       console.log(`  [CIV] ${civ.nom}: appel LLM (${reason})`);
 
       const moralCtx  = calculateMoral(civ, currentTick);
@@ -659,10 +990,13 @@ class CivEngine {
       };
       console.log(`  [QUESTION] ${(moralCtx.frustrations[0] || moralCtx.satisfactions[0] || 'Situation stable').slice(0, 80)}`);
 
-      const { strategie, effets_text, actions, raison, nouveauCap } = await civLLM.decide(context);
+      const { strategie, effets_text, actions, raison, nouveauCap, souhait } = await civLLM.decide(context);
       // V4 — Sauvegarder la mémoire stratégique
       if (nouveauCap) {
         db.prepare('UPDATE civilizations SET memoire=? WHERE id=?').run(JSON.stringify(nouveauCap), civ.id);
+      }
+      if (souhait) {
+        db.prepare('UPDATE civilizations SET current_wish=? WHERE id=?').run(souhait, civ.id);
       }
       thoughtLogs.push({ civId: civ.id, actions, raison: strategie });
 

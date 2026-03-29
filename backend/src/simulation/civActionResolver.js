@@ -1,5 +1,4 @@
-// Résolution des effets libres des civilisations (Option B)
-
+// Résolution des effets libres des civilisations (Option
 const { MAP_WIDTH, MAP_HEIGHT } = require('./mapGenerator');
 const { db } = require('../config/db');
 
@@ -8,6 +7,36 @@ const FOOD_BIOMES  = ['prairie', 'tropical_forest', 'temperate_forest', 'savanna
 const TECH_AGES    = ['primitif', 'neolithique', 'bronze', 'fer', 'classique', 'medieval', 'industriel', 'moderne', 'spatial'];
 
 const parseJ = (v, fb) => { try { return JSON.parse(v != null ? v : JSON.stringify(fb)); } catch { return fb; } };
+
+function addMemoryEntry(civId, domain, entry) {
+  const civ = db.prepare('SELECT civ_memory FROM civilizations WHERE id=?').get(civId);
+  const mem = parseJ(civ?.civ_memory, {});
+  if (!mem[domain]) mem[domain] = [];
+  // Éviter les doublons exacts
+  if (mem[domain].includes(entry)) return;
+  mem[domain].push(entry);
+  // FIFO : max 8 entrées par domaine
+  if (mem[domain].length > 8) mem[domain].shift();
+  db.prepare('UPDATE civilizations SET civ_memory=? WHERE id=?')
+    .run(JSON.stringify(mem), civId);
+}
+
+const ERA_ORDER = { primitif: 0, metal: 1, avance: 2 };
+
+function getCivEra(civ) {
+  const resources = parseJ(civ.resources, {});
+  const buildings = normalizeBuildings(civ.buildings);
+
+  // Niveau avancé : fer, or, charbon en stock
+  if ((resources.fer || 0) > 0 || (resources.or || 0) > 0 || (resources.charbon || 0) > 0)
+    return 'avance';
+
+  // Niveau métal : cuivre, étain, ou bâtiment de fonte
+  if ((resources.cuivre || 0) > 0 || (resources.etain || 0) > 0) return 'metal';
+  if (buildings.some(b => /forge|fonderie/i.test(b.name))) return 'metal';
+
+  return 'primitif';
+}
 
 // ─── 14 ressources (ajout peaux et os) ───────────────────────────────────────
 const RESOURCES = ['nourriture', 'bois', 'pierre', 'glaise', 'silex', 'sable', 'sel', 'cuivre', 'etain', 'fer', 'or', 'charbon', 'peaux', 'os'];
@@ -494,31 +523,61 @@ function discoverRelicsInTerritory(civId, worldId, tick, events) {
     WHERE r.world_id = ? AND t.civ_id = ? AND r.discovered_by IS NULL
   `).all(worldId, civId);
 
+  if (!relics.length) return;
+
+  const civ = db.prepare('SELECT resources, buildings FROM civilizations WHERE id=?').get(civId);
+  const civEraLevel = ERA_ORDER[getCivEra(civ)] ?? 0;
+  const year = Math.floor((tick - 1) / 12) + 1;
+
   for (const relic of relics) {
-    // Marquer comme découverte par cette civ
+    const relicEraLevel = ERA_ORDER[relic.era || 'primitif'] ?? 0;
+    const diff = relicEraLevel - civEraLevel;
+
+    // Deux crans au-dessus : ignorée
+    if (diff > 1) continue;
+
     const taken = (relic.type === 'objet' || relic.type === 'art') ? 1 : 0;
-    db.prepare('UPDATE relics SET discovered_by = ?, discovered_at_tick = ?, taken = ? WHERE id = ?')
+    db.prepare('UPDATE relics SET discovered_by=?, discovered_at_tick=?, taken=? WHERE id=?')
       .run(civId, tick, taken, relic.id);
-    // Ajouter à last_consequences de la civ
-    const civ = db.prepare('SELECT last_consequences FROM civilizations WHERE id = ?').get(civId);
-    const lastConsequences = parseJ(civ.last_consequences, []);
-    lastConsequences.push({
-      type: 'relique_decouverte',
-      nom: relic.name,
-      description: relic.description,
-      domain: relic.domain,
-      relic_id: relic.id
-    });
-    db.prepare('UPDATE civilizations SET last_consequences = ? WHERE id = ?')
+
+    const civRow = db.prepare('SELECT last_consequences FROM civilizations WHERE id=?').get(civId);
+    const lastConsequences = parseJ(civRow.last_consequences, []);
+
+    if (diff === 1) {
+      // Un cran au-dessus : incomprise, inspire
+      lastConsequences.push({
+        type: 'relique_incomprise',
+        nom: relic.name,
+        description: relic.description,
+        domain: relic.domain,
+        relic_id: relic.id,
+      });
+      // Mémoire
+      addMemoryEntry(civId, 'savoir', `An ${year} — Relique incomprise : ${relic.name}`);
+      events.push({
+        type: 'relique',
+        description: `${civId} découvre une relique mystérieuse : ${relic.name} (hors de portée).`,
+        civ_ids: [civId],
+      });
+    } else {
+      // Même niveau ou inférieur : découverte normale
+      lastConsequences.push({
+        type: 'relique_decouverte',
+        nom: relic.name,
+        description: relic.description,
+        domain: relic.domain,
+        relic_id: relic.id,
+      });
+      events.push({
+        type: 'relique',
+        description: `${civId} découvre la relique : ${relic.name}.`,
+        civ_ids: [civId],
+      });
+    }
+
+    db.prepare('UPDATE civilizations SET last_consequences=? WHERE id=?')
       .run(JSON.stringify(lastConsequences), civId);
-    // Ajouter un événement
-    events.push({
-      type: 'relique_decouverte',
-      description: `${relic.name} a été découverte par une civilisation !`,
-      civ_ids: [civId]
-    });
   }
-  return relics.length;
 }
 
 // ─── Résoudre un conflit ─────────────────────────────────────────────────────
@@ -628,7 +687,24 @@ function resolveEffect(effect, civ, allCivs, worldId, biomesMap, events, current
       const category = categorizeStructure(effect.name, '');
       const costs    = CREATION_COSTS[category] || {};
 
+      // Parser rôle et capacité (V3 : habitation avec capacité explicite)
+      const buildRole = (
+        effect.params['rôle'] || effect.params['role'] || effect.params['rôle:'] || ''
+      ).trim().toLowerCase();
+      const buildCap = parseInt(
+        effect.params['capacité'] || effect.params['capacite'] || effect.params['capacity'] || '0'
+      ) || 0;
+
       console.log(`[PARSE] CRÉER ${effect.name} | cat: ${category} | coûts: ${JSON.stringify(costs)} | personnes: ${cWorkers} | durée: ${ticks} ticks`);
+
+      // Vérification que des constructeurs sont affectés pour les bâtiments non passifs
+      const passiveCategories = ['habitation', 'defense', 'religieux', 'surveillance'];
+      const isPassive = passiveCategories.includes(category) || (buildRole && passiveCategories.includes(buildRole));
+      if (cWorkers === 0 && !isPassive) {
+        console.log(`[ECHEC] aucun worker affecté pour un bâtiment non passif (${category}${buildRole ? `, rôle:${buildRole}` : ''})`);
+        events.push({ type: 'echec', description: `${civ.nom} voulait construire "${effect.name}" mais n'a affecté aucun constructeur.`, civ_ids: [civ.id] });
+        break;
+      }
 
       // V3 : plus de prérequis tech — l'IA invente librement selon ses ressources
       // Chaque CRÉER = bâtiment indépendant sur sa propre case (pas de fusion de doublons)
@@ -681,13 +757,6 @@ function resolveEffect(effect, civ, allCivs, worldId, biomesMap, events, current
         }
       }
 
-      // Parser rôle et capacité (V3 : habitation avec capacité explicite)
-      const buildRole = (
-        effect.params['rôle'] || effect.params['role'] || effect.params['rôle:'] || ''
-      ).trim().toLowerCase();
-      const buildCap = parseInt(
-        effect.params['capacité'] || effect.params['capacite'] || effect.params['capacity'] || '0'
-      ) || 0;
 
       const activeConstructions = db.prepare(
         "SELECT COUNT(*) as n FROM civ_processes WHERE civ_id=? AND type='construction' AND state='en_cours'"
@@ -1260,6 +1329,10 @@ function buildCivContext(civ, allCivs, worldId, currentTick, biomesMap, season =
   // V3 — Logement
   const housed   = calculateHoused(buildings);
   const homeless = Math.max(0, (civ.population || 0) - housed);
+  const isWoodOutCtx = (parseJ(civ.resources, {}).bois || 0) <= 0;
+  const homeless_deaths = (season === 'hiver' && homeless > 0)
+    ? Math.ceil(homeless * (isWoodOutCtx ? 0.20 : 0.10))
+    : 0;
 
   // V3 — Utilisation du territoire (1 bâtiment par case)
   const territory_used = buildings.length;
@@ -1303,6 +1376,7 @@ const animal_groups = db.prepare('SELECT * FROM animal_groups WHERE world_id = ?
     materials_level: currentResources.bois || 0, mat_production: productionByRes.bois || 0,
     // Ressources
     resourceBilan, army_soldiers, army_equipment, army_power,
+    last_combat_tick: civ.last_combat_tick || 0,
     military_power: army_power,
     territory_count: civ.territory_count, territory_biomes, known_deposits,
     neighbors, active_processes, structures,
@@ -1311,15 +1385,17 @@ const animal_groups = db.prepare('SELECT * FROM animal_groups WHERE world_id = ?
     free_workforce,
     territory_capacity, pop_vs_capacity, is_overpopulated,
     // V3
-    housed, homeless, territory_used, territory_free,
+    housed, homeless, homeless_deaths, territory_used, territory_free,
     last_consequences, active_events,
+    civ_memory: civ.civ_memory || '{}',
+    _known_count: discoveredIds.size,
     reliques_decouvertes, animal_groups,
   };
 }
 
 module.exports = {
   resolveEffect, parseEffets, advanceProcesses, buildCivContext,
-  initTerritory, computeFoodRegen, expandTerritory, discoverAdjacentCivs, discoverRelicsInTerritory,
+  initTerritory, computeFoodRegen, expandTerritory, discoverAdjacentCivs, discoverRelicsInTerritory, addMemoryEntry,
   getTerritoryCapacity, BIOME_CARRYING_CAPACITY,
   normalizeBuildings, categorizeStructure, calculateProduction, updateResources,
   getEquipmentLabel, getMilitaryPower, calculateHoused, getSeasonMod,

@@ -71,10 +71,30 @@ Le LLM voit ce message au tick suivant → comprend la causalité relique/résul
 
 ---
 
+## Niveaux technologiques (era)
+
+Chaque relique a un champ `era` (`primitif` / `metal` / `avance`).
+Le niveau de la civ est déterminé par `getCivEra(civ)` dans `civActionResolver.js` :
+- `avance` : fer > 0 OU or > 0 OU charbon > 0 en stock
+- `metal` : cuivre > 0 OU étain > 0 OU bâtiment forge/fonderie
+- `primitif` : sinon
+
+Distribution du pool : 10 primitif / 5 metal / 5 avance.
+
+### Règles de découverte (`discoverRelicsInTerritory`)
+
+| diff (relique - civ) | Comportement |
+|---|---|
+| 0 ou négatif | Découverte normale — bonus mécanique possible |
+| +1 | Relique incomprise — message narratif inspirant + entrée mémoire `savoir`, pas de bonus |
+| +2 | Ignorée — reste `discovered_by = NULL` |
+
+Conséquence `relique_incomprise` gérée dans `getTexteConsequencesReliques` (Ollama + Gemini).
+
 ## Spawn
 
 - 10 reliques par world, tirées aléatoirement du pool
-- Rayon 15-30 cases autour des civs de départ
+- Rayon 5-12 cases autour des civs de départ
 - Évite les cases océaniques et déjà occupées
 - `discovered_by = NULL` jusqu'à exploration
 
@@ -91,15 +111,19 @@ Vérifie reliques non découvertes dans le nouveau territoire → injecte `reliq
 
 ---
 
-## Prompt LLM
+## Prompt LLM — placement
 
-Section éclaireurs — si civ possède reliques :
+Section reliques affichée **juste avant la question finale** (`Que décides-tu ?`) dans les deux LLM.
+Filtre : `used=0, taken=1` (reliques en possession non encore utilisées).
+Si aucune relique éligible : section omise.
+
+### Section éclaireurs — si civ possède reliques (ancien emplacement, remplacé)
 ```
 Reliques en votre possession :
 - [nom] : [description]
 ```
 
-Section last_consequences — découverte :
+Section last_consequences — types gérés :
 ```
 Tes éclaireurs ont découvert : [nom] — [description]
 ```
@@ -108,3 +132,5 @@ Section last_consequences — bonus utilisé :
 ```
 Grâce à [nom], [effet narratif concret].
 ```
+
+⚠️ `processRelicUsage` écrit `relique_utilisee` en DB dans Étape 1. Grâce au **merger** last_consequences (fix 2026-03-29), cet objet survit jusqu'à Étape 3 et est visible du LLM.

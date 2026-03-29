@@ -2,81 +2,146 @@
 
 > Dense, économise les tokens. Une fois intégré au code → vider ce fichier.
 
-## Session : 2026-03-28
+## Session : 2026-03-30
 
-### Accompli
-- Création infrastructure docs/ et skills/ (fichiers vides → remplis avec contenu réel)
-- **PATCH V4 prompt LLM** : civOllamaLLM.js entièrement réécrit
-- **Mémoire stratégique** : colonne `memoire` ajoutée (migrate.js)
-- **civEngine.js** : passe `memoire` + `frustration_ticks` au LLM, stocke `nouveauCap` après chaque tick
-- **Fix cap ressources** : `Math.min(9999, ...)` supprimé de `updateResources`
-- **Fix doublons** : système de fusion CRÉER supprimé — chaque bâtiment indépendant
-- **Fix homeless** (DeepSeek) : `homeless = Math.max(0, pop - housed)` — cercle vicieux corrigé
-- **Fix frontend** (DeepSeek) : bâtiments groupés `🌾 Ferme ×3` dans CivCard
-- **Task 1 ✅** (DeepSeek) : Task C supprimée de civOllamaLLM.js
-- **Task 2 ✅** (DeepSeek) : 2 civs de test dans civSeed.js
-  - "Les Conquérants du Feu Sacré" — expansion/guerre/spiritualité — monarchie — centre (128, 96)
-  - "Les Érudits d'Aristos" — savoir/culture/technologie — aristocratie — loin (50, 50)
+### Fait cette session
+- ✅ **Moral guerre** : frustration ×1.0/tick (était ×0.5), plafond supprimé (conforme CLAUDE.md)
+- ✅ **Événements de tension de valeur** : `checkValueTensionEvents` dans civEngine.js — seuil 15 (léger) et 30 (fort) pour 11 valeurs, cooldown 10 ticks, colonne `value_event_ticks` en DB
+- ✅ **Prompt urgences** : marqueurs 💀/🔥/⚠️ dans civGeminiLLM.js et civOllamaLLM.js
+- ✅ **Mémoire structurée** : 5 domaines (identite/savoir/diplomatie/pressions/histoire), max 8 entrées FIFO, moteur seul, chargement sélectif, format identique Gemini+Ollama. Colonne `civ_memory`, `addMemoryEntry` exportée, triggers complets.
+- ✅ **Validation des valeurs** : liste canonique des 11 valeurs. Validation dans `civSeed.js` et route POST `/api/civs`, remplacement des valeurs inconnues par `survie` avec warning.
+- ✅ **Satisfactions affichées dans le prompt** (Ollama + Gemini) — LLM voit ses réussites
+- ✅ **Fix condition commerce** : satisfaite si voisin connu OU route active (moralSystem.js)
+- ✅ **Suppression `connaissance` des tension events** — alias fantôme retiré (civEngine.js)
+- ✅ **Énergie divine + Souhaits — backend** : colonnes `energy` + `current_wish` DB, accumulation +3/tick/valeur satisfaite cap 200, `SOUHAIT:` parsé depuis LLM, route `POST /api/civs/:id/intervene` (9 actions)
+- ✅ **Frontend énergie divine** : CivCard.jsx — barre énergie, souhait affiché, 9 boutons interventions
+- ✅ **Audit last_consequences** : 4 bugs corrigés — `premier_contact` écrit en DB, `animal_decouvert` + `chasse` affichés dans LLM, `homeless_deaths` exposé depuis `buildCivContext`
+- ✅ **Fix LLM non déclenché** : `surplus < 0` ajouté dans `needsDecision`, `CRÉER` 0 workers bloqué, `last_consequences` mergé au lieu d'écrasé
+- ✅ **Fix armée > pop** : `newSoldiers = min(army, floor(pop * 0.6))` dans civEngine.js Étape 1
+- ✅ **Prescription guerre supprimée** : phrase moraliste retirée de moralSystem.js + ligne ARMÉE neutre dans civGeminiLLM.js
+- ✅ **Section ARMÉE ajoutée dans civOllamaLLM.js** + `last_combat_tick` exposé dans `buildCivContext`
+- ✅ **Reliques visibles juste avant la décision** : `getTexteReliquesPossedees`, filtre `used=0, taken=1`, section omise si vide
+- ✅ **`peaux` et `os` affichés même à 0** dans Ollama + Gemini
+- ✅ **Reliques par niveau techno** : `getCivEra`, `ERA_ORDER`, `discoverRelicsInTerritory` refaite (diff>1→ignorée, diff=1→incomprise+mémoire, diff=0→normale)
+- ✅ **Fix dépendance circulaire** : `addMemoryEntry` déplacée vers `civActionResolver.js`
+- ✅ **Spawn civs rapproché** : capitales à (115,80) et (135,80)
+- ✅ **Érudits** : valeurs corrigées → `savoir`, `art`, `commerce` (suppression culture/technologie fantômes)
 
-- **Fix civEngine chargement monde** (DeepSeek) : `ORDER BY id DESC LIMIT 1` — moteur chargeait toujours le 1er monde au lieu du dernier
-- **Fix route /api/civs** (DeepSeek) : même correction dans `getCivWorld()` de `civilizations.js` ligne 15
-- **Fix prompt LLM sans-abri** (DeepSeek) : `getTextePopulation()` dans `civOllamaLLM.js` affiche maintenant morts de froid + % sans-abri en urgence avant tout autre texte
-- **Fix spirale de la mort** (DeepSeek) : `civSeed.js` — 3 bâtiments de départ + ressources augmentées
-  - `nourriture: 400` (était 200), `bois: 150` (était 100), `pierre: 80` (était 50)
-  - Bâtiments initiaux : Champs collectifs (agri, 15 workers), Huttes du peuple (habitat, cap 60), Camp de bûcherons (bois, 10 workers)
-  - Justification : la civ existait avant le tick 1, ce n'est pas une aide artificielle
-- **Fix constructions multiples** (DeepSeek) : `civActionResolver.js` — max 2 constructions simultanées (rejet si ≥ 2 en cours)
-- **Fix workers habitation** (DeepSeek) : `civActionResolver.js` — constructeurs libérés après construction de rôle habitation/defense/religieux/surveillance (plus coincés dans le bâtiment)
-- **Fix prompt structNote** (DeepSeek) : `civOllamaLLM.js` — structures affichées avec rôle+capacité+workers + avertissement chantiers actifs
+### Prochaines priorités (specs prêtes, à implémenter)
 
-### Procédure reset validée
-1. `POST /api/civs/reset`
-2. `node backend/scripts/civSeed.js`
-3. Redémarrer backend → `✓ Monde Civilisations chargé (id=N)`
+#### 🔴 Spec 1 — Attaques animales non déclenchées (civEngine.js, 2 lignes)
+Le code d'attaque dans `updateAnimalGroups` existe et écrit bien `{ type: 'attaque_animaux' }` dans `last_consequences`. Mais `needsDecision` ne le vérifie pas → LLM jamais déclenché.
 
-- **Fix cercle vicieux pierre** (DeepSeek) : `civActionResolver.js` — `extraction: { bois: 20 }` (pierre supprimée des coûts) — une civ sans pierre pouvait JAMAIS produire de pierre
-- **Fix LLM aveugle ressources à 0** (DeepSeek) : `civOllamaLLM.js` — `getTexteRessources()` affiche désormais bois/pierre/glaise même à 0 ("pierre : aucun stock") — le LLM ne voyait pas les manques critiques
-- **Système Reliques complet** (DeepSeek) :
-  - DB : table `relics` (id, world_id, name, description, type, domain, x, y, discovered_by, discovered_at_tick, taken, used, bonus_remaining)
-  - Pool : `backend/src/data/relicsPool.js` — 20 reliques, 3 types (objet/art/construction), 4 domaines (outil/arme/art/ruines)
-  - Spawn : 10 reliques à la seed, rayon 15-30 cases autour des civs, évite océan
-  - Découverte : `discoverRelicsInTerritory()` dans `civActionResolver.js` lors des explorations
-  - Prompt : `getTexteReliques()` dans section éclaireurs + attribution bonus dans last_consequences
-  - Bonus : `processRelicUsage()` + `applyRelicBonuses()` dans `civEngine.js` — détection par matching action/domaine
-  - Frontend : section Reliques dans CivCard (icônes 👜✨), marqueur 🏺 sur la carte
-  - Socket : champ `relics` dans broadcast tick
+**Fix** dans `civEngine.js`, section needsDecision (~ligne 965) :
+```js
+// Ajouter :
+const hasAnimalAttack = lastConseqs.some(c => c.type === 'attaque_animaux');
+// Modifier needsDecision :
+const needsDecision = isIdle || isFamine || isUnderAttack || hasAnimalAttack || (hasNoHousing && ['automne', 'hiver'].includes(season)) || hasRelicDiscovered || hasFirstContact || foodSurplus < 0;
+// Modifier reason :
+const reason = isIdle ? 'idle' : isFamine ? 'FAMINE' : isUnderAttack ? 'SOUS_ATTAQUE' : hasAnimalAttack ? 'ATTAQUE_ANIMAUX' : foodSurplus < 0 ? 'DEFICIT' : hasRelicDiscovered ? 'RELIQUE' : hasFirstContact ? 'PREMIER_CONTACT' : 'URGENT_LOGEMENT';
+```
 
-### Prochaines priorités
-1. ✅ ~~LLM ne comprend pas l'urgence logement~~ — corrigé
-2. ✅ ~~Constructions en doublons~~ — corrigé (limite 2 simultanées + structNote enrichi)
-3. ✅ ~~Cercle vicieux pierre~~ — corrigé (coût extraction sans pierre)
-4. ✅ ~~LLM aveugle aux ressources à 0~~ — corrigé (affichage systématique)
-5. ✅ ~~Système Reliques~~ — implémenté complet (DB + pool + spawn + découverte + prompt + bonus + frontend)
-6. ✅ ~~Fix spawn reliques~~ — rayon 5-12 cases (déjà en place) + discoverRelicsInTerritory à l'auto-expansion (déjà en place) + **ajout** : appelé aussi lors des colonisations (`civActionResolver.js` ligne 728)
-7. ✅ ~~Prompt intro gouvernement~~ — `getRoleIntro(ctx)` selon gouvernement, phrase ancrage sans "jeu"
-8. ✅ ~~Silex/glaise question dynamique~~ — `buildDynamicQuestion(ctx)`, seuil 80
-9. ✅ ~~Système Animaux~~ (DeepSeek) :
-   - DB : table `animal_groups` + ressources `peaux` et `os`
-   - Pool : `backend/src/data/animalsPool.js` — 15 espèces (agressif/peureux/oiseau)
-   - Spawn : 20 groupes, rayon 8-20 cases, respawn si size=0
-   - Mouvement : `updateAnimalGroups()` — fuite peureux, migration saisonnière (±5 cases/tick), agressifs aléatoire
-   - Attaques auto : agressifs ≤2 cases → food/pop damage, réduit si armée
-   - Verbe CHASSER : gains nourriture/peaux/os, morts si sans armes + dangerosite≥3
-   - Prompt : `getTexteAnimaux()` section éclaireurs + questions peaux/os dans buildDynamicQuestion
-   - Frontend : 🐺🦌🦅 sur CivMap, broadcast socket animal_groups
-10. ✅ ~~Fix timeout LLM~~ — timeout 30s→60s, num_predict 800→1200, getTexteAnimaux réduit à 3 lignes max
-11. ✅ ~~Chargement conditionnel prompt~~ — animaux/reliques/voisins/minéraux/frustrations/processus uniquement si pertinents → prompt ~1200 tokens An 1
-12. 🔴 **Reset + seed** — tester animaux + reliques ensemble
-11. 🟡 Moral guerre : frustrations de valeurs noyées dans moral global élevé
-12. 🟡 `chat-server.js` à la racine — usage inconnu
+#### 🔴 Spec 2 — Verb ATTAQUER manquant (frustration guerre perpétuelle)
+`DIPLOMATIE guerre →` fonctionne mécaniquement mais le LLM ne le voit pas comme option directe, et les résultats de combat ne sont jamais écrits dans `last_consequences` → le LLM ne sait jamais qu'il a gagné/perdu.
 
-### Notes
-- Tâche C (valeurs → suggestions bâtiments) définitivement annulée
+**Fichiers touchés** : `civOllamaLLM.js`, `civGeminiLLM.js`, `civActionResolver.js`
+
+**A. civOllamaLLM.js + civGeminiLLM.js** — 3 points chacun :
+1. Ajouter `'ATTAQUER'` dans `VERBES_VALIDES`
+2. Ajouter dans la liste des verbes du prompt : `- ATTAQUER [nom_civ] (déclarer la guerre et mener un assaut immédiat)`
+3. Ajouter dans `parseAction` :
+   ```js
+   case 'ATTAQUER': {
+     const tgt = p.trim();
+     return tgt ? `ATTAQUER ${tgt}` : 'RIEN';
+   }
+   ```
+4. Dans la section conséquences, ajouter le cas `combat` :
+   ```js
+   } else if (c.type === 'combat') {
+     lines.push(c.description);
+   }
+   ```
+
+**B. civActionResolver.js** — 2 points :
+1. Dans `parseEffets`, ajouter avant le bloc `ENVOYER_MARCHANDS` :
+   ```js
+   } else if (/^ATTAQUER\b/i.test(main)) {
+     const m = main.match(/^ATTAQUER\s+(.+)$/i);
+     if (m) effects.push({ verb: 'ATTAQUER', target_name: m[1].trim(), params });
+   ```
+2. Dans `resolveEffect`, ajouter le `case 'ATTAQUER'` (voir spec complète ci-dessous)
+
+**case 'ATTAQUER' complet** (à placer avant `case 'ESPIONNER'`) :
+```js
+case 'ATTAQUER': {
+  const targetName = (effect.target_name || '').trim();
+  const targetCiv = allCivs.find(c =>
+    c.nom.toLowerCase() === targetName.toLowerCase() ||
+    c.nom.toLowerCase().includes(targetName.toLowerCase())
+  );
+  if (!targetCiv || targetCiv.id === civ.id) {
+    events.push({ type: 'echec', description: `${civ.nom} : cible "${targetName}" introuvable.`, civ_ids: [civ.id] });
+    break;
+  }
+  const result = resolveWar(civ, targetCiv, worldId, events);
+  // Attaquant
+  updates.military_power = Math.max(5, (civ.military_power || 0) - result.atkMilitaryLoss);
+  updates.moral          = clamp((civ.moral || 70) + result.atkMoralChange, 0, 100);
+  updates.army_soldiers  = Math.max(0, (civ.army_soldiers || 0) - Math.floor(result.atkMilitaryLoss * 0.5));
+  updates.last_combat_tick = currentTick;
+  // Défenseur
+  db.prepare('UPDATE civilizations SET military_power=MAX(5,military_power-?), moral=MAX(0,MIN(100,moral+?)), army_soldiers=MAX(0,army_soldiers-?), last_combat_tick=? WHERE id=?')
+    .run(result.defMilitaryLoss, result.defMoralChange, Math.floor(result.defMilitaryLoss * 0.5), currentTick, targetCiv.id);
+  // Diplomatie
+  const pairMin = Math.min(civ.id, targetCiv.id);
+  const pairMax = Math.max(civ.id, targetCiv.id);
+  db.prepare('INSERT OR REPLACE INTO diplomacy (world_id, civ_a_id, civ_b_id, relation) VALUES (?,?,?,?)')
+    .run(worldId, pairMin, pairMax, 'guerre');
+  // last_consequences attaquant
+  const atkConseqs = parseJ(civ.last_consequences, []);
+  atkConseqs.push({
+    type: 'combat', victoire: result.atkWins, adversaire: targetCiv.nom,
+    pertes: Math.floor(result.atkMilitaryLoss * 0.5),
+    description: result.atkWins
+      ? `Victoire contre ${targetCiv.nom} ! Vos soldats ont brisé leurs lignes et pris des territoires.`
+      : `Défaite contre ${targetCiv.nom}. Vos troupes ont été repoussées avec de lourdes pertes.`,
+  });
+  db.prepare('UPDATE civilizations SET last_consequences=? WHERE id=?').run(JSON.stringify(atkConseqs), civ.id);
+  // last_consequences défenseur
+  const defConseqs = parseJ(targetCiv.last_consequences, []);
+  defConseqs.push({
+    type: 'combat', victoire: !result.atkWins, adversaire: civ.nom,
+    pertes: Math.floor(result.defMilitaryLoss * 0.5),
+    description: result.atkWins
+      ? `${civ.nom} a envahi votre territoire. Des terres ont été perdues.`
+      : `Vous avez repoussé l'attaque de ${civ.nom} !`,
+  });
+  db.prepare('UPDATE civilizations SET last_consequences=? WHERE id=?').run(JSON.stringify(defConseqs), targetCiv.id);
+  // Mémoire
+  addMemoryEntry(civ.id, 'diplomatie', `An ${Math.floor(currentTick/12)+1} — ${result.atkWins ? 'Victoire' : 'Défaite'} contre ${targetCiv.nom}.`);
+  addMemoryEntry(targetCiv.id, 'diplomatie', `An ${Math.floor(currentTick/12)+1} — ${result.atkWins ? 'Attaque subie' : 'Résistance'} face à ${civ.nom}.`);
+  addMemoryEntry(civ.id, 'histoire', `An ${Math.floor(currentTick/12)+1} — Bataille contre ${targetCiv.nom}.`);
+  break;
+}
+```
+
+### Autres bugs ouverts
+- ⚠️ **Vérifier** `premier_contact` écrit pour `foundCiv` aussi (pas seulement `civ`)
+- 🟡 `chat-server.js` à la racine — usage inconnu, à investiguer
+- 🔴 **Moral guerre** — bâtiments militaires compensent frustration même sans soldats réels (moralSystem.js)
+
+### Backlog
+- 🗂️ Protocole "Bring your own agent"
+- 🏺 Reliques pondérées selon niveau techno
+- 🏰 Remparts sans logique spatiale
+- 🐺 Diversité réponses animaux agressifs
+- 🎨 Sprites bâtiments
+- ⏳ Durée de vie bâtiments
+- 🧠 Simulation des habitants (artisans / soldats / paysans)
+
+### Notes permanentes
 - Route civs : `/api/civs` (pas `/api/civilizations`)
-
-### Backlog (idées à spécifier plus tard)
-- 🗂️ **Mémoire structurée par domaine** — fichiers par civ (identite/savoir/diplomatie/tensions) + chargement sélectif selon contexte du tick. Protocole "Bring your own agent" séparé.
-- 🎨 **Images bâtiments** — sprites ou icônes pour chaque structure sur la carte/CivCard
-- 💭 **Souhaits des civs** — voix du peuple distincte du dirigeant, à spécifier
-- ✅ ~~Animaux~~ — implémenté
-- ⏳ **Durée de vie bâtiments + variété bois** — dégradation, maintenance, matériaux (à spécifier)
+- Procédure reset : `POST /api/civs/reset` → `node backend/scripts/civSeed.js` → redémarrer backend
+- 14 ressources : `nourriture bois pierre glaise silex sable sel cuivre etain fer or charbon peaux os`

@@ -192,6 +192,7 @@ export default function CivMode({ onBack }) {
               civ={selectedCiv}
               allCivs={civs}
               thoughtLogs={thoughtLogs}
+              onRefresh={refreshCivs}
               onClose={() => { setRightPanel('journal'); setSelectedCiv(null); }}
             />
           ) : (

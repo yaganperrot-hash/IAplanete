@@ -3,27 +3,31 @@ const { db } = require('../src/config/db');
 const { migrate } = require('./migrate');
 const { generateMap } = require('../src/simulation/mapGenerator');
 const { initTerritory } = require('../src/simulation/civActionResolver');
+const { addMemoryEntry } = require('../src/simulation/civActionResolver');
 const relicsPool = require('../src/data/relicsPool');
 const animalsPool = require('../src/data/animalsPool');
+
+const VALID_VALUES = ['expansion', 'commerce', 'guerre', 'spiritualite', 'isolationnisme',
+  'liberte', 'ordre', 'survie', 'exploration', 'art', 'savoir'];
 
 const DEMO_CIVS = [
   {
     nom: "Les Conquérants du Feu Sacré",
     creator_name: 'Demo',
-    valeurs: ['expansion', 'guerre', 'spiritualité'],
+    valeurs: ['expansion', 'guerre', 'spiritualite'],
     gouvernement: 'monarchie',
     description: 'Un peuple conquérant guidé par une foi ardente, cherchant à étendre son territoire par la force et la conviction.',
     color: '#ef4444',
-    capital_x: 128, capital_y: 96,
+    capital_x: 115, capital_y: 80,
   },
   {
     nom: "Les Érudits d'Aristos",
     creator_name: 'Demo',
-    valeurs: ['savoir', 'culture', 'technologie'],
+    valeurs: ['savoir', 'art', 'commerce'],
     gouvernement: 'aristocratie',
     description: 'Une société d\'érudits et d\'inventeurs où le savoir et la culture priment, gouvernée par une aristocratie de sages.',
     color: '#3b82f6',
-    capital_x: 50, capital_y: 50,
+    capital_x: 135, capital_y: 80,
   },
 ];
 
@@ -58,11 +62,17 @@ function seed() {
   // Créer les civilisations de démo
   const colors = DEMO_CIVS.map(c => c.color);
   for (const civData of DEMO_CIVS) {
+    // Validation des valeurs
+    const validatedValeurs = civData.valeurs.map(v => {
+      if (VALID_VALUES.includes(v)) return v;
+      console.warn(`Valeur inconnue "${v}" pour la civilisation "${civData.nom}", remplacée par "survie".`);
+      return 'survie';
+    });
     const civId = db.prepare(
       'INSERT INTO civilizations (world_id, nom, creator_name, valeurs, gouvernement, description, color, capital_x, capital_y, resources) VALUES (?,?,?,?,?,?,?,?,?,?)'
     ).run(
       worldId, civData.nom, civData.creator_name,
-      JSON.stringify(civData.valeurs), civData.gouvernement,
+      JSON.stringify(validatedValeurs), civData.gouvernement,
       civData.description, civData.color,
       civData.capital_x, civData.capital_y,
       JSON.stringify(INITIAL_RESOURCES)
@@ -72,6 +82,10 @@ function seed() {
     const civRow = { id: civId, capital_x: civData.capital_x, capital_y: civData.capital_y };
     const territoryCount = initTerritory(civRow, biomesMap, worldId);
     db.prepare('UPDATE civilizations SET territory_count=? WHERE id=?').run(territoryCount, civId);
+
+    // Mémoire initiale — identité fondatrice
+    const valeurs = validatedValeurs.join(', ');
+    addMemoryEntry(civId, 'identite', `An 1 — Fondée comme ${civData.gouvernement}, valeurs: ${valeurs}`);
 
     // Bâtiments de départ — la civ existait déjà avant le début de la simulation
     const startBuildings = [
@@ -123,9 +137,9 @@ function seed() {
       // Choisir une relique aléatoire dans le pool
       const relicData = relicsPool[Math.floor(Math.random() * relicsPool.length)];
       db.prepare(
-        `INSERT INTO relics (world_id, name, description, type, domain, x, y, discovered_by, discovered_at_tick, taken, used)
-         VALUES (?, ?, ?, ?, ?, ?, ?, NULL, NULL, 0, 0)`
-      ).run(worldId, relicData.name, relicData.description, relicData.type, relicData.domain, x, y);
+        `INSERT INTO relics (world_id, name, description, type, domain, era, x, y, discovered_by, discovered_at_tick, taken, used)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, NULL, NULL, 0, 0)`
+      ).run(worldId, relicData.name, relicData.description, relicData.type, relicData.domain, relicData.era || 'primitif', x, y);
       
       occupiedCells.add(key);
       placed++;
