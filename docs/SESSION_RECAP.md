@@ -26,8 +26,9 @@
 - ✅ **Fix dépendance circulaire** : `addMemoryEntry` déplacée vers `civActionResolver.js`
 - ✅ **Spawn civs rapproché** : capitales à (115,80) et (135,80)
 - ✅ **Érudits** : valeurs corrigées → `savoir`, `art`, `commerce` (suppression culture/technologie fantômes)
+- ✅ **`premier_contact` symétrique** : `last_consequences` + `addMemoryEntry` pour `foundCiv` aussi (civEngine.js ~ligne 916)
 
-### Prochaines priorités (specs prêtes, à implémenter)
+### Prochaines priorités (specs rédigées, PRÊTES À CODER)
 
 #### 🔴 Spec 1 — Attaques animales non déclenchées (civEngine.js, 2 lignes)
 Le code d'attaque dans `updateAnimalGroups` existe et écrit bien `{ type: 'attaque_animaux' }` dans `last_consequences`. Mais `needsDecision` ne le vérifie pas → LLM jamais déclenché.
@@ -128,9 +129,7 @@ case 'ATTAQUER': {
 ```
 
 ### Autres bugs ouverts
-- ⚠️ **Vérifier** `premier_contact` écrit pour `foundCiv` aussi (pas seulement `civ`)
 - 🟡 `chat-server.js` à la racine — usage inconnu, à investiguer
-- 🔴 **Moral guerre** — bâtiments militaires compensent frustration même sans soldats réels (moralSystem.js)
 
 ### Backlog
 - 🗂️ Protocole "Bring your own agent"

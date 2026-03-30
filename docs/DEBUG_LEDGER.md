@@ -59,9 +59,9 @@
 ### [2026-03-29] `premier_contact` jamais écrit dans last_consequences
 - **Symptôme** : `hasFirstContact` dans `needsDecision` reste toujours `false` — le LLM n'est jamais déclenché lors d'un premier contact.
 - **Cause** : `discoverAdjacentCivs` (civEngine.js) pousse dans `events[]` (Socket.io) mais n'écrit jamais `{ type: 'premier_contact' }` dans `last_consequences`. `hasFirstContact` cherche ce type en vain.
-- **Fix** : Dans civEngine.js Étape 2b, après `events.push({ type: 'decouverte' })`, écriture de `premier_contact` dans `last_consequences` de la civ découvrante + `addMemoryEntry` diplomatie.
+- **Fix** : Dans civEngine.js Étape 2b, écriture `premier_contact` + `addMemoryEntry` pour `civ` ET `foundCiv`. Contact symétrique.
 - **Fichiers** : `civEngine.js`
-- **Statut** : ✅ Résolu (⚠️ à vérifier : foundCiv également traité ?)
+- **Statut** : ✅ Résolu
 
 ### [2026-03-29] `animal_decouvert` écrit mais jamais lu par le LLM
 - **Symptôme** : Les civs découvrent des groupes animaux mais le LLM n'en est jamais informé.

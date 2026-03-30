@@ -915,8 +915,16 @@ class CivEngine {
           db.prepare('UPDATE civilizations SET last_consequences=? WHERE id=?')
             .run(JSON.stringify(lc), civ.id);
 
+          // Écrire premier_contact aussi pour foundCiv
+          const foundCivRow = db.prepare('SELECT last_consequences FROM civilizations WHERE id=?').get(foundId);
+          const lcFound = parseJ(foundCivRow?.last_consequences, []);
+          lcFound.push({ type: 'premier_contact', nom: civ.nom, civ_id: civ.id });
+          db.prepare('UPDATE civilizations SET last_consequences=? WHERE id=?')
+            .run(JSON.stringify(lcFound), foundId);
+
           // Mémoire
           addMemoryEntry(civ.id, 'diplomatie', `An ${year} — Premier contact : ${foundCiv.nom}`);
+          addMemoryEntry(foundId, 'diplomatie', `An ${year} — Premier contact : ${civ.nom}`);
           console.log(`  [FOG] ${civ.nom} découvre ${foundCiv.nom} !`);
           if (isNew) {
             // Relation diplomatique actuelle
