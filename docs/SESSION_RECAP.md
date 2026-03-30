@@ -28,7 +28,7 @@
 - ✅ **Érudits** : valeurs corrigées → `savoir`, `art`, `commerce` (suppression culture/technologie fantômes)
 - ✅ **`premier_contact` symétrique** : `last_consequences` + `addMemoryEntry` pour `foundCiv` aussi (civEngine.js ~ligne 916)
 
-### Prochaines priorités (specs rédigées, PRÊTES À CODER)
+### Toutes les tâches pour Roo Code (PRÊTES À CODER — dans cet ordre)
 
 #### 🔴 Spec 1 — Attaques animales non déclenchées (civEngine.js, 2 lignes)
 Le code d'attaque dans `updateAnimalGroups` existe et écrit bien `{ type: 'attaque_animaux' }` dans `last_consequences`. Mais `needsDecision` ne le vérifie pas → LLM jamais déclenché.
@@ -127,6 +127,57 @@ case 'ATTAQUER': {
   break;
 }
 ```
+
+#### 🔴 Spec 3 — Moral guerre sans soldats réels (moralSystem.js)
+
+**Fichier** : `backend/src/simulation/moralSystem.js`
+
+Remplacer le bloc `guerre` (~ligne 33) :
+```js
+// AVANT
+guerre: {
+  satisfied:    (c, tick) => (c.last_combat_tick || 0) > 0 && tick - (c.last_combat_tick || 0) < 20,
+  frustrated:   (c, tick) => (c.last_combat_tick || 0) === 0 && (c._known_count || 0) > 0,
+  satisfiedText:  'Ton armée a prouvé sa valeur au combat',
+  moralBonus: +8, moralMalus: -10,
+},
+// APRÈS
+guerre: {
+  satisfied:    (c, tick) => (c.army_soldiers || 0) > 0 && (c.last_combat_tick || 0) > 0 && tick - (c.last_combat_tick || 0) < 20,
+  frustrated:   (c, tick) => (c._known_count || 0) > 0 && (c.army_soldiers || 0) === 0,
+  satisfiedText:  'Ton armée a prouvé sa valeur au combat',
+  frustratedText: "Ton peuple belliqueux n'a pas d'armée pour défendre ses ambitions",
+  moralBonus: +8, moralMalus: -10,
+},
+```
+
+---
+
+#### 🧪 Specs 4→12 — Expérience 10 variants de prompts
+
+> Spec technique complète dans `docs/PROMPT_VARIANTS_SPEC.md`. Lire ce fichier en entier avant de commencer.
+
+**Ordre d'exécution strict :**
+
+**4.** `backend/scripts/migrate.js` — ajouter colonne `prompt_variant` + table `civ_snapshots` (section 2 du spec)
+
+**5.** Créer `backend/src/llm/civPromptVariants.js` — code complet en section 5 du spec
+
+**6.** `backend/src/llm/civOllamaLLM.js` — renommer buildPrompt→buildPromptV0, import civPromptVariants, nouvelle buildPrompt + constante FORMAT_OLLAMA (section 4)
+
+**7.** `backend/src/llm/civGeminiLLM.js` — idem pour Gemini (section 4)
+
+**8.** `backend/src/simulation/civActionResolver.js` — ajouter `prompt_variant: civ.prompt_variant || 'V0'` dans le retour de buildCivContext
+
+**9.** `backend/src/simulation/civEngine.js` — ajouter le bloc snapshot après la boucle LLM (section 3 du spec)
+
+**10.** `backend/scripts/civSeed.js` — remplacer DEMO_CIVS par les 10 civs + ajouter prompt_variant dans INSERT (section 6)
+
+**11.** `.env` — ajouter `TICK_INTERVAL_MS=60000` et `SNAPSHOT_INTERVAL_TICKS=20`
+
+**12.** Créer `backend/scripts/analyzeVariants.js` (section 7 du spec)
+
+---
 
 ### Autres bugs ouverts
 - 🟡 `chat-server.js` à la racine — usage inconnu, à investiguer
