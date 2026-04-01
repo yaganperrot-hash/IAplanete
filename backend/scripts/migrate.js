@@ -276,6 +276,8 @@ const ALTER_MIGRATIONS = [
   "ALTER TABLE civilizations ADD COLUMN value_event_ticks TEXT DEFAULT '{}'",
   "ALTER TABLE civilizations ADD COLUMN energy REAL DEFAULT 0",
   "ALTER TABLE civilizations ADD COLUMN current_wish TEXT DEFAULT NULL",
+  // Prompt variants experiment
+  "ALTER TABLE civilizations ADD COLUMN prompt_variant TEXT DEFAULT 'V0'",
 ];
 
 function migrate() {
@@ -288,6 +290,30 @@ function migrate() {
     } catch (e) {
       // Colonne déjà existante → ignorer
     }
+  }
+
+  // Table snapshots
+  try {
+    db.prepare(`CREATE TABLE IF NOT EXISTS civ_snapshots (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      world_id INTEGER NOT NULL,
+      civ_id INTEGER NOT NULL,
+      prompt_variant TEXT DEFAULT 'V0',
+      tick INTEGER NOT NULL,
+      population INTEGER DEFAULT 0,
+      moral INTEGER DEFAULT 0,
+      food_stock INTEGER DEFAULT 0,
+      army_soldiers INTEGER DEFAULT 0,
+      territory_count INTEGER DEFAULT 0,
+      buildings_count INTEGER DEFAULT 0,
+      nb_wars INTEGER DEFAULT 0,
+      nb_alliances INTEGER DEFAULT 0,
+      frustration_max INTEGER DEFAULT 0,
+      captured_at TEXT DEFAULT (datetime('now'))
+    )`).run();
+    console.log('✓ TABLE civ_snapshots');
+  } catch (e) {
+    // Table déjà existante → ignorer
   }
 
   console.log('✓ Migrations SQLite appliquées');

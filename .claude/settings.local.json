@@ -16,7 +16,10 @@
       "Bash(powershell.exe:*)",
       "Bash(git add:*)",
       "Bash(git commit:*)",
-      "Bash(git push:*)"
+      "Bash(git push:*)",
+      "Bash(cat:*)",
+      "Bash(ls:*)",
+      "Bash(start:*)"
     ]
   }
 }

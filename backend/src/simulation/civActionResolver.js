@@ -430,6 +430,10 @@ function parseEffets(text) {
       const m = main.match(/^LOI\s+(.+)$/i);
       if (m) effects.push({ verb: 'LOI', content: m[1].trim(), params });
 
+    } else if (/^ATTAQUER\b/i.test(main)) {
+      const m = main.match(/^ATTAQUER\s+(.+)$/i);
+      if (m) effects.push({ verb: 'ATTAQUER', target_name: m[1].trim(), params });
+
     } else if (/^ESPIONNER\b/i.test(main)) {
       const m = main.match(/^ESPIONNER\s+(.+)$/i);
       if (m) effects.push({ verb: 'ESPIONNER', target_name: m[1].trim(), params });
@@ -908,6 +912,57 @@ function resolveEffect(effect, civ, allCivs, worldId, biomesMap, events, current
       break;
     }
 
+    case 'ATTAQUER': {
+      const targetName = (effect.target_name || '').trim();
+      const targetCiv = allCivs.find(c =>
+        c.nom.toLowerCase() === targetName.toLowerCase() ||
+        c.nom.toLowerCase().includes(targetName.toLowerCase())
+      );
+      if (!targetCiv || targetCiv.id === civ.id) {
+        events.push({ type: 'echec', description: `${civ.nom} : cible "${targetName}" introuvable.`, civ_ids: [civ.id] });
+        break;
+      }
+      const result = resolveWar(civ, targetCiv, worldId, events);
+      // Attaquant
+      updates.military_power = Math.max(5, (civ.military_power || 0) - result.atkMilitaryLoss);
+      updates.moral          = clamp((civ.moral || 70) + result.atkMoralChange, 0, 100);
+      updates.army_soldiers  = Math.max(0, (civ.army_soldiers || 0) - Math.floor(result.atkMilitaryLoss * 0.5));
+      updates.last_combat_tick = currentTick;
+      // Défenseur
+      db.prepare('UPDATE civilizations SET military_power=MAX(5,military_power-?), moral=MAX(0,MIN(100,moral+?)), army_soldiers=MAX(0,army_soldiers-?), last_combat_tick=? WHERE id=?')
+        .run(result.defMilitaryLoss, result.defMoralChange, Math.floor(result.defMilitaryLoss * 0.5), currentTick, targetCiv.id);
+      // Diplomatie
+      const pairMin = Math.min(civ.id, targetCiv.id);
+      const pairMax = Math.max(civ.id, targetCiv.id);
+      db.prepare('INSERT OR REPLACE INTO diplomacy (world_id, civ_a_id, civ_b_id, relation) VALUES (?,?,?,?)')
+        .run(worldId, pairMin, pairMax, 'guerre');
+      // last_consequences attaquant
+      const atkConseqs = parseJ(civ.last_consequences, []);
+      atkConseqs.push({
+        type: 'combat', victoire: result.atkWins, adversaire: targetCiv.nom,
+        pertes: Math.floor(result.atkMilitaryLoss * 0.5),
+        description: result.atkWins
+          ? `Victoire contre ${targetCiv.nom} ! Vos soldats ont brisé leurs lignes et pris des territoires.`
+          : `Défaite contre ${targetCiv.nom}. Vos troupes ont été repoussées avec de lourdes pertes.`,
+      });
+      db.prepare('UPDATE civilizations SET last_consequences=? WHERE id=?').run(JSON.stringify(atkConseqs), civ.id);
+      // last_consequences défenseur
+      const defConseqs = parseJ(targetCiv.last_consequences, []);
+      defConseqs.push({
+        type: 'combat', victoire: !result.atkWins, adversaire: civ.nom,
+        pertes: Math.floor(result.defMilitaryLoss * 0.5),
+        description: result.atkWins
+          ? `${civ.nom} a envahi votre territoire. Des terres ont été perdues.`
+          : `Vous avez repoussé l'attaque de ${civ.nom} !`,
+      });
+      db.prepare('UPDATE civilizations SET last_consequences=? WHERE id=?').run(JSON.stringify(defConseqs), targetCiv.id);
+      // Mémoire
+      addMemoryEntry(civ.id, 'diplomatie', `An ${Math.floor(currentTick/12)+1} — ${result.atkWins ? 'Victoire' : 'Défaite'} contre ${targetCiv.nom}.`);
+      addMemoryEntry(targetCiv.id, 'diplomatie', `An ${Math.floor(currentTick/12)+1} — ${result.atkWins ? 'Attaque subie' : 'Résistance'} face à ${civ.nom}.`);
+      addMemoryEntry(civ.id, 'histoire', `An ${Math.floor(currentTick/12)+1} — Bataille contre ${targetCiv.nom}.`);
+      break;
+    }
+
     case 'ESPIONNER': {
       const targetName = effect.target_name || '';
       const askedW     = parseInt(effect.params.personnes || '5') || 5;
@@ -1246,6 +1301,7 @@ function buildCivContext(civ, allCivs, worldId, currentTick, biomesMap, season =
     .filter(c => c.id !== civ.id && c.status === 'alive' && discoveredIds.has(c.id))
     .map(c => ({
       id: c.id, nom: c.nom, age_tech: c.age_tech, military_power: c.military_power,
+      population: c.population || 0,
       relation: relMap[c.id] || 'neutre',
       distance: Math.abs(c.capital_x - civ.capital_x) + Math.abs(c.capital_y - civ.capital_y),
     }))
@@ -1345,6 +1401,8 @@ const active_events = parseJ(civ.active_events, []);
 
 // V4 — Reliques découvertes
 const reliques_decouvertes = db.prepare('SELECT id, name, description, type, domain, x, y, taken, used FROM relics WHERE world_id=? AND discovered_by=?').all(worldId, civ.id);
+// Reliques actives (prises et non utilisées)
+const reliques_actives = db.prepare('SELECT id, name, description, type, domain, x, y, taken, used FROM relics WHERE world_id=? AND discovered_by=? AND taken=1 AND used=0').all(worldId, civ.id);
 
 // Groupes animaux découverts
 const animal_groups = db.prepare('SELECT * FROM animal_groups WHERE world_id = ?').all(worldId)
@@ -1368,7 +1426,11 @@ const animal_groups = db.prepare('SELECT * FROM animal_groups WHERE world_id = ?
   return {
     nom: civ.nom, valeurs, gouvernement: civ.gouvernement, description: civ.description,
     population: civ.population, population_trend: popTrend,
-    moral: civ.moral, food_status: foodStatus,
+    moral: civ.moral,
+    frustration_ticks: parseJ(civ.frustration_ticks, {}),
+    moralLabel: (civ.moral || 50) >= 75 ? 'excellent' : (civ.moral || 50) >= 60 ? 'correct' : (civ.moral || 50) >= 45 ? 'tension' : (civ.moral || 50) >= 30 ? 'mécontentement' : 'révolte',
+    satisfactions: parseJ(civ.satisfactions, []),
+    food_status: foodStatus,
     // Calendrier
     season, month_name: monthName, year,
     // Compat
@@ -1389,7 +1451,8 @@ const animal_groups = db.prepare('SELECT * FROM animal_groups WHERE world_id = ?
     last_consequences, active_events,
     civ_memory: civ.civ_memory || '{}',
     _known_count: discoveredIds.size,
-    reliques_decouvertes, animal_groups,
+    prompt_variant: civ.prompt_variant || 'V0',
+    reliques_decouvertes, reliques_actives, animal_groups,
   };
 }
 

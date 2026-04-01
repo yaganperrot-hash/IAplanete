@@ -205,28 +205,26 @@ isIdle || isFamine || foodSurplus < 0 || isUnderAttack || hasAnimalAttack
 || (hasNoHousing && ['automne','hiver'].includes(season))
 || hasRelicDiscovered || hasFirstContact
 ```
-- `foodSurplus < 0` ajouté — déclenche LLM quand production < consommation, même si stock > 0
+- `foodSurplus < 0` : production < consommation (même si stock > 0)
 - `isFamine` = `nourriture <= 0` (stock vide)
 - `isUnderAttack` = diplomacy.relation = 'guerre' (guerre entre civs)
-- `hasAnimalAttack` = `last_consequences` contient `type: 'attaque_animaux'` — ⚠️ **spec prête, pas encore implémenté**
+- `hasAnimalAttack` = `last_consequences` contient `type: 'attaque_animaux'` ✅ implémenté
 - `CRÉER` à 0 workers rejeté si rôle non passif (`[ECHEC] aucun worker affecté`)
 
 ### `last_consequences` — cycle de vie
 - **Étape 1** : merger avec existant DB (ne plus écraser) — objets structurés survivent jusqu'à Étape 3
 - **Étape 2** : advanceProcesses écrit `relique_decouverte`, constructions terminées
 - **Étape 2b** : `premier_contact` écrit pour les deux civs (civ ET foundCiv)
-- **updateAnimalGroups** : `attaque_animaux` écrit — ⚠️ `needsDecision` ne le détecte pas encore
-- **case ATTAQUER** : écrira `{ type: 'combat', victoire, adversaire, pertes, description }` pour les deux civs — ⚠️ pas encore implémenté
+- **updateAnimalGroups** : `attaque_animaux` écrit — `needsDecision` le détecte ✅
+- **case ATTAQUER** : écrit `{ type: 'combat', victoire, adversaire, pertes, description }` pour les deux civs ✅
 - **Étape 3** : LLM lit last_consequences — tous les types visibles
-- Types gérés dans les prompts : `relique_decouverte`, `relique_incomprise`, `relique_utilisee`, `animal_decouvert`, `chasse`, `premier_contact`, `attaque_animaux`
-- Types à ajouter dans les prompts : `combat` (victoire/défaite entre civs)
+- Types gérés dans les prompts : `relique_decouverte`, `relique_incomprise`, `relique_utilisee`, `animal_decouvert`, `chasse`, `premier_contact`, `attaque_animaux`, `combat`
 
 ### Verbs LLM civs
-Verbs actuellement dans `VERBES_VALIDES` et `parseEffets` :
-`AFFECTER` `CRÉER` `EXPLORER` `COLONISER` `ENVOYER` `MODIFIER` `ABANDONNER` `DIPLOMATIE` `LOI` `ESPIONNER` `ENVOYER_EMISSAIRE` `ENVOYER_MARCHANDS` `SURVEILLER_FRONTIERE` `CHASSER` `RIEN`
+Verbs dans `VERBES_VALIDES` et `parseEffets` :
+`AFFECTER` `CRÉER` `EXPLORER` `COLONISER` `ENVOYER` `MODIFIER` `ABANDONNER` `DIPLOMATIE` `LOI` `ESPIONNER` `ENVOYER_EMISSAIRE` `ENVOYER_MARCHANDS` `SURVEILLER_FRONTIERE` `CHASSER` `ATTAQUER` `RIEN`
 
-Verb **à ajouter** (spec prête dans SESSION_RECAP.md) :
-- `ATTAQUER [nom_civ]` — déclare la guerre et résout un combat immédiat via `resolveWar`
+- `ATTAQUER [nom_civ]` — déclare la guerre et résout un combat immédiat via `resolveWar` ✅
 
 ### Ton narrateur — Chroniqueur neutre (refonte 2026-03-29)
 **Principe :** décrire la réalité sans prescrire. Le LLM décide seul ce qui compte.

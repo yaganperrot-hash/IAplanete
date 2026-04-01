@@ -1,0 +1,588 @@
+{
+  "timestamp": "2026-04-01T00:59:59.992Z",
+  "heure": "02:59",
+  "tick": 551,
+  "civs": [
+    {
+      "id": 1,
+      "nom": "Les Conquérants du Feu Sacré",
+      "variant": "V0",
+      "pop": 842,
+      "moral": 86,
+      "frustration": 0,
+      "territory": 183,
+      "army": 5,
+      "military_power": 5,
+      "food": 45268,
+      "bois": 336,
+      "pierre": 0,
+      "trade_routes": 0,
+      "known_civs": 4,
+      "status": "alive"
+    },
+    {
+      "id": 2,
+      "nom": "Les Nomades du Fer",
+      "variant": "V1",
+      "pop": 0,
+      "moral": 0,
+      "frustration": 284,
+      "territory": 19,
+      "army": 0,
+      "military_power": 0,
+      "food": 5867,
+      "bois": 1562,
+      "pierre": 0,
+      "trade_routes": 0,
+      "known_civs": 2,
+      "status": "effondree"
+    },
+    {
+      "id": 3,
+      "nom": "Les Enfants de la Terre Mère",
+      "variant": "V2",
+      "pop": 0,
+      "moral": 0,
+      "frustration": 174,
+      "territory": 310,
+      "army": 0,
+      "military_power": 0,
+      "food": 20193,
+      "bois": 1116,
+      "pierre": 0,
+      "trade_routes": 0,
+      "known_civs": 5,
+      "status": "effondree"
+    },
+    {
+      "id": 4,
+      "nom": "Les Marchands de l'Aube",
+      "variant": "V3",
+      "pop": 0,
+      "moral": 0,
+      "frustration": 193,
+      "territory": 217,
+      "army": 0,
+      "military_power": 0,
+      "food": 5379,
+      "bois": 410,
+      "pierre": 80,
+      "trade_routes": 0,
+      "known_civs": 3,
+      "status": "effondree"
+    },
+    {
+      "id": 5,
+      "nom": "Les Gardiens du Mur",
+      "variant": "V4",
+      "pop": 716,
+      "moral": 86,
+      "frustration": 3,
+      "territory": 110,
+      "army": 1,
+      "military_power": 1,
+      "food": 23212,
+      "bois": 0,
+      "pierre": 946,
+      "trade_routes": 0,
+      "known_civs": 2,
+      "status": "alive"
+    },
+    {
+      "id": 6,
+      "nom": "Le Grand Khaganat",
+      "variant": "V5",
+      "pop": 291,
+      "moral": 86,
+      "frustration": 0,
+      "territory": 900,
+      "army": 20,
+      "military_power": 20,
+      "food": 7964,
+      "bois": 0,
+      "pierre": 0,
+      "trade_routes": 0,
+      "known_civs": 7,
+      "status": "alive"
+    },
+    {
+      "id": 7,
+      "nom": "Le Syndicat des Forges",
+      "variant": "V6",
+      "pop": 45,
+      "moral": 0,
+      "frustration": 486,
+      "territory": 33,
+      "army": 0,
+      "military_power": 0,
+      "food": 36978,
+      "bois": 2965,
+      "pierre": 80,
+      "trade_routes": 0,
+      "known_civs": 1,
+      "status": "alive"
+    },
+    {
+      "id": 8,
+      "nom": "Les Érudits d'Aristos",
+      "variant": "V7",
+      "pop": 0,
+      "moral": 0,
+      "frustration": 303,
+      "territory": 458,
+      "army": 0,
+      "military_power": 0,
+      "food": 8076,
+      "bois": 1183,
+      "pierre": 10,
+      "trade_routes": 0,
+      "known_civs": 2,
+      "status": "effondree"
+    },
+    {
+      "id": 9,
+      "nom": "Les Ascètes de la Pierre",
+      "variant": "V8",
+      "pop": 404,
+      "moral": 86,
+      "frustration": 0,
+      "territory": 469,
+      "army": 0,
+      "military_power": 0,
+      "food": 33611,
+      "bois": 0,
+      "pierre": 5,
+      "trade_routes": 0,
+      "known_civs": 2,
+      "status": "alive"
+    },
+    {
+      "id": 10,
+      "nom": "Les Mystiques des Brumes",
+      "variant": "V9",
+      "pop": 690,
+      "moral": 94,
+      "frustration": 0,
+      "territory": 176,
+      "army": 0,
+      "military_power": 0,
+      "food": 70198,
+      "bois": 0,
+      "pierre": 0,
+      "trade_routes": 0,
+      "known_civs": 4,
+      "status": "alive"
+    }
+  ],
+  "eventCounts": {
+    "exploration": 301,
+    "construction": 197,
+    "echec": 261,
+    "affectation": 198,
+    "epidemie": 8,
+    "diplomatie": 51,
+    "mission": 64,
+    "catastrophe": 33,
+    "loi": 13,
+    "recrutement": 3,
+    "bonus": 11,
+    "guerre": 12
+  },
+  "eventsRaw": [
+    {
+      "tick": 545,
+      "type": "construction",
+      "description": "Les Conquérants du Feu Sacré commence la construction de \"Pièges anti loups  personnes:20\" [defense] (5 ticks, 5 constructeurs)."
+    },
+    {
+      "tick": 545,
+      "type": "affectation",
+      "description": "Les Conquérants du Feu Sacré affecte 5 personnes → Habitations en bois rôle:habitation personnes:5."
+    },
+    {
+      "tick": 545,
+      "type": "construction",
+      "description": "Le Grand Khaganat commence la construction de \"habitation\" [habitation] (5 ticks, 5 constructeurs)."
+    },
+    {
+      "tick": 545,
+      "type": "exploration",
+      "description": "Le Grand Khaganat envoie 5 éclaireurs vers exploration nord-est."
+    },
+    {
+      "tick": 545,
+      "type": "echec",
+      "description": "Le Syndicat des Forges : pas assez de main-d'œuvre libre pour \"agriculture\" (libre: 0)."
+    },
+    {
+      "tick": 545,
+      "type": "echec",
+      "description": "Le Syndicat des Forges voulait construire \"champs collectifs\" mais n'a affecté aucun constructeur."
+    },
+    {
+      "tick": 545,
+      "type": "echec",
+      "description": "Les Mystiques des Brumes voulait construire \"entraînement militaire\" mais manque de pierre (besoin: 10, dispo: 0)."
+    },
+    {
+      "tick": 545,
+      "type": "exploration",
+      "description": "Les Mystiques des Brumes envoie 5 éclaireurs vers exploration ouest."
+    },
+    {
+      "tick": 546,
+      "type": "exploration",
+      "description": "Les éclaireurs de Les Ascètes de la Pierre rentrent (nord) : +0 territoires."
+    },
+    {
+      "tick": 546,
+      "type": "affectation",
+      "description": "Les Conquérants du Feu Sacré affecte 12 personnes → Habitations en bois rôle:habitation personnes:5."
+    },
+    {
+      "tick": 546,
+      "type": "echec",
+      "description": "Le Grand Khaganat voulait construire \"militaire\" mais manque de pierre (besoin: 10, dispo: 0)."
+    },
+    {
+      "tick": 546,
+      "type": "exploration",
+      "description": "Le Grand Khaganat envoie 5 éclaireurs vers exploration nord."
+    },
+    {
+      "tick": 546,
+      "type": "affectation",
+      "description": "Les Ascètes de la Pierre affecte 5 personnes → aux Champs collectifs."
+    },
+    {
+      "tick": 546,
+      "type": "construction",
+      "description": "Les Ascètes de la Pierre commence la construction de \"Habitations personnes:36\" [habitation] (5 ticks, 5 constructeurs)."
+    },
+    {
+      "tick": 546,
+      "type": "affectation",
+      "description": "Les Mystiques des Brumes affecte 10 personnes → Habitation."
+    },
+    {
+      "tick": 547,
+      "type": "exploration",
+      "description": "Les éclaireurs de Les Gardiens du Mur rentrent (sud_est) : +0 territoires."
+    },
+    {
+      "tick": 547,
+      "type": "affectation",
+      "description": "Les Gardiens du Mur affecte 8 personnes → Habitat."
+    },
+    {
+      "tick": 547,
+      "type": "echec",
+      "description": "Le Grand Khaganat voulait construire \"militaire\" mais manque de pierre (besoin: 10, dispo: 0)."
+    },
+    {
+      "tick": 547,
+      "type": "exploration",
+      "description": "Le Grand Khaganat envoie 5 éclaireurs vers exploration nord."
+    },
+    {
+      "tick": 547,
+      "type": "echec",
+      "description": "Le Syndicat des Forges : pas assez de main-d'œuvre libre pour \"agriculture\" (libre: 0)."
+    },
+    {
+      "tick": 547,
+      "type": "echec",
+      "description": "Le Syndicat des Forges voulait construire \"champs collectifs\" mais n'a affecté aucun constructeur."
+    },
+    {
+      "tick": 548,
+      "type": "construction",
+      "description": "Les Conquérants du Feu Sacré a terminé \"Habitations en bois\" [habitation] — 5 pers. affectées."
+    },
+    {
+      "tick": 548,
+      "type": "exploration",
+      "description": "Les éclaireurs de Le Grand Khaganat rentrent (nord_est) : +3 territoires."
+    },
+    {
+      "tick": 548,
+      "type": "exploration",
+      "description": "Les éclaireurs de Les Mystiques des Brumes rentrent (ouest) : +0 territoires."
+    },
+    {
+      "tick": 548,
+      "type": "construction",
+      "description": "Les Conquérants du Feu Sacré commence la construction de \"Pièges anti loups personnes:25\" [defense] (5 ticks, 5 constructeurs)."
+    },
+    {
+      "tick": 548,
+      "type": "affectation",
+      "description": "Les Conquérants du Feu Sacré affecte 10 personnes → Abri temporaire rôle:habitation personnes:5."
+    },
+    {
+      "tick": 548,
+      "type": "construction",
+      "description": "Les Gardiens du Mur commence la construction de \"habitat\" [habitation] (5 ticks, 5 constructeurs)."
+    },
+    {
+      "tick": 548,
+      "type": "exploration",
+      "description": "Les Gardiens du Mur envoie 5 éclaireurs vers exploration nord-est."
+    },
+    {
+      "tick": 548,
+      "type": "affectation",
+      "description": "Le Grand Khaganat affecte 8 personnes → habitat."
+    },
+    {
+      "tick": 548,
+      "type": "construction",
+      "description": "Le Syndicat des Forges commence la construction de \"habitat  personnes:10\" [habitation] (5 ticks, 0 constructeurs)."
+    },
+    {
+      "tick": 548,
+      "type": "echec",
+      "description": "Le Syndicat des Forges : pas assez de main-d'œuvre libre pour \"agriculture\" (libre: 0)."
+    },
+    {
+      "tick": 548,
+      "type": "echec",
+      "description": "Les Mystiques des Brumes voulait construire \"militaire  personnes:5\" mais manque de pierre (besoin: 10, dispo: 0)."
+    },
+    {
+      "tick": 548,
+      "type": "exploration",
+      "description": "Les Mystiques des Brumes envoie 5 éclaireurs vers exploration nord-ouest."
+    },
+    {
+      "tick": 548,
+      "type": "mission",
+      "description": "Les Mystiques des Brumes envoie 1 émissaires vers Les Conquérants du Feu Sacré."
+    },
+    {
+      "tick": 549,
+      "type": "exploration",
+      "description": "Les éclaireurs de Le Grand Khaganat rentrent (nord) : +0 territoires."
+    },
+    {
+      "tick": 549,
+      "type": "affectation",
+      "description": "Le Grand Khaganat affecte 8 personnes → habitat."
+    },
+    {
+      "tick": 550,
+      "type": "construction",
+      "description": "Les Conquérants du Feu Sacré a terminé \"Pièges anti loups  personnes:20\" [defense] — 5 pers. affectées."
+    },
+    {
+      "tick": 550,
+      "type": "construction",
+      "description": "Le Grand Khaganat a terminé \"habitation\" [habitation] — 5 pers. affectées."
+    },
+    {
+      "tick": 550,
+      "type": "exploration",
+      "description": "Les éclaireurs de Le Grand Khaganat rentrent (nord) : +0 territoires."
+    },
+    {
+      "tick": 550,
+      "type": "construction",
+      "description": "Le Grand Khaganat commence la construction de \"nouvelle tache  personnes:5\" [militaire] (5 ticks, 5 constructeurs)."
+    },
+    {
+      "tick": 550,
+      "type": "exploration",
+      "description": "Le Grand Khaganat envoie 5 éclaireurs vers exploration nord."
+    },
+    {
+      "tick": 551,
+      "type": "catastrophe",
+      "description": "Tempête dans Les Conquérants du Feu Sacré ! -50 bois."
+    },
+    {
+      "tick": 551,
+      "type": "exploration",
+      "description": "Les éclaireurs de Les Gardiens du Mur rentrent (nord_est) : +0 territoires."
+    },
+    {
+      "tick": 551,
+      "type": "construction",
+      "description": "Les Ascètes de la Pierre a terminé \"Habitations personnes:36\" [habitation] — 5 pers. affectées."
+    },
+    {
+      "tick": 551,
+      "type": "exploration",
+      "description": "Les éclaireurs de Les Mystiques des Brumes rentrent (nord_ouest) : +0 territoires."
+    },
+    {
+      "tick": 551,
+      "type": "construction",
+      "description": "Les Conquérants du Feu Sacré commence la construction de \"Abri temporaire  personnes:37\" [habitation] (5 ticks, 5 constructeurs)."
+    },
+    {
+      "tick": 551,
+      "type": "exploration",
+      "description": "Les Conquérants du Feu Sacré envoie 5 éclaireurs vers exploration nord-est."
+    },
+    {
+      "tick": 551,
+      "type": "affectation",
+      "description": "Le Grand Khaganat affecte 8 personnes → habitat."
+    },
+    {
+      "tick": 551,
+      "type": "construction",
+      "description": "Les Ascètes de la Pierre commence la construction de \"Habitations personnes:36\" (5 ticks, 5 constructeurs)."
+    },
+    {
+      "tick": 551,
+      "type": "affectation",
+      "description": "Les Ascètes de la Pierre affecte 10 personnes → aux Champs collectifs."
+    }
+  ],
+  "relicsDiscovered": [],
+  "diplomacy": [
+    {
+      "civ_a_id": 1,
+      "civ_b_id": 3,
+      "relation": "neutre"
+    },
+    {
+      "civ_a_id": 1,
+      "civ_b_id": 5,
+      "relation": "neutre"
+    },
+    {
+      "civ_a_id": 1,
+      "civ_b_id": 6,
+      "relation": "neutre"
+    },
+    {
+      "civ_a_id": 1,
+      "civ_b_id": 10,
+      "relation": "neutre"
+    },
+    {
+      "civ_a_id": 2,
+      "civ_b_id": 6,
+      "relation": "guerre"
+    },
+    {
+      "civ_a_id": 2,
+      "civ_b_id": 10,
+      "relation": "neutre"
+    },
+    {
+      "civ_a_id": 3,
+      "civ_b_id": 5,
+      "relation": "neutre"
+    },
+    {
+      "civ_a_id": 3,
+      "civ_b_id": 6,
+      "relation": "neutre"
+    },
+    {
+      "civ_a_id": 3,
+      "civ_b_id": 7,
+      "relation": "commerce"
+    },
+    {
+      "civ_a_id": 3,
+      "civ_b_id": 9,
+      "relation": "neutre"
+    },
+    {
+      "civ_a_id": 4,
+      "civ_b_id": 6,
+      "relation": "guerre"
+    },
+    {
+      "civ_a_id": 4,
+      "civ_b_id": 8,
+      "relation": "neutre"
+    },
+    {
+      "civ_a_id": 4,
+      "civ_b_id": 10,
+      "relation": "neutre"
+    },
+    {
+      "civ_a_id": 6,
+      "civ_b_id": 9,
+      "relation": "neutre"
+    },
+    {
+      "civ_a_id": 6,
+      "civ_b_id": 10,
+      "relation": "neutre"
+    }
+  ],
+  "wars": [
+    {
+      "tick": 463,
+      "type": "guerre",
+      "description": "Le Grand Khaganat a attaqué Les Mystiques des Brumes mais a été repoussé !"
+    },
+    {
+      "tick": 465,
+      "type": "guerre",
+      "description": "Les Mystiques des Brumes a attaqué Le Grand Khaganat mais a été repoussé !"
+    },
+    {
+      "tick": 466,
+      "type": "guerre",
+      "description": "Le Grand Khaganat a attaqué Les Mystiques des Brumes mais a été repoussé !"
+    },
+    {
+      "tick": 466,
+      "type": "guerre",
+      "description": "Les Mystiques des Brumes a attaqué Le Grand Khaganat mais a été repoussé !"
+    },
+    {
+      "tick": 471,
+      "type": "guerre",
+      "description": "Les Mystiques des Brumes a attaqué Le Grand Khaganat mais a été repoussé !"
+    },
+    {
+      "tick": 474,
+      "type": "guerre",
+      "description": "Le Grand Khaganat a attaqué Les Mystiques des Brumes mais a été repoussé !"
+    },
+    {
+      "tick": 480,
+      "type": "guerre",
+      "description": "Le Grand Khaganat a attaqué Les Mystiques des Brumes mais a été repoussé !"
+    },
+    {
+      "tick": 482,
+      "type": "guerre",
+      "description": "Le Grand Khaganat a attaqué Les Mystiques des Brumes mais a été repoussé !"
+    },
+    {
+      "tick": 485,
+      "type": "guerre",
+      "description": "Le Grand Khaganat a attaqué Les Mystiques des Brumes mais a été repoussé !"
+    },
+    {
+      "tick": 497,
+      "type": "guerre",
+      "description": "Le Grand Khaganat a attaqué Les Mystiques des Brumes mais a été repoussé !"
+    },
+    {
+      "tick": 502,
+      "type": "guerre",
+      "description": "Le Grand Khaganat a attaqué Les Mystiques des Brumes mais a été repoussé !"
+    },
+    {
+      "tick": 505,
+      "type": "guerre",
+      "description": "Le Grand Khaganat a attaqué Les Mystiques des Brumes mais a été repoussé !"
+    }
+  ],
+  "trades": [],
+  "tickRangeChecked": [
+    444,
+    551
+  ]
+}

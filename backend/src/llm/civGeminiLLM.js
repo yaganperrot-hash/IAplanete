@@ -1,5 +1,6 @@
 // Civ LLM — Gemini 2.0 Flash (fallback : civMockLLM)
 const { decide: mockDecide } = require('./civMockLLM');
+const { buildVariantBody } = require('./civPromptVariants');
 
 let model = null;
 
@@ -70,7 +71,7 @@ function getRelicsPossessedText(ctx) {
   return lines.join('\n');
 }
 
-function buildPrompt(ctx) {
+function buildPromptV0(ctx) {
   const valeurs = (ctx.valeurs || []).join(', ') || 'aucune';
 
   // ── Moral avec frustrations/satisfactions ──
@@ -194,6 +195,7 @@ ${(ctx.last_consequences || []).map(c =>
     ? `  - Chasse de ${c.nom} réussie : +${c.gains?.nourriture || 0} nourriture, +${c.gains?.peaux || 0} peaux, +${c.gains?.os || 0} os.` :
   c.type === 'chasse' && !c.succes
     ? `  - Chasse de ${c.nom} échouée : ${c.morts || 0} chasseurs tués.` :
+  c.type === 'combat' ? `  - ${c.description}` :
   `  - ${c}`
 ).join('\n') || '  (aucune)'}
 
@@ -213,11 +215,38 @@ EFFETS:
 - ESPIONNER [civ cible] (personnes: X, durée: Y ticks)
 - ENVOYER_EMISSAIRE [civ cible] (personnes: X, durée: Y ticks)
 - ENVOYER_MARCHANDS [civ cible] (personnes: X, durée: Y ticks)
+- ATTAQUER [nom_civ] (déclarer la guerre et mener un assaut immédiat)
 - SURVEILLER_FRONTIERE [direction] (personnes: X, permanent)
 - DIPLOMATIE [action] → [civ cible]
 - LOI [description]
 - RIEN
 SOUHAIT: [un besoin ou désir de ta civilisation en une phrase]`;
+}
+
+const FORMAT_GEMINI = `
+Décris ta stratégie, puis résume en effets.
+
+STRATÉGIE: [une phrase en français]
+EFFETS:
+- CRÉER [nom libre] (personnes: X, durée: Y ticks)
+- AFFECTER X personnes → [tâche]
+- ENVOYER X personnes → exploration [direction] (durée: Y ticks)
+- MODIFIER [existant] → [changement]
+- ABANDONNER [structure]
+- ESPIONNER [civ cible] (personnes: X, durée: Y ticks)
+- ENVOYER_EMISSAIRE [civ cible] (personnes: X, durée: Y ticks)
+- ENVOYER_MARCHANDS [civ cible] (personnes: X, durée: Y ticks)
+- SURVEILLER_FRONTIERE [direction] (personnes: X, permanent)
+- ATTAQUER [nom_civ]
+- DIPLOMATIE [alliance|paix|commerce] → [civ cible]
+- LOI [description]
+- RIEN
+SOUHAIT: [un besoin ou désir de ta civilisation en une phrase]`;
+
+function buildPrompt(ctx) {
+  const variant = ctx.prompt_variant || 'V0';
+  if (variant === 'V0') return buildPromptV0(ctx);
+  return buildVariantBody(ctx, variant) + '\n\n' + FORMAT_GEMINI;
 }
 
 function parseResponse(text) {

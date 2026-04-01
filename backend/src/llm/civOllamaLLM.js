@@ -1,5 +1,6 @@
 // Civ LLM — Ollama local (V4 : prompt 3 couches narratives + réponse JSON) — fallback : civMockLLM
 const { decide: mockDecide } = require('./civMockLLM');
+const { buildVariantBody } = require('./civPromptVariants');
 
 const DEFAULT_MODEL = 'mistral-nemo';
 const DEFAULT_HOST  = 'http://localhost:11434';
@@ -304,6 +305,9 @@ function getTexteConsequencesReliques(ctx) {
     if (c.type === 'chasse' && !c.succes) {
       lines.push(`Chasse de ${c.nom} échouée : ${c.morts || 0} chasseurs tués.`);
     }
+    if (c.type === 'combat') {
+      lines.push(c.description);
+    }
   }
   return lines.join(' ');
 }
@@ -450,7 +454,7 @@ function formatMemory(memory, ctx) {
   return lines.length ? `MÉMOIRE :\n${lines.join('\n')}` : '';
 }
 
-function buildPrompt(ctx) {
+function buildPromptV0(ctx) {
   const memoire = ctx.memoire || DEFAULT_MEMOIRE;
 
   const enCours = (ctx.active_processes || []).length > 0
@@ -542,6 +546,7 @@ Verbes disponibles pour ACTIONS_MECANIQUES :
 - ESPIONNER [nom_civ] personnes:[N]
 - ENVOYER_MARCHANDS [nom_civ] personnes:[N] offre:[ressource] demande:[ressource]
 - CHASSER [nom du groupe animal] personnes:[N]
+- ATTAQUER [nom_civ] (déclarer la guerre et mener un assaut immédiat)
 - DIPLOMATIE [guerre|alliance|paix|commerce] → [nom_civ]
 - ABANDONNER [nom_bâtiment]
 - LOI [description]
@@ -563,12 +568,47 @@ Réponds UNIQUEMENT avec ce JSON (aucun texte avant ou après) :
 }`;
 }
 
+const FORMAT_OLLAMA = `
+Verbes disponibles pour ACTIONS_MECANIQUES :
+- AFFECTER N travailleurs à [bâtiment existant ou nouvelle tâche]
+- CONSTRUIRE [nom] rôle:[habitation|agriculture|militaire|defense|commerce|religieux|savoir|bois|extraction|production|maritime|surveillance|autre]
+- EXPLORER direction:[nord|sud|est|ouest|nord-est|nord-ouest|sud-est|sud-ouest]
+- COLONISER direction:[direction]
+- ATTAQUER [nom_civ]
+- ENVOYER_EMISSAIRE [nom_civ] personnes:[N]
+- ESPIONNER [nom_civ] personnes:[N]
+- ENVOYER_MARCHANDS [nom_civ] personnes:[N] offre:[ressource] demande:[ressource]
+- CHASSER [nom du groupe animal] personnes:[N]
+- DIPLOMATIE [alliance|paix|commerce] → [nom_civ]
+- ABANDONNER [nom_bâtiment]
+- LOI [description]
+- RIEN
+
+Réponds UNIQUEMENT avec ce JSON (aucun texte avant ou après) :
+
+{
+  "ANALYSE_INTERNE": "Un paragraphe : comment tes valeurs et instincts réagissent à la situation.",
+  "ACTIONS_MECANIQUES": ["VERBE paramètres"],
+  "NOUVEAU_CAP_STRATEGIQUE": {
+    "projet_principal": "Ton grand objectif pour les prochains mois.",
+    "posture_diplomatique": "Ta vision actuelle de tes voisins.",
+    "inquietude_majeure": "Le problème que tu cherches à résoudre."
+  },
+  "SOUHAIT": "[un besoin ou désir de ta civilisation en une phrase]"
+}`;
+
+function buildPrompt(ctx) {
+  const variant = ctx.prompt_variant || 'V0';
+  if (variant === 'V0') return buildPromptV0(ctx);
+  return buildVariantBody(ctx, variant) + '\n\n' + FORMAT_OLLAMA;
+}
+
 // ─── Parser JSON ────────────────────────────────────────────────────────────────
 
 const VERBES_VALIDES = [
   'AFFECTER', 'CONSTRUIRE', 'EXPLORER', 'COLONISER',
   'ENVOYER_MARCHANDS', 'ENVOYER_EMISSAIRE', 'ESPIONNER',
-  'DEVELOPPER', 'ABANDONNER', 'REORGANISER', 'CHASSER', 'LOI', 'DIPLOMATIE', 'RIEN',
+  'DEVELOPPER', 'ABANDONNER', 'REORGANISER', 'CHASSER', 'ATTAQUER', 'LOI', 'DIPLOMATIE', 'RIEN',
 ];
 
 function parseAction(actionStr) {
@@ -612,6 +652,10 @@ function parseAction(actionStr) {
     action.nombre = parseInt(parametres.match(/personnes\s*:\s*(\d+)/i)?.[1]) || 5;
   }
 
+  if (verbe === 'ATTAQUER') {
+    action.cible = parametres.trim();
+  }
+
   if (verbe === 'EXPLORER') {
     const dirMatch = parametres.match(/direction\s*:\s*([^\s,]+)/i)
       || parametres.match(/(nord[-_]est|nord[-_]ouest|sud[-_]est|sud[-_]ouest|nord|sud|est|ouest)/i);
@@ -632,7 +676,15 @@ function parseLLMResponse(text) {
   try {
     parsed = JSON.parse(jsonMatch[0]);
   } catch (e) {
-    return { analyseInterne: '', parsedActions: [], nouveauCap: null, souhait: null, parseError: `JSON invalide : ${e.message}` };
+    // Tentative de réparation : supprimer les retours à la ligne dans les strings, trailing commas
+    try {
+      const repaired = jsonMatch[0]
+        .replace(/:\s*"((?:[^"\\]|\\.)*)"/gs, (_, v) => `: "${v.replace(/\n/g, ' ').replace(/\r/g, '')}"`)
+        .replace(/,\s*([}\]])/g, '$1');
+      parsed = JSON.parse(repaired);
+    } catch (e2) {
+      return { analyseInterne: '', parsedActions: [], nouveauCap: null, souhait: null, parseError: `JSON invalide : ${e.message}` };
+    }
   }
 
   const analyseInterne = typeof parsed.ANALYSE_INTERNE === 'string' ? parsed.ANALYSE_INTERNE : '';
@@ -741,6 +793,11 @@ function actionToEffetLine(action) {
       return `CHASSER ${cible} (personnes: ${nombre})`;
     }
 
+    case 'ATTAQUER': {
+      const cible = action.cible || p.trim();
+      return `ATTAQUER ${cible}`;
+    }
+
     case 'REORGANISER':
     case 'RIEN':
     default:
@@ -782,6 +839,7 @@ async function decide(context) {
 
     if (parseError) {
       console.warn(`[LLM Parser] ${parseError} — fallback mock`);
+      console.warn(`[LLM Parser] RAW DUMP:\n${rawText.slice(0, 1200)}`);
       const r = mockDecide(context);
       return { ...r, nouveauCap: null, souhait: null, analyseInterne: r.strategie };
     }

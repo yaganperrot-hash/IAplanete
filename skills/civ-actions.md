@@ -97,6 +97,17 @@ LOI [description libre]
 ```
 - Effet moral : ±5 (décision politique)
 
+### ATTAQUER
+```
+ATTAQUER [nom civ cible]
+```
+- Déclare la guerre et résout un combat immédiat via `resolveWar()`
+- Résultat basé sur `military_power` des deux civs
+- Écrit `{ type: 'combat', victoire, adversaire, pertes, description }` dans `last_consequences` des deux civs
+- Met à jour `army_soldiers`, `military_power`, `moral`, `last_combat_tick` des deux civs
+- Insère relation `'guerre'` dans `diplomacy`
+- Écrit en mémoire (`diplomatie` + `histoire`) pour les deux civs
+
 ### CHASSER
 ```
 CHASSER [nom groupe animal] personnes:[N]
@@ -143,10 +154,15 @@ Construit le contexte passé au prompt LLM :
   active_processes,    // processus en cours
   moral, moralLabel,
   army_soldiers, army_power,
-  neighbors,           // civs connues avec relation
+  neighbors,           // civs connues avec relation + population
   last_consequences,   // événements du tick précédent
   food_famine_in,      // ticks avant famine (null si ok)
   season, month_name, year,
   known_deposits,      // gisements sur le territoire
+  moral, moralLabel,   // moralLabel : 'excellent'|'correct'|'tension'|'mécontentement'|'révolte'
+  frustration_ticks,   // { valeur: nbTicks } — brut depuis DB
+  satisfactions,       // [] — valeurs satisfaites ce tick
+  civ_memory,          // string JSON brute — parsée par getMemoryShort() dans civPromptVariants.js
+  prompt_variant,      // V0–V9 — sélecteur de builder dans civPromptVariants.js
 }
 ```

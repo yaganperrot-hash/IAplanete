@@ -31,9 +31,10 @@ const VALUE_SATISFACTION = {
   },
 
   guerre: {
-    satisfied:    (c, tick) => (c.last_combat_tick || 0) > 0 && tick - (c.last_combat_tick || 0) < 20,
-    frustrated:   (c, tick) => (c.last_combat_tick || 0) === 0 && (c._known_count || 0) > 0,
+    satisfied:    (c, tick) => (c.army_soldiers || 0) > 0 && (c.last_combat_tick || 0) > 0 && tick - (c.last_combat_tick || 0) < 20,
+    frustrated:   (c, tick) => (c._known_count || 0) > 0 && (c.army_soldiers || 0) === 0,
     satisfiedText:  'Ton armée a prouvé sa valeur au combat',
+    frustratedText: "Ton peuple belliqueux n'a pas d'armée pour défendre ses ambitions",
     moralBonus: +8, moralMalus: -10,
   },
 

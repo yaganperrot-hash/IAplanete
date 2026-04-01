@@ -148,11 +148,54 @@ Objectif : ~1200 tokens en An 1, grossit naturellement avec les découvertes.
 
 ---
 
+## Variants de prompt (civPromptVariants.js)
+
+Chaque civilisation a un `prompt_variant` (V0–V9) stocké en DB.
+`buildPrompt(ctx)` sélectionne le builder selon `ctx.prompt_variant` :
+- `V0` : baseline (`buildPromptV0`) — prompt V4 complet dans chaque LLM file
+- `V1` : Minimal — état factuel condensé, 1 page
+- `V2` : Psychologique — trauma/mémoire/mystère/tension latente
+- `V3` : Corps — faits bruts "dans les corps du peuple"
+- `V4` : Urgence pure — liste de ce qui ne va pas
+- `V5` : Géopolitique — focus relations extérieures
+- `V6` : Économique — bilan détaillé ressources/production
+- `V7` : Chronique — narration annalistique
+- `V8` : Valeurs-Tension — état de chaque valeur (satisfaite/frustrée)
+- `V9` : Oracle — lecture oraculaire des signes
+
+Architecture :
+```js
+// civGeminiLLM.js / civOllamaLLM.js
+const { buildVariantBody } = require('./civPromptVariants');
+function buildPromptV0(ctx) { /* prompt baseline complet */ }
+function buildPrompt(ctx) {
+  const variant = ctx.prompt_variant || 'V0';
+  if (variant === 'V0') return buildPromptV0(ctx);
+  return buildVariantBody(ctx, variant) + '\n\n' + FORMAT_*;
+}
+```
+
+`prompt_variant` injecté dans `buildCivContext()` via `civActionResolver.js`.
+
+---
+
+## Snapshots (`civ_snapshots`)
+
+Pris toutes les `SNAPSHOT_INTERVAL_TICKS` ticks (défaut 20) après la boucle LLM.
+Colonnes : `world_id, civ_id, prompt_variant, tick, population, moral, food_stock, army_soldiers, territory_count, buildings_count, nb_wars, nb_alliances, frustration_max`.
+
+Analyse : `node backend/scripts/analyzeVariants.js`
+
+---
+
 ## Condition d'appel LLM (civEngine.js)
 L'appel LLM est déclenché si **au moins une** condition est vraie :
 - `isIdle` : 0 processus en cours
 - `isFamine` : nourriture ≤ 0
 - `isUnderAttack` : relation = 'guerre' en DB
+- `hasAnimalAttack` : `last_consequences` contient `type: 'attaque_animaux'`
 - `hasNoHousing && saison ∈ [automne, hiver]`
+- `foodSurplus < 0` : production < consommation
+- `hasRelicDiscovered`, `hasFirstContact`
 
 Sinon : skip (économie de tokens).

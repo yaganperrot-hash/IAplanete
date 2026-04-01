@@ -1,3 +1,4 @@
+// [TEST AUTOMATISATION] — 2026-03-30
 require('dotenv').config();
 const { db } = require('../config/db');
 const { MAP_WIDTH, MAP_HEIGHT } = require('./mapGenerator');
@@ -429,7 +430,7 @@ function checkValueTensionEvents(civ, frustTicks, currentTick, worldId, events, 
           if (knownCivs.length > 0) {
             const targetCivId = knownCivs[Math.floor(Math.random() * knownCivs.length)];
             db.prepare(
-              `INSERT INTO civ_processes (civ_id, world_id, type, target, workers, ticks_remaining, state) VALUES (?, ?, ?, ?, ?, ?, ?)`
+              `INSERT INTO civ_processes (civ_id, world_id, type, target, workers, max_ticks, state) VALUES (?, ?, ?, ?, ?, ?, ?)`
             ).run(civ.id, worldId, 'commerce_expedition', targetCivId, 3, 5, 'en_cours');
             consequences.push('Des marchands partent d\'eux-mêmes vers les terres voisines.');
           }
@@ -452,7 +453,7 @@ function checkValueTensionEvents(civ, frustTicks, currentTick, worldId, events, 
           const directions = ['nord', 'sud', 'est', 'ouest'];
           const direction = directions[Math.floor(Math.random() * directions.length)];
           db.prepare(
-            `INSERT INTO civ_processes (civ_id, world_id, type, target, workers, ticks_remaining, state) VALUES (?, ?, ?, ?, ?, ?, ?)`
+            `INSERT INTO civ_processes (civ_id, world_id, type, target, workers, max_ticks, state) VALUES (?, ?, ?, ?, ?, ?, ?)`
           ).run(civ.id, worldId, 'exploration', direction, workers, ticksRemaining, 'en_cours');
           consequences.push(`Un groupe de ${workers} personnes part explorer vers le ${direction} pour ${ticksRemaining} mois, sans ordre du dirigeant.`);
         }
@@ -544,7 +545,7 @@ function checkValueTensionEvents(civ, frustTicks, currentTick, worldId, events, 
             const workers = Math.max(3, Math.floor(freeLabor * 0.15));
             const ticksRemaining = Math.floor(workers / 2) + 2;
             db.prepare(
-              `INSERT INTO civ_processes (civ_id, world_id, type, target, workers, ticks_remaining, state) VALUES (?, ?, ?, ?, ?, ?, ?)`
+              `INSERT INTO civ_processes (civ_id, world_id, type, target, workers, max_ticks, state) VALUES (?, ?, ?, ?, ?, ?, ?)`
             ).run(civ.id, worldId, 'exploration', direction, workers, ticksRemaining, 'en_cours');
             consequences.push('Une second groupe d\'explorateurs part, refusant d\'attendre.');
           }
@@ -588,6 +589,14 @@ function checkValueTensionEvents(civ, frustTicks, currentTick, worldId, events, 
   // Sauvegarder value_event_ticks
   if (Object.keys(valueEventTicks).length > 0) {
     db.prepare('UPDATE civilizations SET value_event_ticks = ? WHERE id = ?').run(JSON.stringify(valueEventTicks), civ.id);
+  }
+
+  // Ajouter les conséquences générées à last_consequences de la civilisation
+  if (consequences.length > 0) {
+    const current = db.prepare('SELECT last_consequences FROM civilizations WHERE id = ?').get(civ.id);
+    const existing = parseJ(current.last_consequences, []);
+    const merged = [...existing, ...consequences];
+    db.prepare('UPDATE civilizations SET last_consequences = ? WHERE id = ?').run(JSON.stringify(merged), civ.id);
   }
 
   return { armyDelta, resourceDelta, gouvernement, newBuilding, consequences, moralDelta, popDelta, doubleRevoltRisk, rationingActive };
@@ -801,7 +810,8 @@ class CivEngine {
       // Fusionner last_consequences existant avec les nouveaux messages
       const current = db.prepare('SELECT last_consequences FROM civilizations WHERE id=?').get(civ.id);
       const existing = parseJ(current.last_consequences, []);
-      const mergedConsequences = [...existing, ...eventMsgs];
+      // Éviter les doublons avec les conséquences déjà ajoutées par checkValueTensionEvents
+      const mergedConsequences = [...existing, ...eventMsgs.filter(msg => !existing.includes(msg))];
 
       db.prepare(`UPDATE civilizations SET
         resources=?, energy=?, army_soldiers=?, population=?, moral=?,
@@ -973,42 +983,55 @@ class CivEngine {
       const lastConseqs = parseJ(civ.last_consequences, []);
       const hasRelicDiscovered = lastConseqs.some(c => c.type === 'relique_decouverte' || c.type === 'relique_incomprise');
       const hasFirstContact = lastConseqs.some(c => c.type === 'premier_contact');
-      const needsDecision = isIdle || isFamine || isUnderAttack || (hasNoHousing && ['automne', 'hiver'].includes(season)) || hasRelicDiscovered || hasFirstContact || foodSurplus < 0;
+      const hasAnimalAttack = lastConseqs.some(c => c.type === 'attaque_animaux');
+      const needsDecision = isIdle || isFamine || isUnderAttack || hasAnimalAttack || (hasNoHousing && ['automne', 'hiver'].includes(season)) || hasRelicDiscovered || hasFirstContact || foodSurplus < 0;
 
       if (!needsDecision) {
         console.log(`  [CIV] ${civ.nom}: en cours (${activeCount} processus) → pas d'appel LLM`);
         continue;
       }
 
-      const reason = isIdle ? 'idle' : isFamine ? 'FAMINE' : isUnderAttack ? 'SOUS_ATTAQUE' : foodSurplus < 0 ? 'DEFICIT' : hasRelicDiscovered ? 'RELIQUE' : hasFirstContact ? 'PREMIER_CONTACT' : 'URGENT_LOGEMENT';
+      const reason = isIdle ? 'idle' : isFamine ? 'FAMINE' : isUnderAttack ? 'SOUS_ATTAQUE' : hasAnimalAttack ? 'ATTAQUE_ANIMAUX' : foodSurplus < 0 ? 'DEFICIT' : hasRelicDiscovered ? 'RELIQUE' : hasFirstContact ? 'PREMIER_CONTACT' : 'URGENT_LOGEMENT';
       console.log(`  [CIV] ${civ.nom}: appel LLM (${reason})`);
 
       const moralCtx  = calculateMoral(civ, currentTick);
       const context   = buildCivContext(civ, liveCivs, this.worldId, currentTick, biomesMap, season, month.name, year);
+      context.prompt_variant = civ.prompt_variant || 'V0';
       context.frustrations     = moralCtx.frustrations;
       context.satisfactions    = moralCtx.satisfactions;
       context.moralLabel       = moralCtx.moralLabel;
       context.neighbors_info   = buildNeighborInfo(civ, liveCivs);
       // V4 — Mémoire stratégique et frustration cumulée
       context.frustration_ticks = moralCtx.frustration_ticks || {};
-      context.memoire = parseJ(civ.memoire, null) || {
+      // Mémoire stratégique (stockée dans civ_memory.strategie)
+      const civMemory = parseJ(civ.civ_memory, {});
+      const memoireStrategie = civMemory.strategie || {
         projet_principal:     'Établir les premières structures de survie.',
         posture_diplomatique: 'Le monde autour est inconnu. Nous restons sur nos gardes.',
         inquietude_majeure:   'Nous ne savons pas ce qui nous entoure.',
       };
+      context.memoire = memoireStrategie;
       console.log(`  [QUESTION] ${(moralCtx.frustrations[0] || moralCtx.satisfactions[0] || 'Situation stable').slice(0, 80)}`);
 
       const { strategie, effets_text, actions, raison, nouveauCap, souhait } = await civLLM.decide(context);
+      // Recalculer freeLabor pour limiter les effets
+      const procWorkersLLM = db.prepare(
+        "SELECT COALESCE(SUM(workers),0) as total FROM civ_processes WHERE civ_id=? AND world_id=? AND state='en_cours'"
+      ).get(civ.id, this.worldId).total || 0;
+      const freeLaborLLM = Math.max(0, (civ.population || 0) - (civ.army_soldiers || 0) - procWorkersLLM);
       // V4 — Sauvegarder la mémoire stratégique
       if (nouveauCap) {
-        db.prepare('UPDATE civilizations SET memoire=? WHERE id=?').run(JSON.stringify(nouveauCap), civ.id);
+        const civMemory = parseJ(civ.civ_memory, {});
+        civMemory.strategie = nouveauCap;
+        db.prepare('UPDATE civilizations SET civ_memory=? WHERE id=?').run(JSON.stringify(civMemory), civ.id);
       }
       if (souhait) {
         db.prepare('UPDATE civilizations SET current_wish=? WHERE id=?').run(souhait, civ.id);
       }
       thoughtLogs.push({ civId: civ.id, actions, raison: strategie });
+      db.prepare('UPDATE civilizations SET last_consequences=? WHERE id=?').run(JSON.stringify([]), civ.id);
 
-      const effects   = parseEffets(effets_text);
+      const effects   = parseEffets(effets_text).slice(0, Math.max(1, freeLaborLLM));
       let civState    = { ...civ };
       let allUpdates  = {};
 
@@ -1040,6 +1063,34 @@ class CivEngine {
       for (const ev of events)
         stmtEv.run(this.worldId, currentTick, ev.type, ev.description, JSON.stringify(ev.civ_ids || []));
     })();
+
+    // ═══ SNAPSHOTS (toutes les N ticks) ════════════════════════════════════════
+    const snapInterval = parseInt(process.env.SNAPSHOT_INTERVAL_TICKS || '20');
+    if (currentTick % snapInterval === 0 && currentTick > 0) {
+      const snapCivs = db.prepare("SELECT * FROM civilizations WHERE world_id=? AND status='alive'").all(this.worldId);
+      const insertSnap = db.prepare(`
+        INSERT INTO civ_snapshots (world_id, civ_id, prompt_variant, tick, population, moral, food_stock,
+          army_soldiers, territory_count, buildings_count, nb_wars, nb_alliances, frustration_max)
+        VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)`);
+      const snapTx = db.transaction(() => {
+        for (const sc of snapCivs) {
+          const res = parseJ(sc.resources, {});
+          const bldgs = normalizeBuildings(sc.buildings);
+          const wars = db.prepare("SELECT COUNT(*) as n FROM diplomacy WHERE world_id=? AND (civ_a_id=? OR civ_b_id=?) AND relation='guerre'").get(this.worldId, sc.id, sc.id).n;
+          const allies = db.prepare("SELECT COUNT(*) as n FROM diplomacy WHERE world_id=? AND (civ_a_id=? OR civ_b_id=?) AND relation='alliance'").get(this.worldId, sc.id, sc.id).n;
+          const frustTicks = parseJ(sc.frustration_ticks, {});
+          const frustMax = Math.max(0, ...Object.values(frustTicks));
+          insertSnap.run(
+            this.worldId, sc.id, sc.prompt_variant || 'V0', currentTick,
+            sc.population || 0, sc.moral || 0, res.nourriture || 0,
+            sc.army_soldiers || 0, sc.territory_count || 0, bldgs.length,
+            wars, allies, frustMax
+          );
+        }
+      });
+      snapTx();
+      console.log(`  [SNAP] Snapshot tick ${currentTick} — ${snapCivs.length} civs`);
+    }
 
     // ═══ ÉTAPE 5 : BROADCAST ════════════════════════════════════════════════
     this._broadcast(currentTick, events, { year, season, monthName: month.name });

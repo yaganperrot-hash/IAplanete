@@ -1,0 +1,248 @@
+{
+  "timestamp": "2026-03-31T22:00:00.013Z",
+  "heure": "00:00",
+  "tick": 240,
+  "civs": [
+    {
+      "id": 1,
+      "nom": "Les Conquérants du Feu Sacré",
+      "variant": "V0",
+      "pop": 230,
+      "moral": 86,
+      "frustration": 0,
+      "territory": 161,
+      "army": 5,
+      "military_power": 5,
+      "food": 8044,
+      "bois": 1250,
+      "pierre": 0,
+      "trade_routes": 0,
+      "known_civs": 2,
+      "status": "alive"
+    },
+    {
+      "id": 2,
+      "nom": "Les Nomades du Fer",
+      "variant": "V1",
+      "pop": 22,
+      "moral": 0,
+      "frustration": 218,
+      "territory": 19,
+      "army": 13,
+      "military_power": 13,
+      "food": 4502,
+      "bois": 1173,
+      "pierre": 0,
+      "trade_routes": 0,
+      "known_civs": 2,
+      "status": "alive"
+    },
+    {
+      "id": 3,
+      "nom": "Les Enfants de la Terre Mère",
+      "variant": "V2",
+      "pop": 107,
+      "moral": 75,
+      "frustration": 94,
+      "territory": 314,
+      "army": 0,
+      "military_power": 0,
+      "food": 12581,
+      "bois": 191,
+      "pierre": 0,
+      "trade_routes": 0,
+      "known_civs": 5,
+      "status": "alive"
+    },
+    {
+      "id": 4,
+      "nom": "Les Marchands de l'Aube",
+      "variant": "V3",
+      "pop": 0,
+      "moral": 0,
+      "frustration": 193,
+      "territory": 217,
+      "army": 0,
+      "military_power": 0,
+      "food": 5379,
+      "bois": 410,
+      "pierre": 80,
+      "trade_routes": 0,
+      "known_civs": 3,
+      "status": "effondree"
+    },
+    {
+      "id": 5,
+      "nom": "Les Gardiens du Mur",
+      "variant": "V4",
+      "pop": 227,
+      "moral": 86,
+      "frustration": 3,
+      "territory": 108,
+      "army": 1,
+      "military_power": 1,
+      "food": 4527,
+      "bois": 0,
+      "pierre": 128,
+      "trade_routes": 0,
+      "known_civs": 2,
+      "status": "alive"
+    },
+    {
+      "id": 6,
+      "nom": "Le Grand Khaganat",
+      "variant": "V5",
+      "pop": 196,
+      "moral": 94,
+      "frustration": 0,
+      "territory": 461,
+      "army": 3,
+      "military_power": 3,
+      "food": 3838,
+      "bois": 55,
+      "pierre": 0,
+      "trade_routes": 0,
+      "known_civs": 5,
+      "status": "alive"
+    },
+    {
+      "id": 7,
+      "nom": "Le Syndicat des Forges",
+      "variant": "V6",
+      "pop": 50,
+      "moral": 0,
+      "frustration": 174,
+      "territory": 19,
+      "army": 0,
+      "military_power": 0,
+      "food": 13385,
+      "bois": 453,
+      "pierre": 80,
+      "trade_routes": 0,
+      "known_civs": 1,
+      "status": "alive"
+    },
+    {
+      "id": 8,
+      "nom": "Les Érudits d'Aristos",
+      "variant": "V7",
+      "pop": 34,
+      "moral": 0,
+      "frustration": 218,
+      "territory": 348,
+      "army": 0,
+      "military_power": 0,
+      "food": 5347,
+      "bois": 615,
+      "pierre": 40,
+      "trade_routes": 0,
+      "known_civs": 1,
+      "status": "alive"
+    },
+    {
+      "id": 9,
+      "nom": "Les Ascètes de la Pierre",
+      "variant": "V8",
+      "pop": 213,
+      "moral": 86,
+      "frustration": 0,
+      "territory": 283,
+      "army": 0,
+      "military_power": 0,
+      "food": 7238,
+      "bois": 0,
+      "pierre": 5,
+      "trade_routes": 0,
+      "known_civs": 2,
+      "status": "alive"
+    },
+    {
+      "id": 10,
+      "nom": "Les Mystiques des Brumes",
+      "variant": "V9",
+      "pop": 214,
+      "moral": 94,
+      "frustration": 0,
+      "territory": 171,
+      "army": 0,
+      "military_power": 0,
+      "food": 19899,
+      "bois": 137,
+      "pierre": 0,
+      "trade_routes": 0,
+      "known_civs": 3,
+      "status": "alive"
+    }
+  ],
+  "eventCounts": {},
+  "eventsRaw": [],
+  "relicsDiscovered": [],
+  "diplomacy": [
+    {
+      "civ_a_id": 1,
+      "civ_b_id": 3,
+      "relation": "neutre"
+    },
+    {
+      "civ_a_id": 1,
+      "civ_b_id": 5,
+      "relation": "neutre"
+    },
+    {
+      "civ_a_id": 2,
+      "civ_b_id": 6,
+      "relation": "guerre"
+    },
+    {
+      "civ_a_id": 2,
+      "civ_b_id": 10,
+      "relation": "neutre"
+    },
+    {
+      "civ_a_id": 3,
+      "civ_b_id": 5,
+      "relation": "neutre"
+    },
+    {
+      "civ_a_id": 3,
+      "civ_b_id": 7,
+      "relation": "commerce"
+    },
+    {
+      "civ_a_id": 3,
+      "civ_b_id": 9,
+      "relation": "neutre"
+    },
+    {
+      "civ_a_id": 4,
+      "civ_b_id": 6,
+      "relation": "guerre"
+    },
+    {
+      "civ_a_id": 4,
+      "civ_b_id": 8,
+      "relation": "neutre"
+    },
+    {
+      "civ_a_id": 4,
+      "civ_b_id": 10,
+      "relation": "neutre"
+    },
+    {
+      "civ_a_id": 6,
+      "civ_b_id": 9,
+      "relation": "neutre"
+    },
+    {
+      "civ_a_id": 6,
+      "civ_b_id": 10,
+      "relation": "neutre"
+    }
+  ],
+  "wars": [],
+  "trades": [],
+  "tickRangeChecked": [
+    240,
+    240
+  ]
+}
