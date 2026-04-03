@@ -1,0 +1,506 @@
+{
+  "timestamp": "2026-04-03T16:00:00.002Z",
+  "heure": "18:00",
+  "tick": 22,
+  "civs": [
+    {
+      "id": 1,
+      "nom": "Les Conquérants du Feu Sacré",
+      "variant": "V0",
+      "pop": 112,
+      "moral": 76,
+      "frustration": 0,
+      "territory": 37,
+      "army": 0,
+      "military_power": 0,
+      "food": 825,
+      "bois": 277,
+      "pierre": 80,
+      "trade_routes": 0,
+      "known_civs": 0,
+      "status": "alive",
+      "gouvernement": "monarchie",
+      "valeurs": [
+        "expansion",
+        "guerre",
+        "spiritualite"
+      ]
+    },
+    {
+      "id": 2,
+      "nom": "Les Gardiens du Mur",
+      "variant": "V4",
+      "pop": 95,
+      "moral": 77,
+      "frustration": 0,
+      "territory": 10,
+      "army": 0,
+      "military_power": 0,
+      "food": 874,
+      "bois": 195,
+      "pierre": 80,
+      "trade_routes": 0,
+      "known_civs": 0,
+      "status": "alive",
+      "gouvernement": "dictature_militaire",
+      "valeurs": [
+        "ordre",
+        "survie",
+        "guerre"
+      ]
+    },
+    {
+      "id": 3,
+      "nom": "Le Grand Khaganat",
+      "variant": "V5",
+      "pop": 104,
+      "moral": 62,
+      "frustration": 0,
+      "territory": 12,
+      "army": 0,
+      "military_power": 0,
+      "food": 783,
+      "bois": 322,
+      "pierre": 80,
+      "trade_routes": 0,
+      "known_civs": 0,
+      "status": "alive",
+      "gouvernement": "monarchie",
+      "valeurs": [
+        "expansion",
+        "guerre",
+        "ordre"
+      ]
+    },
+    {
+      "id": 4,
+      "nom": "Les Ascètes de la Pierre",
+      "variant": "V8",
+      "pop": 96,
+      "moral": 71,
+      "frustration": 0,
+      "territory": 90,
+      "army": 0,
+      "military_power": 0,
+      "food": 884,
+      "bois": 332,
+      "pierre": 80,
+      "trade_routes": 0,
+      "known_civs": 0,
+      "status": "alive",
+      "gouvernement": "théocratie",
+      "valeurs": [
+        "isolationnisme",
+        "spiritualite",
+        "art"
+      ]
+    },
+    {
+      "id": 5,
+      "nom": "Les Mystiques des Brumes",
+      "variant": "V9",
+      "pop": 95,
+      "moral": 71,
+      "frustration": 0,
+      "territory": 89,
+      "army": 0,
+      "military_power": 0,
+      "food": 831,
+      "bois": 261,
+      "pierre": 80,
+      "trade_routes": 0,
+      "known_civs": 0,
+      "status": "alive",
+      "gouvernement": "théocratie",
+      "valeurs": [
+        "spiritualite",
+        "savoir",
+        "liberte"
+      ]
+    },
+    {
+      "id": 6,
+      "nom": "Les Marchands de la Route d'Or",
+      "variant": "V0",
+      "pop": 97,
+      "moral": 51,
+      "frustration": 0,
+      "territory": 0,
+      "army": 0,
+      "military_power": 0,
+      "food": 848,
+      "bois": 322,
+      "pierre": 80,
+      "trade_routes": 0,
+      "known_civs": 0,
+      "status": "alive",
+      "gouvernement": "oligarchie_marchande",
+      "valeurs": [
+        "commerce",
+        "exploration",
+        "liberte"
+      ]
+    },
+    {
+      "id": 7,
+      "nom": "La Cité des Sages",
+      "variant": "V9",
+      "pop": 104,
+      "moral": 62,
+      "frustration": 0,
+      "territory": 87,
+      "army": 0,
+      "military_power": 0,
+      "food": 861,
+      "bois": 268,
+      "pierre": 80,
+      "trade_routes": 0,
+      "known_civs": 0,
+      "status": "alive",
+      "gouvernement": "conseil_des_anciens",
+      "valeurs": [
+        "savoir",
+        "art",
+        "commerce"
+      ]
+    },
+    {
+      "id": 8,
+      "nom": "Les Chasseurs du Vent",
+      "variant": "V5",
+      "pop": 104,
+      "moral": 78,
+      "frustration": 0,
+      "territory": 16,
+      "army": 0,
+      "military_power": 0,
+      "food": 781,
+      "bois": 226,
+      "pierre": 80,
+      "trade_routes": 0,
+      "known_civs": 0,
+      "status": "alive",
+      "gouvernement": "tribu",
+      "valeurs": [
+        "exploration",
+        "survie",
+        "liberte"
+      ]
+    },
+    {
+      "id": 9,
+      "nom": "L'Empire des Forges",
+      "variant": "V4",
+      "pop": 104,
+      "moral": 76,
+      "frustration": 0,
+      "territory": 101,
+      "army": 0,
+      "military_power": 0,
+      "food": 884,
+      "bois": 272,
+      "pierre": 80,
+      "trade_routes": 0,
+      "known_civs": 0,
+      "status": "alive",
+      "gouvernement": "oligarchie",
+      "valeurs": [
+        "ordre",
+        "savoir",
+        "survie"
+      ]
+    },
+    {
+      "id": 10,
+      "nom": "Les Pillards de la Côte",
+      "variant": "V8",
+      "pop": 92,
+      "moral": 85,
+      "frustration": 0,
+      "territory": 114,
+      "army": 0,
+      "military_power": 0,
+      "food": 880,
+      "bois": 144,
+      "pierre": 80,
+      "trade_routes": 0,
+      "known_civs": 0,
+      "status": "alive",
+      "gouvernement": "monarchie",
+      "valeurs": [
+        "guerre",
+        "expansion",
+        "liberte"
+      ]
+    }
+  ],
+  "eventCounts": {
+    "catastrophe": 5,
+    "construction": 24,
+    "echec": 38,
+    "exploration": 11,
+    "affectation": 4,
+    "mission": 1,
+    "bonus": 3
+  },
+  "eventsRaw": [
+    {
+      "tick": 17,
+      "type": "echec",
+      "description": "L'Empire des Forges voulait construire \"construction\" mais n'a affecté aucun constructeur."
+    },
+    {
+      "tick": 18,
+      "type": "catastrophe",
+      "description": "Sécheresse dans Les Mystiques des Brumes ! Récoltes quasi-nulles."
+    },
+    {
+      "tick": 18,
+      "type": "construction",
+      "description": "Le Grand Khaganat a terminé \"38\" — 5 pers. affectées."
+    },
+    {
+      "tick": 18,
+      "type": "construction",
+      "description": "Le Grand Khaganat commence la construction de \"construction\" (5 ticks, 5 constructeurs)."
+    },
+    {
+      "tick": 18,
+      "type": "exploration",
+      "description": "Le Grand Khaganat envoie 5 éclaireurs vers exploration nord."
+    },
+    {
+      "tick": 18,
+      "type": "echec",
+      "description": "Les Ascètes de la Pierre voulait construire \"construction\" mais n'a affecté aucun constructeur."
+    },
+    {
+      "tick": 18,
+      "type": "affectation",
+      "description": "Les Mystiques des Brumes affecte 2 personnes → 2."
+    },
+    {
+      "tick": 18,
+      "type": "construction",
+      "description": "L'Empire des Forges commence la construction de \"habitations_temporaires\" (5 ticks, 0 constructeurs)."
+    },
+    {
+      "tick": 18,
+      "type": "echec",
+      "description": "L'Empire des Forges : pas assez de main-d'œuvre libre pour \"tâche générale\" (libre: 0)."
+    },
+    {
+      "tick": 19,
+      "type": "catastrophe",
+      "description": "Sécheresse dans Les Mystiques des Brumes ! Récoltes quasi-nulles."
+    },
+    {
+      "tick": 19,
+      "type": "construction",
+      "description": "Les Mystiques des Brumes a terminé \"7\" — 5 pers. affectées."
+    },
+    {
+      "tick": 19,
+      "type": "construction",
+      "description": "Les Marchands de la Route d'Or a terminé \"7\" — 2 pers. affectées."
+    },
+    {
+      "tick": 19,
+      "type": "construction",
+      "description": "Les Chasseurs du Vent a terminé \"20\" — 5 pers. affectées."
+    },
+    {
+      "tick": 19,
+      "type": "echec",
+      "description": "Les Gardiens du Mur voulait construire \"construction\" mais n'a affecté aucun constructeur."
+    },
+    {
+      "tick": 19,
+      "type": "echec",
+      "description": "Les Mystiques des Brumes voulait construire \"construction\" mais n'a affecté aucun constructeur."
+    },
+    {
+      "tick": 19,
+      "type": "construction",
+      "description": "Les Chasseurs du Vent commence la construction de \"20\" (5 ticks, 5 constructeurs)."
+    },
+    {
+      "tick": 19,
+      "type": "exploration",
+      "description": "Les Chasseurs du Vent envoie 5 éclaireurs vers exploration nord."
+    },
+    {
+      "tick": 19,
+      "type": "echec",
+      "description": "Les Pillards de la Côte voulait construire \"8\" mais n'a affecté aucun constructeur."
+    },
+    {
+      "tick": 20,
+      "type": "exploration",
+      "description": "Les éclaireurs de Les Conquérants du Feu Sacré rentrent (nord) : +0 territoires."
+    },
+    {
+      "tick": 20,
+      "type": "construction",
+      "description": "La Cité des Sages a terminé \"34\" — 1 pers. affectées."
+    },
+    {
+      "tick": 20,
+      "type": "echec",
+      "description": "Les Gardiens du Mur : pas assez de main-d'œuvre libre pour \"ressources\" (libre: 0)."
+    },
+    {
+      "tick": 20,
+      "type": "construction",
+      "description": "Les Ascètes de la Pierre commence la construction de \"construction\" (5 ticks, 1 constructeurs)."
+    },
+    {
+      "tick": 20,
+      "type": "construction",
+      "description": "Les Marchands de la Route d'Or commence la construction de \"5\" (5 ticks, 5 constructeurs)."
+    },
+    {
+      "tick": 20,
+      "type": "mission",
+      "description": "Les Marchands de la Route d'Or envoie 4 marchands vers direction:nord,sud,est ()."
+    },
+    {
+      "tick": 20,
+      "type": "affectation",
+      "description": "La Cité des Sages affecte 3 personnes → tâche générale."
+    },
+    {
+      "tick": 20,
+      "type": "echec",
+      "description": "La Cité des Sages voulait construire \"construction\" mais n'a affecté aucun constructeur."
+    },
+    {
+      "tick": 20,
+      "type": "echec",
+      "description": "Les Pillards de la Côte voulait construire \"9\" mais n'a affecté aucun constructeur."
+    },
+    {
+      "tick": 21,
+      "type": "bonus",
+      "description": "Récolte exceptionnelle pour Les Marchands de la Route d'Or !"
+    },
+    {
+      "tick": 21,
+      "type": "bonus",
+      "description": "Récolte exceptionnelle pour La Cité des Sages !"
+    },
+    {
+      "tick": 21,
+      "type": "exploration",
+      "description": "Les éclaireurs de Le Grand Khaganat rentrent (nord) : +0 territoires."
+    },
+    {
+      "tick": 21,
+      "type": "construction",
+      "description": "Les Mystiques des Brumes a terminé \"construction\" — 2 pers. affectées."
+    },
+    {
+      "tick": 21,
+      "type": "echec",
+      "description": "Les Ascètes de la Pierre voulait construire \"20\" mais n'a affecté aucun constructeur."
+    },
+    {
+      "tick": 21,
+      "type": "construction",
+      "description": "Les Mystiques des Brumes commence la construction de \"30\" (5 ticks, 1 constructeurs)."
+    },
+    {
+      "tick": 21,
+      "type": "affectation",
+      "description": "La Cité des Sages affecte 1 personnes → 20."
+    },
+    {
+      "tick": 21,
+      "type": "echec",
+      "description": "Les Pillards de la Côte voulait construire \"construction\" mais n'a affecté aucun constructeur."
+    },
+    {
+      "tick": 21,
+      "type": "echec",
+      "description": "Les Pillards de la Côte voulait construire \"construction\" mais n'a affecté aucun constructeur."
+    },
+    {
+      "tick": 22,
+      "type": "catastrophe",
+      "description": "Tempête dans Les Gardiens du Mur ! -77 bois."
+    },
+    {
+      "tick": 22,
+      "type": "bonus",
+      "description": "Récolte exceptionnelle pour L'Empire des Forges !"
+    },
+    {
+      "tick": 22,
+      "type": "construction",
+      "description": "Les Conquérants du Feu Sacré a terminé \"5\" — 5 pers. affectées."
+    },
+    {
+      "tick": 22,
+      "type": "exploration",
+      "description": "Les éclaireurs de Les Chasseurs du Vent rentrent (nord) : +0 territoires."
+    },
+    {
+      "tick": 22,
+      "type": "echec",
+      "description": "Les Gardiens du Mur voulait construire \"construction\" mais n'a affecté aucun constructeur."
+    },
+    {
+      "tick": 22,
+      "type": "echec",
+      "description": "Les Gardiens du Mur : pas assez de main-d'œuvre libre pour \"architectes\" (libre: 0)."
+    },
+    {
+      "tick": 22,
+      "type": "echec",
+      "description": "Les Gardiens du Mur : pas assez de main-d'œuvre libre pour \"ingénieurs\" (libre: 0)."
+    },
+    {
+      "tick": 22,
+      "type": "echec",
+      "description": "Les Ascètes de la Pierre voulait construire \"35\" mais n'a affecté aucun constructeur."
+    },
+    {
+      "tick": 22,
+      "type": "echec",
+      "description": "Les Ascètes de la Pierre : pas assez de main-d'œuvre libre pour \"tâche générale\" (libre: 0)."
+    },
+    {
+      "tick": 22,
+      "type": "construction",
+      "description": "La Cité des Sages commence la construction de \"construction\" (5 ticks, 1 constructeurs)."
+    },
+    {
+      "tick": 22,
+      "type": "echec",
+      "description": "La Cité des Sages : pas assez de main-d'œuvre libre pour \"1 travailleurs qualifiés\" (libre: 0)."
+    },
+    {
+      "tick": 22,
+      "type": "echec",
+      "description": "Les Pillards de la Côte voulait construire \"construction\" mais n'a affecté aucun constructeur."
+    },
+    {
+      "tick": 22,
+      "type": "echec",
+      "description": "Les Pillards de la Côte : pas assez de main-d'œuvre libre pour \"artisans expérimentés\" (libre: 0)."
+    },
+    {
+      "tick": 22,
+      "type": "echec",
+      "description": "Les Pillards de la Côte : pas assez de main-d'œuvre libre pour \"meilleurs guerriers\" (libre: 0)."
+    }
+  ],
+  "relicsDiscovered": [],
+  "diplomacy": [],
+  "wars": [],
+  "trades": [],
+  "tickRangeChecked": [
+    13,
+    22
+  ]
+}

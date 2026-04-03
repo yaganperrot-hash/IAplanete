@@ -1,6 +1,7 @@
 // Civ LLM — Ollama local (V4 : prompt 3 couches narratives + réponse JSON) — fallback : civMockLLM
 const { decide: mockDecide } = require('./civMockLLM');
-const { buildVariantBody } = require('./civPromptVariants');
+const { buildPromptFree } = require('./civPromptFree');
+const { parseCivNarrative } = require('./civParserLLM');
 
 const DEFAULT_MODEL = 'mistral-nemo';
 const DEFAULT_HOST  = 'http://localhost:11434';
@@ -454,154 +455,8 @@ function formatMemory(memory, ctx) {
   return lines.length ? `MÉMOIRE :\n${lines.join('\n')}` : '';
 }
 
-function buildPromptV0(ctx) {
-  const memoire = ctx.memoire || DEFAULT_MEMOIRE;
-
-  const enCours = (ctx.active_processes || []).length > 0
-    ? ctx.active_processes.map(p => `  - ${p.type} : "${p.target}" (${p.progress}/${p.max_ticks} mois, ${p.workers || 0} pers.)`).join('\n')
-    : '';
-  const processusSection = (ctx.active_processes || []).length > 0
-    ? `**Processus en cours :**\n${enCours}`
-    : '';
-
-  const existantes = (ctx.structures || []).map(s => s.name);
-  const structLines = (ctx.structures || []).map(s => {
-    const roleTag = s.role ? ` [${s.role}${s.capacity ? ', cap:'+s.capacity : ''}]` : '';
-    const wTag = s.workers > 0 ? ` — ${s.workers} travailleurs` : '';
-    return `  - ${s.name}${roleTag}${wTag}`;
-  });
-  const constructionsEnCours = (ctx.active_processes || []).filter(p => p.type === 'construction');
-  const chantierNote = constructionsEnCours.length >= 2
-    ? `\n⚠️ Tu as déjà ${constructionsEnCours.length} chantiers actifs — tu NE PEUX PAS lancer d'autres constructions.`
-    : constructionsEnCours.length === 1
-      ? `\n(1 chantier en cours — 1 de plus maximum)`
-      : '';
-  const structNote = existantes.length > 0
-    ? `Constructions existantes :\n${structLines.join('\n')}${chantierNote}`
-    : `(aucune construction)${chantierNote}`;
-
-  const reliquesText = '';
-  const reliquesPossedeesText = getTexteReliquesPossedees(ctx);
-  const conseqText = getTexteConsequencesReliques(ctx);
-  const animauxText = (ctx.animal_groups || []).length > 0 ? getTexteAnimaux(ctx) : '';
-  const rapportEclaireurs = getTexteExploration(ctx) +
-    (animauxText ? '\n' + animauxText : '') +
-    (reliquesText ? '\n' + reliquesText : '') +
-    (conseqText ? '\n' + conseqText : '');
-  return `${getRoleIntro(ctx)}
 
 
----
-
-#### COUCHE 1 : TON IDENTITÉ ET TA PSYCHOLOGIE
-
-${ctx.description ? ctx.description + '\n' : ''}Valeurs fondamentales : ${(ctx.valeurs || []).join(', ')}.
-${formatMemory(ctx.civ_memory, ctx) ? formatMemory(ctx.civ_memory, ctx) + '\n' : ''}Gouvernement : ${ctx.gouvernement}.
-
-${getUrgentTensions(ctx)}Ton peuple perçoit le monde à travers ces prismes :
-
-1. **Instinct de Survie :** ${getJaugeSecurite(ctx)}
-2. **Instinct face à l'Inconnu :** ${getJaugeOuverture(ctx)}
-3. **Instinct de Statut :** ${getJaugeFierte(ctx)}
-
----
-
-#### COUCHE 2 : L'ÉTAT DE TON MONDE
-
-**Saison : ${ctx.month_name || 'Juin'}, An ${ctx.year || 1} (${ctx.season || 'ete'})**
-
-**Ta Mémoire (mois dernier) :**
-- Projet : ${memoire.projet_principal}
-- Diplomatie : ${memoire.posture_diplomatique}
-- Inquiétude : ${memoire.inquietude_majeure}
-Tu peux poursuivre ce cap, l'adapter ou l'abandonner si une urgence l'exige.
-
-**Rapport d'intendance :**
-Population — ${getTextePopulation(ctx)}
-Ressources — ${getTexteRessources(ctx)}
-Moral — ${getTexteMoral(ctx)}
-
-**Rapport d'éclaireurs :**
-${rapportEclaireurs}
-
-${processusSection}
-
-**${structNote}**
-
-**État militaire :**
-ARMÉE : ${ctx.army_soldiers || 0} soldats, équipement: ${ctx.army_equipment || 'aucun'} (puissance: ${ctx.army_power || 0})${ctx.last_combat_tick ? ` — dernier combat : tick ${ctx.last_combat_tick}` : ' — aucun combat enregistré'}
-
----
-
-#### COUCHE 3 : TA DÉCISION
-
-${reliquesPossedeesText ? reliquesPossedeesText + '\n\n' : ''}${buildDynamicQuestion(ctx)}
-
-Verbes disponibles pour ACTIONS_MECANIQUES :
-- AFFECTER N travailleurs à [bâtiment existant ou nouvelle tâche]
-- CONSTRUIRE [nom] rôle:[habitation|agriculture|militaire|defense|commerce|religieux|savoir|bois|extraction|production|maritime|surveillance|autre]
-- EXPLORER direction:[nord|sud|est|ouest|nord-est|nord-ouest|sud-est|sud-ouest]
-- COLONISER direction:[direction]
-- ENVOYER_EMISSAIRE [nom_civ] personnes:[N]
-- ESPIONNER [nom_civ] personnes:[N]
-- ENVOYER_MARCHANDS [nom_civ] personnes:[N] offre:[ressource] demande:[ressource]
-- CHASSER [nom du groupe animal] personnes:[N]
-- ATTAQUER [nom_civ] (déclarer la guerre et mener un assaut immédiat)
-- DIPLOMATIE [guerre|alliance|paix|commerce] → [nom_civ]
-- ABANDONNER [nom_bâtiment]
-- LOI [description]
-- RIEN
-
-Réponds UNIQUEMENT avec ce JSON (aucun texte avant ou après) :
-
-{
-  "ANALYSE_INTERNE": "Un paragraphe : comment tes valeurs et instincts réagissent à la situation, pourquoi tu choisis cette stratégie.",
-  "ACTIONS_MECANIQUES": [
-    "VERBE paramètres"
-  ],
-  "NOUVEAU_CAP_STRATEGIQUE": {
-    "projet_principal": "Ton grand objectif pour les prochains mois.",
-    "posture_diplomatique": "Ta vision actuelle de tes voisins.",
-    "inquietude_majeure": "Le problème ou mystère que tu cherches à résoudre."
-  },
-  "SOUHAIT": "[un besoin ou désir de ta civilisation en une phrase]"
-}`;
-}
-
-const FORMAT_OLLAMA = `
-Verbes disponibles pour ACTIONS_MECANIQUES :
-- AFFECTER N travailleurs à [bâtiment existant ou nouvelle tâche]
-- CONSTRUIRE [nom] rôle:[habitation|agriculture|militaire|defense|commerce|religieux|savoir|bois|extraction|production|maritime|surveillance|autre]
-- EXPLORER direction:[nord|sud|est|ouest|nord-est|nord-ouest|sud-est|sud-ouest]
-- COLONISER direction:[direction]
-- ATTAQUER [nom_civ]
-- ENVOYER_EMISSAIRE [nom_civ] personnes:[N]
-- ESPIONNER [nom_civ] personnes:[N]
-- ENVOYER_MARCHANDS [nom_civ] personnes:[N] offre:[ressource] demande:[ressource]
-- CHASSER [nom du groupe animal] personnes:[N]
-- DIPLOMATIE [alliance|paix|commerce] → [nom_civ]
-- ABANDONNER [nom_bâtiment]
-- LOI [description]
-- RIEN
-
-Réponds UNIQUEMENT avec ce JSON (aucun texte avant ou après) :
-
-{
-  "ANALYSE_INTERNE": "Un paragraphe : comment tes valeurs et instincts réagissent à la situation.",
-  "ACTIONS_MECANIQUES": ["VERBE paramètres"],
-  "NOUVEAU_CAP_STRATEGIQUE": {
-    "projet_principal": "Ton grand objectif pour les prochains mois.",
-    "posture_diplomatique": "Ta vision actuelle de tes voisins.",
-    "inquietude_majeure": "Le problème que tu cherches à résoudre."
-  },
-  "SOUHAIT": "[un besoin ou désir de ta civilisation en une phrase]"
-}`;
-
-function buildPrompt(ctx) {
-  const variant = ctx.prompt_variant || 'V0';
-  if (variant === 'V0') return buildPromptV0(ctx);
-  return buildVariantBody(ctx, variant) + '\n\n' + FORMAT_OLLAMA;
-}
 
 // ─── Parser JSON ────────────────────────────────────────────────────────────────
 
@@ -798,6 +653,21 @@ function actionToEffetLine(action) {
       return `ATTAQUER ${cible}`;
     }
 
+    case 'RECRUTER': {
+      const nb = action.quantite || parseInt(action.parametres) || 10;
+      return `AFFECTER ${nb} personnes → armée`;
+    }
+
+    case 'UTILISER_RELIQUE': {
+      const cible = action.cible || action.parametres || '';
+      return `UTILISER_RELIQUE ${cible}`;
+    }
+
+    case 'ETUDIER_RELIQUE': {
+      const cible = action.cible || action.parametres || '';
+      return `ETUDIER_RELIQUE ${cible}`;
+    }
+
     case 'REORGANISER':
     case 'RIEN':
     default:
@@ -815,14 +685,14 @@ async function decide(context) {
   }
 
   try {
-    const prompt = buildPrompt(context);
+    const prompt = buildPromptFree(context);
     const response = await Promise.race([
       ollamaChat({
         model,
         messages: [
           {
             role: 'system',
-            content: 'Tu es le dirigeant d\'une civilisation vivante. Réponds UNIQUEMENT en JSON valide, sans aucun texte avant ou après. Les 3 clés obligatoires : ANALYSE_INTERNE, ACTIONS_MECANIQUES, NOUVEAU_CAP_STRATEGIQUE.',
+            content: 'Tu es le dirigeant d\'une civilisation vivante. Raconte ce que tu décides, pourquoi, avec qui, avec quoi. Sois précis sur ce que tu mets en mouvement.',
           },
           { role: 'user', content: prompt },
         ],
@@ -832,30 +702,68 @@ async function decide(context) {
       new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 60000)),
     ]);
 
-    const rawText = response.message.content.trim();
-    console.log('[OLLAMA CIV RAW]', rawText.slice(0, 300));
+    const narrative = response.message.content.trim();
+    console.log('[OLLAMA CIV NARRATIVE]', narrative.slice(0, 300));
 
-    const { analyseInterne, parsedActions, nouveauCap, souhait, parseError } = parseLLMResponse(rawText);
+    const { actions: parsedActions, etat_psychologique, memoire_a_conserver } = await parseCivNarrative(
+      narrative,
+      ollamaChat,
+      { model, stream: false, options: { temperature: 0.8, num_predict: 1200 } }
+    );
 
-    if (parseError) {
-      console.warn(`[LLM Parser] ${parseError} — fallback mock`);
-      console.warn(`[LLM Parser] RAW DUMP:\n${rawText.slice(0, 1200)}`);
-      const r = mockDecide(context);
-      return { ...r, nouveauCap: null, souhait: null, analyseInterne: r.strategie };
+    // Dériver souhait
+    const souhait = memoire_a_conserver || etat_psychologique || null;
+
+    // Convertir les actions parsées en format ancien pour effet_text
+    function parsedActionToOld(action) {
+      // mapping des types connus vers verbes majuscules
+      const verbMap = {
+        affecter: 'AFFECTER',
+        construire: 'CONSTRUIRE',
+        explorer: 'EXPLORER',
+        coloniser: 'COLONISER',
+        attaquer: 'ATTAQUER',
+        diplomatie: 'DIPLOMATIE',
+        envoyer_emissaire: 'ENVOYER_EMISSAIRE',
+        envoyer_marchands: 'ENVOYER_MARCHANDS',
+        espionner: 'ESPIONNER',
+        loi: 'LOI',
+        recruter: 'RECRUTER',
+        abandonner: 'ABANDONNER',
+        chasser: 'CHASSER',
+        utiliser_relique: 'UTILISER_RELIQUE',
+        etudier_relique: 'ETUDIER_RELIQUE',
+      };
+      const verbe = verbMap[action.type] || action.type.toUpperCase();
+      let parametres = '';
+      if (action.quantite) parametres += action.quantite + ' ';
+      if (action.cible) parametres += action.cible + ' ';
+      if (action.direction) parametres += 'direction:' + action.direction;
+      parametres = parametres.trim();
+      return {
+        type: verbe,
+        raw: action.description_brute || '',
+        parametres,
+        cible: action.cible,
+        quantite: action.quantite,
+        direction: action.direction,
+      };
     }
 
-    const effets_text = parsedActions.map(a => actionToEffetLine(a)).join('\n') || 'RIEN';
-    const actions     = parsedActions.map(a => a.type);
+    const oldActions = parsedActions.map(parsedActionToOld);
+    const effets_text = oldActions.map(a => actionToEffetLine(a)).join('\n') || 'RIEN';
+    const actions = parsedActions.map(a => a.type);
+
     console.log('[LLM] Actions parsées:', actions.join(', ') || 'RIEN');
 
     return {
-      strategie:    analyseInterne,
+      strategie: narrative,
       effets_text,
-      actions:      actions.length ? actions : ['RIEN'],
-      raison:       analyseInterne,
-      nouveauCap,
+      actions: actions.length ? actions : ['RIEN'],
+      raison: etat_psychologique,
+      nouveauCap: null,
       souhait,
-      analyseInterne,
+      analyseInterne: narrative,
     };
   } catch (err) {
     console.warn(`Ollama civ → mock (${err.message})`);

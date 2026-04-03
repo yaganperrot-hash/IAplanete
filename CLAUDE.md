@@ -3,6 +3,18 @@
 
 ---
 
+## 0. RÔLE DE CLAUDE (NE PAS CONTOURNER)
+
+**Je ne code jamais sauf demande express.**
+Mon rôle est uniquement :
+- Donner mon avis quand il est demandé
+- Préparer les tâches que Deepseek implémentera
+
+Toute modification de code sans instruction explicite est interdite.
+En particulier : **jamais toucher au code pendant qu'une simulation tourne.**
+
+---
+
 ## 1. PHILOSOPHIE FONDAMENTALE (NE PAS CONTOURNER)
 
 **Laisser les IA le plus libres possible en suggérant simplement.**
@@ -118,13 +130,22 @@ EFFETS :
 
 ## 8. PROBLÈMES CONNUS OUVERTS
 
-| Problème | Statut | Notes |
-|---|---|---|
-| Spirale de la mort (libre=0) | 🔴 À corriger | Prompt doit informer sans suggérer la solution |
-| Doublons (système à supprimer) | 🔴 À corriger | Chaque CRÉER = case indépendante |
-| Civs qui ne se rencontrent pas | 🟡 En cours | Spawn à 15-25 cases, checkFrontierContact à vérifier |
-| IA qui répète "culture des champs" | 🟡 En cours | Lié au prompt + modèle 3B trop faible |
-| Cap nourriture ~9999 | 🔴 À supprimer | Si le cap existe dans le code |
+> Aucun problème ouvert connu à ce jour.
+
+### Résolus (ne pas re-ouvrir)
+| Problème | Résolu |
+|---|---|
+| Cap nourriture ~9999 | ✅ 2026-03-28 |
+| Doublons bâtiments (CRÉER) | ✅ 2026-03-28 |
+| Spirale de la mort / LLM non déclenché en famine | ✅ 2026-03-29 |
+| Civs qui ne se rencontrent pas | ✅ Spawn repositionné + checkFrontierContact |
+| prompt_variant non transmis au contexte | ✅ Résolu via migration civPromptFree |
+| last_consequences non retourné par buildCivContext | ✅ Résolu via migration civPromptFree |
+| Reliques non injectées dans le prompt | ✅ ctx.relics ajouté dans buildCivContext |
+| Double colonne memoire / civ_memory | ✅ Résolu |
+| Tension de valeur non transmise au LLM | ✅ Résolu |
+| Moral guerre — infra ≠ activité réelle | ✅ satisfied exige army > 0 + combat récent (<20 ticks) |
+| IA qui répète les mêmes actions | ✅ section [ÉCHECS] civPromptFree + prompt narratif libre |
 
 ---
 

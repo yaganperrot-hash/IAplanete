@@ -1034,11 +1034,13 @@ class CivEngine {
       const effects   = parseEffets(effets_text).slice(0, Math.max(1, freeLaborLLM));
       let civState    = { ...civ };
       let allUpdates  = {};
+      let allEchecs   = [];
 
       for (const effect of effects) {
         Object.assign(civState, allUpdates);
-        const updates = resolveEffect(effect, civState, liveCivs, this.worldId, biomesMap, events, currentTick);
+        const { updates, echecs } = resolveEffect(effect, civState, liveCivs, this.worldId, biomesMap, events, currentTick);
         Object.assign(allUpdates, updates);
+        allEchecs.push(...echecs);
       }
 
       if (Object.keys(allUpdates).length > 0) {
@@ -1046,6 +1048,9 @@ class CivEngine {
         const values = Object.entries(allUpdates).filter(([k]) => !k.startsWith('_')).map(([, v]) => v);
         if (fields) db.prepare(`UPDATE civilizations SET ${fields} WHERE id=?`).run(...values, civ.id);
       }
+
+      // Stocker la narration et les échecs (prompt‑free architecture)
+      db.prepare('UPDATE civilizations SET last_narrative=?, last_echecs=? WHERE id=?').run(strategie, JSON.stringify(allEchecs), civ.id);
 
       const refreshed = db.prepare('SELECT population, territory_count, moral FROM civilizations WHERE id=?').get(civ.id);
       console.log(`  [CIV] ${civ.nom}: "${(strategie || '').slice(0, 60)}..." | pop=${refreshed?.population} moral=${refreshed?.moral}`);

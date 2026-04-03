@@ -278,6 +278,9 @@ const ALTER_MIGRATIONS = [
   "ALTER TABLE civilizations ADD COLUMN current_wish TEXT DEFAULT NULL",
   // Prompt variants experiment
   "ALTER TABLE civilizations ADD COLUMN prompt_variant TEXT DEFAULT 'V0'",
+  // Prompt free architecture
+  "ALTER TABLE civilizations ADD COLUMN last_narrative TEXT DEFAULT NULL",
+  "ALTER TABLE civilizations ADD COLUMN last_echecs TEXT DEFAULT '[]'",
 ];
 
 function migrate() {
@@ -314,9 +317,26 @@ function migrate() {
     console.log('✓ TABLE civ_snapshots');
   } catch (e) {
     // Table déjà existante → ignorer
-  }
-
-  console.log('✓ Migrations SQLite appliquées');
+    }
+  
+    // Table unknown_actions (prompt-free architecture)
+    try {
+      db.prepare(`CREATE TABLE IF NOT EXISTS unknown_actions (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        world_id INTEGER NOT NULL,
+        civ_id INTEGER NOT NULL,
+        tick INTEGER NOT NULL,
+        action_type TEXT NOT NULL,
+        description_brute TEXT,
+        confiance REAL DEFAULT 0.5,
+        captured_at TEXT DEFAULT (datetime('now'))
+      )`).run();
+      console.log('✓ TABLE unknown_actions');
+    } catch (e) {
+      // Table déjà existante → ignorer
+    }
+  
+    console.log('✓ Migrations SQLite appliquées');
 }
 
 if (require.main === module) {

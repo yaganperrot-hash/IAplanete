@@ -1,0 +1,505 @@
+{
+  "timestamp": "2026-04-03T16:59:59.987Z",
+  "heure": "18:59",
+  "tick": 53,
+  "civs": [
+    {
+      "id": 1,
+      "nom": "Les Conquérants du Feu Sacré",
+      "variant": "V0",
+      "pop": 114,
+      "moral": 84,
+      "frustration": 0,
+      "territory": 44,
+      "army": 0,
+      "military_power": 0,
+      "food": 1543,
+      "bois": 314,
+      "pierre": 70,
+      "trade_routes": 0,
+      "known_civs": 0,
+      "status": "alive",
+      "gouvernement": "monarchie",
+      "valeurs": [
+        "expansion",
+        "guerre",
+        "spiritualite"
+      ]
+    },
+    {
+      "id": 2,
+      "nom": "Les Gardiens du Mur",
+      "variant": "V4",
+      "pop": 92,
+      "moral": 77,
+      "frustration": 0,
+      "territory": 10,
+      "army": 0,
+      "military_power": 0,
+      "food": 1499,
+      "bois": 204,
+      "pierre": 80,
+      "trade_routes": 0,
+      "known_civs": 0,
+      "status": "alive",
+      "gouvernement": "dictature_militaire",
+      "valeurs": [
+        "ordre",
+        "survie",
+        "guerre"
+      ]
+    },
+    {
+      "id": 3,
+      "nom": "Le Grand Khaganat",
+      "variant": "V5",
+      "pop": 89,
+      "moral": 64,
+      "frustration": 0,
+      "territory": 14,
+      "army": 0,
+      "military_power": 0,
+      "food": 1534,
+      "bois": 386,
+      "pierre": 80,
+      "trade_routes": 0,
+      "known_civs": 0,
+      "status": "alive",
+      "gouvernement": "monarchie",
+      "valeurs": [
+        "expansion",
+        "guerre",
+        "ordre"
+      ]
+    },
+    {
+      "id": 4,
+      "nom": "Les Ascètes de la Pierre",
+      "variant": "V8",
+      "pop": 76,
+      "moral": 78,
+      "frustration": 0,
+      "territory": 94,
+      "army": 0,
+      "military_power": 0,
+      "food": 1637,
+      "bois": 372,
+      "pierre": 80,
+      "trade_routes": 0,
+      "known_civs": 0,
+      "status": "alive",
+      "gouvernement": "théocratie",
+      "valeurs": [
+        "isolationnisme",
+        "spiritualite",
+        "art"
+      ]
+    },
+    {
+      "id": 5,
+      "nom": "Les Mystiques des Brumes",
+      "variant": "V9",
+      "pop": 78,
+      "moral": 76,
+      "frustration": 0,
+      "territory": 91,
+      "army": 0,
+      "military_power": 0,
+      "food": 1554,
+      "bois": 438,
+      "pierre": 80,
+      "trade_routes": 0,
+      "known_civs": 0,
+      "status": "alive",
+      "gouvernement": "théocratie",
+      "valeurs": [
+        "spiritualite",
+        "savoir",
+        "liberte"
+      ]
+    },
+    {
+      "id": 6,
+      "nom": "Les Marchands de la Route d'Or",
+      "variant": "V0",
+      "pop": 77,
+      "moral": 27,
+      "frustration": 31,
+      "territory": 0,
+      "army": 0,
+      "military_power": 0,
+      "food": 1567,
+      "bois": 285,
+      "pierre": 80,
+      "trade_routes": 0,
+      "known_civs": 0,
+      "status": "alive",
+      "gouvernement": "oligarchie_marchande",
+      "valeurs": [
+        "commerce",
+        "exploration",
+        "liberte"
+      ]
+    },
+    {
+      "id": 7,
+      "nom": "La Cité des Sages",
+      "variant": "V9",
+      "pop": 89,
+      "moral": 69,
+      "frustration": 0,
+      "territory": 91,
+      "army": 0,
+      "military_power": 0,
+      "food": 1585,
+      "bois": 303,
+      "pierre": 80,
+      "trade_routes": 0,
+      "known_civs": 0,
+      "status": "alive",
+      "gouvernement": "conseil_des_anciens",
+      "valeurs": [
+        "savoir",
+        "art",
+        "commerce"
+      ]
+    },
+    {
+      "id": 8,
+      "nom": "Les Chasseurs du Vent",
+      "variant": "V5",
+      "pop": 89,
+      "moral": 54,
+      "frustration": 31,
+      "territory": 27,
+      "army": 0,
+      "military_power": 0,
+      "food": 1516,
+      "bois": 338,
+      "pierre": 80,
+      "trade_routes": 0,
+      "known_civs": 0,
+      "status": "alive",
+      "gouvernement": "tribu",
+      "valeurs": [
+        "exploration",
+        "survie",
+        "liberte"
+      ]
+    },
+    {
+      "id": 9,
+      "nom": "L'Empire des Forges",
+      "variant": "V4",
+      "pop": 117,
+      "moral": 77,
+      "frustration": 0,
+      "territory": 109,
+      "army": 0,
+      "military_power": 0,
+      "food": 1593,
+      "bois": 162,
+      "pierre": 80,
+      "trade_routes": 0,
+      "known_civs": 0,
+      "status": "alive",
+      "gouvernement": "oligarchie",
+      "valeurs": [
+        "ordre",
+        "savoir",
+        "survie"
+      ]
+    },
+    {
+      "id": 10,
+      "nom": "Les Pillards de la Côte",
+      "variant": "V8",
+      "pop": 69,
+      "moral": 86,
+      "frustration": 0,
+      "territory": 114,
+      "army": 0,
+      "military_power": 0,
+      "food": 1627,
+      "bois": 141,
+      "pierre": 80,
+      "trade_routes": 0,
+      "known_civs": 0,
+      "status": "alive",
+      "gouvernement": "monarchie",
+      "valeurs": [
+        "guerre",
+        "expansion",
+        "liberte"
+      ]
+    }
+  ],
+  "eventCounts": {
+    "bonus": 3,
+    "construction": 43,
+    "echec": 221,
+    "exploration": 8,
+    "catastrophe": 19,
+    "affectation": 3
+  },
+  "eventsRaw": [
+    {
+      "tick": 50,
+      "type": "construction",
+      "description": "Les Conquérants du Feu Sacré a terminé \"36\" — 1 pers. affectées."
+    },
+    {
+      "tick": 50,
+      "type": "exploration",
+      "description": "Les éclaireurs de Les Marchands de la Route d'Or rentrent (est) : +0 territoires."
+    },
+    {
+      "tick": 50,
+      "type": "exploration",
+      "description": "Les éclaireurs de Les Chasseurs du Vent rentrent (ouest) : +3 territoires."
+    },
+    {
+      "tick": 50,
+      "type": "construction",
+      "description": "L'Empire des Forges a terminé \"17\" — 4 pers. affectées."
+    },
+    {
+      "tick": 50,
+      "type": "echec",
+      "description": "Les Conquérants du Feu Sacré voulait construire \"20\" mais n'a affecté aucun constructeur."
+    },
+    {
+      "tick": 50,
+      "type": "echec",
+      "description": "Les Conquérants du Feu Sacré : pas assez de main-d'œuvre libre pour \"20\" (libre: 0)."
+    },
+    {
+      "tick": 50,
+      "type": "echec",
+      "description": "Les Conquérants du Feu Sacré voulait construire \"couvertures\" mais n'a affecté aucun constructeur."
+    },
+    {
+      "tick": 50,
+      "type": "echec",
+      "description": "Les Gardiens du Mur : pas assez de main-d'œuvre libre pour \"10\" (libre: 0)."
+    },
+    {
+      "tick": 50,
+      "type": "echec",
+      "description": "Les Gardiens du Mur voulait construire \"construction\" mais n'a affecté aucun constructeur."
+    },
+    {
+      "tick": 50,
+      "type": "echec",
+      "description": "Le Grand Khaganat voulait construire \"50\" mais n'a affecté aucun constructeur."
+    },
+    {
+      "tick": 50,
+      "type": "echec",
+      "description": "Les Ascètes de la Pierre voulait construire \"direction:interne\" mais n'a affecté aucun constructeur."
+    },
+    {
+      "tick": 50,
+      "type": "echec",
+      "description": "Les Ascètes de la Pierre : pas assez de main-d'œuvre libre pour \"4 direction:forets_environnantes\" (libre: 0)."
+    },
+    {
+      "tick": 50,
+      "type": "echec",
+      "description": "Les Mystiques des Brumes voulait construire \"construction\" mais n'a affecté aucun constructeur."
+    },
+    {
+      "tick": 50,
+      "type": "echec",
+      "description": "Les Marchands de la Route d'Or : pas assez de main-d'œuvre libre pour \"50\" (libre: 0)."
+    },
+    {
+      "tick": 50,
+      "type": "echec",
+      "description": "Les Marchands de la Route d'Or voulait construire \"construction\" mais n'a affecté aucun constructeur."
+    },
+    {
+      "tick": 50,
+      "type": "echec",
+      "description": "Les Chasseurs du Vent voulait construire \"5\" mais n'a affecté aucun constructeur."
+    },
+    {
+      "tick": 50,
+      "type": "echec",
+      "description": "Les Chasseurs du Vent voulait construire \"construction\" mais n'a affecté aucun constructeur."
+    },
+    {
+      "tick": 50,
+      "type": "echec",
+      "description": "Les Chasseurs du Vent : pas assez de main-d'œuvre libre pour \"tâche générale\" (libre: 0)."
+    },
+    {
+      "tick": 50,
+      "type": "echec",
+      "description": "L'Empire des Forges : pas assez de main-d'œuvre libre pour \"1 meilleur_forgeron\" (libre: 0)."
+    },
+    {
+      "tick": 50,
+      "type": "echec",
+      "description": "L'Empire des Forges : pas assez de main-d'œuvre libre pour \"partie_greniers\" (libre: 0)."
+    },
+    {
+      "tick": 50,
+      "type": "echec",
+      "description": "Les Pillards de la Côte voulait construire \"10\" mais n'a affecté aucun constructeur."
+    },
+    {
+      "tick": 50,
+      "type": "echec",
+      "description": "Les Pillards de la Côte voulait construire \"50\" mais n'a affecté aucun constructeur."
+    },
+    {
+      "tick": 51,
+      "type": "echec",
+      "description": "Les Conquérants du Feu Sacré voulait construire \"28\" mais n'a affecté aucun constructeur."
+    },
+    {
+      "tick": 51,
+      "type": "echec",
+      "description": "Les Gardiens du Mur voulait construire \"construction\" mais n'a affecté aucun constructeur."
+    },
+    {
+      "tick": 51,
+      "type": "echec",
+      "description": "Les Mystiques des Brumes voulait construire \"17\" mais n'a affecté aucun constructeur."
+    },
+    {
+      "tick": 51,
+      "type": "echec",
+      "description": "Les Marchands de la Route d'Or voulait construire \"construction\" mais n'a affecté aucun constructeur."
+    },
+    {
+      "tick": 51,
+      "type": "echec",
+      "description": "Les Chasseurs du Vent voulait construire \"6\" mais n'a affecté aucun constructeur."
+    },
+    {
+      "tick": 51,
+      "type": "echec",
+      "description": "L'Empire des Forges : pas assez de main-d'œuvre libre pour \"hunters\" (libre: 0)."
+    },
+    {
+      "tick": 51,
+      "type": "echec",
+      "description": "L'Empire des Forges : pas assez de main-d'œuvre libre pour \"travailleurs disponibles\" (libre: 0)."
+    },
+    {
+      "tick": 52,
+      "type": "catastrophe",
+      "description": "Inondation dans Les Pillards de la Côte ! -2 morts."
+    },
+    {
+      "tick": 52,
+      "type": "echec",
+      "description": "Les Conquérants du Feu Sacré voulait construire \"30\" mais n'a affecté aucun constructeur."
+    },
+    {
+      "tick": 52,
+      "type": "echec",
+      "description": "Les Gardiens du Mur voulait construire \"construction\" mais n'a affecté aucun constructeur."
+    },
+    {
+      "tick": 52,
+      "type": "echec",
+      "description": "Les Gardiens du Mur voulait construire \"direction:intérieure\" mais n'a affecté aucun constructeur."
+    },
+    {
+      "tick": 52,
+      "type": "echec",
+      "description": "Les Mystiques des Brumes voulait construire \"construction\" mais n'a affecté aucun constructeur."
+    },
+    {
+      "tick": 52,
+      "type": "echec",
+      "description": "La Cité des Sages voulait construire \"7\" mais n'a affecté aucun constructeur."
+    },
+    {
+      "tick": 52,
+      "type": "echec",
+      "description": "Les Chasseurs du Vent voulait construire \"7\" mais n'a affecté aucun constructeur."
+    },
+    {
+      "tick": 52,
+      "type": "echec",
+      "description": "L'Empire des Forges voulait construire \"construction\" mais n'a affecté aucun constructeur."
+    },
+    {
+      "tick": 52,
+      "type": "echec",
+      "description": "Les Pillards de la Côte : pas assez de main-d'œuvre libre pour \"20\" (libre: 0)."
+    },
+    {
+      "tick": 52,
+      "type": "echec",
+      "description": "Les Pillards de la Côte voulait construire \"armes\" mais n'a affecté aucun constructeur."
+    },
+    {
+      "tick": 52,
+      "type": "echec",
+      "description": "Les Pillards de la Côte voulait construire \"navires\" mais n'a affecté aucun constructeur."
+    },
+    {
+      "tick": 53,
+      "type": "catastrophe",
+      "description": "Inondation dans Les Mystiques des Brumes ! -2 morts."
+    },
+    {
+      "tick": 53,
+      "type": "echec",
+      "description": "Les Gardiens du Mur voulait construire \"1\" mais n'a affecté aucun constructeur."
+    },
+    {
+      "tick": 53,
+      "type": "echec",
+      "description": "Les Gardiens du Mur voulait construire \"construction\" mais n'a affecté aucun constructeur."
+    },
+    {
+      "tick": 53,
+      "type": "echec",
+      "description": "Les Gardiens du Mur : pas assez de main-d'œuvre libre pour \"nos paysans et chasseurs\" (libre: 0)."
+    },
+    {
+      "tick": 53,
+      "type": "echec",
+      "description": "Le Grand Khaganat voulait construire \"28\" mais n'a affecté aucun constructeur."
+    },
+    {
+      "tick": 53,
+      "type": "echec",
+      "description": "Les Mystiques des Brumes voulait construire \"construction\" mais n'a affecté aucun constructeur."
+    },
+    {
+      "tick": 53,
+      "type": "echec",
+      "description": "Les Marchands de la Route d'Or voulait construire \"construction\" mais n'a affecté aucun constructeur."
+    },
+    {
+      "tick": 53,
+      "type": "echec",
+      "description": "Les Chasseurs du Vent voulait construire \"10\" mais n'a affecté aucun constructeur."
+    },
+    {
+      "tick": 53,
+      "type": "echec",
+      "description": "L'Empire des Forges voulait construire \"construction\" mais n'a affecté aucun constructeur."
+    },
+    {
+      "tick": 53,
+      "type": "echec",
+      "description": "Les Pillards de la Côte voulait construire \"construction\" mais n'a affecté aucun constructeur."
+    }
+  ],
+  "relicsDiscovered": [],
+  "diplomacy": [],
+  "wars": [],
+  "trades": [],
+  "tickRangeChecked": [
+    22,
+    53
+  ]
+}

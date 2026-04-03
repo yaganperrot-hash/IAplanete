@@ -23,8 +23,9 @@ function collectSnapshot(prevTickRange) {
   const db = new DatabaseSync(DB_PATH);
   const now = new Date();
 
-  const world = db.prepare("SELECT tick FROM worlds WHERE world_type='civilisations' LIMIT 1").get();
+  const world = db.prepare("SELECT id, tick FROM worlds WHERE world_type='civilisations' ORDER BY id DESC LIMIT 1").get();
   const tick = world?.tick ?? 0;
+  const worldId = world?.id ?? 1;
 
   const civs = db.prepare(`
     SELECT id, nom, prompt_variant, population, moral, frustration_ticks,
@@ -54,6 +55,8 @@ function collectSnapshot(prevTickRange) {
       trade_routes: c.active_trade_routes ?? 0,
       known_civs: Object.keys(knowledge).length,
       status: c.status,
+      gouvernement: c.gouvernement ?? '?',
+      valeurs: safeJSON(c.valeurs, []),
     };
   });
 
@@ -61,7 +64,7 @@ function collectSnapshot(prevTickRange) {
   const minTick = prevTickRange ?? (tick - 80);
   const events = db.prepare(`
     SELECT tick, type, description FROM events
-    WHERE tick > ? AND world_id = 2
+    WHERE tick > ? AND world_id = ${worldId}
     ORDER BY tick ASC
   `).all(minTick);
 
@@ -80,7 +83,7 @@ function collectSnapshot(prevTickRange) {
   `).all(minTick);
 
   // Diplomatie
-  const diplo = db.prepare('SELECT civ_a_id, civ_b_id, relation FROM diplomacy WHERE world_id=2').all();
+  const diplo = db.prepare(`SELECT civ_a_id, civ_b_id, relation FROM diplomacy WHERE world_id=${worldId}`).all();
 
   // Guerres récentes (events type 'guerre' ou 'combat')
   const wars = events.filter(e => ['guerre', 'combat', 'attaque'].includes(e.type));
@@ -145,13 +148,15 @@ async function generateFinalReport() {
 
   // Charger tous les snapshots sauvegardés (au cas où le process aurait redémarré)
   const allSnaps = [];
-  const files = fs.readdirSync(LOGS_DIR).filter(f => f.endsWith('.json')).sort();
+  const files = fs.readdirSync(LOGS_DIR).filter(f => f.endsWith('.json'));
   files.forEach(f => {
     try {
       allSnaps.push(JSON.parse(fs.readFileSync(path.join(LOGS_DIR, f), 'utf8')));
     } catch {}
   });
   if (allSnaps.length === 0 && snapshots.length > 0) allSnaps.push(...snapshots);
+  // Trier par tick croissant (évite le bug alphabétique 22h > 00h)
+  allSnaps.sort((a, b) => (a.tick ?? 0) - (b.tick ?? 0));
 
   const reportPath = path.join(REPORT_DIR, 'rapport_nuit.html');
   const html = buildHTMLReport(allSnaps);
@@ -297,6 +302,10 @@ function buildHTMLReport(snaps) {
     .rank1 td:first-child { color: #f7c948; font-weight: bold; }
     .rank1 { background: #1a2010; }
     .dead { opacity: 0.5; text-decoration: line-through; }
+    .civ-fiche { background: #1a202c; border: 1px solid #2d3748; border-radius: 8px; padding: 15px 20px; margin: 12px 0; }
+    .fiche-header { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; flex-wrap: wrap; }
+    .fiche-stats { font-size: 0.85em; color: #a0aec0; line-height: 1.8; }
+    .fiche-events ul { margin: 4px 0; padding-left: 20px; font-size: 0.83em; color: #cbd5e0; }
   `;
 
   const tickRange = `tick ${first.tick} → ${last.tick}`;
@@ -350,14 +359,28 @@ function buildHTMLReport(snaps) {
   });
   popTable += '</table>';
 
+  // Timeline moral par snapshot
+  let moralTable = `<table><tr><th>Heure</th><th>Tick</th>`;
+  popEvolution[0]?.civs.forEach(c => { moralTable += `<th>${c.variant}</th>`; });
+  moralTable += '</tr>';
+  popEvolution.forEach(h => {
+    moralTable += `<tr><td>${h.heure}</td><td>${h.tick}</td>`;
+    h.civs.forEach(c => {
+      const cls = (c.moral ?? 100) < 30 ? 'bad' : (c.moral ?? 100) < 60 ? 'neutral' : 'good';
+      moralTable += `<td class="${cls}">${c.moral ?? '—'}</td>`;
+    });
+    moralTable += '</tr>';
+  });
+  moralTable += '</table>';
+
   // Reliques
   let relicSection = '';
   if (uniqueRelics.length > 0) {
     relicSection = `<h2>🏺 Reliques découvertes</h2><table>
-      <tr><th>Nom</th><th>Type</th><th>Ère</th><th>Tick</th><th>Découverte par</th><th>Variant</th><th>Prise</th><th>Utilisée</th></tr>`;
+      <tr><th>Nom</th><th>Type</th><th>Tick</th><th>Découverte par</th><th>Variant</th><th>Prise</th><th>Utilisée</th></tr>`;
     uniqueRelics.forEach(r => {
       relicSection += `<tr>
-        <td>${r.name}</td><td>${r.type}</td><td>${r.era}</td><td>${r.discovered_at_tick}</td>
+        <td>${r.name}</td><td>${r.type}</td><td>${r.discovered_at_tick}</td>
         <td>${r.owner_nom ?? '?'}</td><td><span class="badge badge-blue">${r.owner_variant ?? '?'}</span></td>
         <td>${r.taken ? '<span class="good">✓</span>' : '✗'}</td>
         <td>${r.used ? '<span class="good">✓</span>' : '✗'}</td>
@@ -419,6 +442,24 @@ function buildHTMLReport(snaps) {
     cataSection += '</table>';
   }
 
+  // Lois
+  const allLois = allEvents.filter(e => e.type === 'loi');
+  let loisSection = '';
+  if (allLois.length > 0) {
+    loisSection = `<h2>📜 Lois adoptées</h2><table><tr><th>Tick</th><th>Description</th></tr>`;
+    allLois.forEach(l => { loisSection += `<tr><td>${l.tick}</td><td>${l.description}</td></tr>`; });
+    loisSection += '</table>';
+  }
+
+  // Découvertes
+  const allDecouvertes = allEvents.filter(e => e.type === 'decouverte');
+  let decouvertesSection = '';
+  if (allDecouvertes.length > 0) {
+    decouvertesSection = `<h2>🔬 Découvertes & Technologies</h2><table><tr><th>Tick</th><th>Description</th></tr>`;
+    allDecouvertes.forEach(d => { decouvertesSection += `<tr><td>${d.tick}</td><td>${d.description}</td></tr>`; });
+    decouvertesSection += '</table>';
+  }
+
   // Leçons tirées
   const best = sortedVariants[0];
   const worst = sortedVariants[sortedVariants.length - 1];
@@ -464,6 +505,75 @@ function buildHTMLReport(snaps) {
       (inciter à finaliser les échanges), soit une correction mécanique (trigger automatique sur contact frontalier marchand).</div>`;
   }
 
+  const deads = sortedVariants.filter(s => s.statusFinal === 'dead');
+  if (deads.length > 0) {
+    lecons += `<div class="lecon"><strong>💀 Civilisations disparues (${deads.length}) :</strong> ${deads.map(s => `${s.variant} — ${s.nom}`).join(' · ')}<br>
+      → ${deads.length > sortedVariants.length / 2 ? 'Plus de la moitié des civs sont mortes. Conditions trop dures ou prompts inadaptés.' : 'Taux de survie acceptable.'}</div>`;
+  }
+
+  const topDiscoverer = [...sortedVariants].sort((a, b) => {
+    const da = allDecouvertes.filter(e => e.description?.includes(a.nom)).length;
+    const db2 = allDecouvertes.filter(e => e.description?.includes(b.nom)).length;
+    return db2 - da;
+  })[0];
+  if (topDiscoverer) {
+    const topCount = allDecouvertes.filter(e => e.description?.includes(topDiscoverer.nom)).length;
+    if (topCount > 0) {
+      lecons += `<div class="lecon"><strong>🔬 Plus grand explorateur intellectuel :</strong> ${topDiscoverer.variant} — ${topDiscoverer.nom} (${topCount} découvertes)<br>
+        → Ce variant favorise le développement des connaissances.</div>`;
+    }
+  }
+
+  // Fiches individuelles
+  let fichesSection = `<h2>🏛️ Fiches civilisations</h2>`;
+  sortedVariants.forEach(s => {
+    const civLast = last.civs.find(c => c.variant === s.variant);
+    const civFirst = first.civs.find(c => c.variant === s.variant);
+    const civLoisCiv = allLois.filter(e => e.description && e.description.includes(s.nom));
+    const civDecouvertesCiv = allDecouvertes.filter(e => e.description && e.description.includes(s.nom));
+    const civEpidemies = allEvents.filter(e => e.type === 'epidemie' && e.description && e.description.includes(s.nom));
+    const isDead = s.statusFinal === 'dead';
+    const gouvernement = civLast?.gouvernement ?? '?';
+    const valeursRaw = civLast?.valeurs;
+    const valeurs = Array.isArray(valeursRaw) ? valeursRaw.join(', ') : (typeof valeursRaw === 'string' ? valeursRaw : '?');
+
+    fichesSection += `
+  <div class="civ-fiche${isDead ? ' dead' : ''}">
+    <div class="fiche-header">
+      <span class="badge badge-blue">${s.variant}</span>
+      <strong>${s.nom}</strong>
+      ${isDead ? '<span class="badge badge-red">DISPARUE</span>' : ''}
+      <span class="meta" style="font-size:0.85em">${gouvernement}</span>
+    </div>
+    <div class="fiche-stats">
+      <strong>Population :</strong> ${s.popStart} → ${s.popEnd ?? '?'} (${s.popGrowth >= 0 ? '+' : ''}${s.popGrowth ?? '?'}) &nbsp;|&nbsp;
+      <strong>Moral :</strong> ${civFirst?.moral ?? '?'} → ${civLast?.moral ?? '?'} &nbsp;|&nbsp;
+      <strong>Territoire Δ :</strong> ${s.territoryGrowth >= 0 ? '+' : ''}${s.territoryGrowth ?? '?'} &nbsp;|&nbsp;
+      <strong>Armée :</strong> ${civLast?.army ?? 0}<br>
+      <strong>Ressources finales :</strong> 🌾 ${civLast?.food ?? 0} &nbsp; 🪵 ${civLast?.bois ?? 0} &nbsp; 🪨 ${civLast?.pierre ?? 0}<br>
+      <strong>Valeurs :</strong> ${valeurs}<br>
+      <strong>Activité :</strong> ${s.explorations} explor. · ${s.constructions} constru. · ${s.diplomatie} diplo. · ${s.echecs} échecs · ${s.revoltes} révolte(s)
+    </div>`;
+
+    if (civLoisCiv.length > 0) {
+      fichesSection += `<div class="fiche-events"><strong>📜 Lois adoptées :</strong><ul>`;
+      civLoisCiv.forEach(l => { fichesSection += `<li>[tick ${l.tick}] ${l.description}</li>`; });
+      fichesSection += `</ul></div>`;
+    }
+    if (civDecouvertesCiv.length > 0) {
+      fichesSection += `<div class="fiche-events"><strong>🔬 Découvertes :</strong><ul>`;
+      civDecouvertesCiv.forEach(d => { fichesSection += `<li>[tick ${d.tick}] ${d.description}</li>`; });
+      fichesSection += `</ul></div>`;
+    }
+    if (civEpidemies.length > 0) {
+      fichesSection += `<div class="fiche-events"><strong>🦠 Épidémies :</strong><ul>`;
+      civEpidemies.forEach(e => { fichesSection += `<li>[tick ${e.tick}] ${e.description}</li>`; });
+      fichesSection += `</ul></div>`;
+    }
+
+    fichesSection += `</div>`;
+  });
+
   // Résumé final
   const totalTicksPlayed = last.tick - first.tick;
   const totalEventsCounted = allEvents.length;
@@ -497,12 +607,18 @@ function buildHTMLReport(snaps) {
   <h2>📈 Évolution de la population par heure</h2>
   ${popTable}
 
+  <h2>🧠 Évolution du moral par heure</h2>
+  ${moralTable}
+
   ${relicSection}
   ${diploSection}
   ${warSection}
   ${tradeSection}
   ${cataSection}
+  ${loisSection}
+  ${decouvertesSection}
   ${lecons}
+  ${fichesSection}
 </div>
 </body>
 </html>`;
@@ -510,10 +626,10 @@ function buildHTMLReport(snaps) {
 
 // ─── Scheduler ───────────────────────────────────────────────────────────────
 
-function msUntilNext6AM() {
+function msUntilNextReport() {
   const now = new Date();
   const target = new Date(now);
-  target.setHours(6, 0, 0, 0);
+  target.setHours(22, 0, 0, 0);
   if (target <= now) target.setDate(target.getDate() + 1);
   return target - now;
 }
@@ -531,6 +647,11 @@ async function main() {
   console.log(`Logs → docs/night_logs/`);
   console.log(`PDF → docs/rapport_nuit.pdf\n`);
 
+  // Nettoyer les anciens snapshots pour éviter les mélanges inter-nuits
+  const oldFiles = fs.readdirSync(LOGS_DIR).filter(f => f.endsWith('.json'));
+  oldFiles.forEach(f => fs.unlinkSync(path.join(LOGS_DIR, f)));
+  if (oldFiles.length > 0) console.log(`  ${oldFiles.length} ancien(s) snapshot(s) supprimé(s)`);
+
   // Snapshot immédiat au démarrage
   await doHourlyCheck();
 
@@ -545,9 +666,9 @@ async function main() {
   }
   scheduleNextHour();
 
-  // Rapport final à 6h
-  const ms6am = msUntilNext6AM();
-  console.log(`Rapport final dans ${Math.round(ms6am / 3600000 * 10) / 10}h (à 6h00)`);
+  // Rapport final à 22h30
+  const ms6am = msUntilNextReport();
+  console.log(`Rapport final dans ${Math.round(ms6am / 3600000 * 10) / 10}h (à 22h00)`);
   setTimeout(async () => {
     await doHourlyCheck(); // snapshot final avant rapport
     await generateFinalReport();
@@ -556,7 +677,11 @@ async function main() {
   }, ms6am);
 }
 
-main().catch(err => {
-  console.error('FATAL:', err);
-  process.exit(1);
-});
+if (require.main === module) {
+  main().catch(err => {
+    console.error('FATAL:', err);
+    process.exit(1);
+  });
+}
+
+module.exports = { generateFinalReport, collectSnapshot };

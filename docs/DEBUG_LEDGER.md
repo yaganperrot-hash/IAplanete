@@ -12,7 +12,18 @@
 
 ---
 
-## Bugs ouverts
+## Bugs ouverts (vrais)
+
+### [2026-04-03] RECRUTER / UTILISER_RELIQUE / ETUDIER_RELIQUE tombaient en RIEN
+- **Symptôme** : Le parseur produisait des actions `recruter`, `utiliser_relique`, `etudier_relique` mais elles étaient converties en `RIEN` par `actionToEffetLine()` → jamais exécutées. Résultat : 0 armée malgré valeur `guerre`, 0 relique utilisée.
+- **Cause** : `actionToEffetLine()` dans civOllamaLLM.js et civGeminiLLM.js n'avait pas de `case` pour ces 3 verbes → tombait en `default: return 'RIEN'`. `parseEffets()` et `resolveEffect()` dans civActionResolver.js idem.
+- **Fix** :
+  - `actionToEffetLine()` (les deux LLM) : RECRUTER → `AFFECTER N → armée`, UTILISER/ETUDIER_RELIQUE → string dédiée
+  - `parseEffets()` : patterns UTILISER_RELIQUE + ETUDIER_RELIQUE ajoutés
+  - `resolveEffect()` : cases UTILISER_RELIQUE (used=1, bonus moral) + ETUDIER_RELIQUE (savoir, +5 moral)
+  - `buildCivContext()` : `last_narrative` ajouté au return
+- **Fichiers** : `civOllamaLLM.js`, `civGeminiLLM.js`, `civActionResolver.js`
+- **Statut** : ✅ Résolu
 
 ### [2026-03-29] LLM non déclenché malgré nourriture en déficit
 - **Symptôme** : `famine:-1` dans les logs (pop meurt), mais "en cours → pas d'appel LLM". La civ meurt à petit feu sans que le LLM intervienne.
@@ -99,48 +110,19 @@
 - **Statut** : ✅ Résolu (Spec 2 — session 2026-03-31)
 
 ### [2026-03-31] prompt_variant jamais transmis au contexte LLM
-- **Symptôme** : Les 10 civs de l'expérience variants tournent toutes en V0 — les variants V1–V9 n'ont aucun effet.
-- **Cause** : `civEngine.js` (~ligne 989) appelle `buildCivContext()` sans y passer `civ.prompt_variant`. La valeur n'est donc jamais dans `ctx` quand `buildVariantBody(ctx, variant)` est appelé.
-- **Fix attendu** : Après l'appel `buildCivContext(...)`, ajouter `context.prompt_variant = civ.prompt_variant || 'V0'`.
-- **Fichiers** : `civEngine.js`
-- **Statut** : 🔴 Ouvert
-- **Leçon** : Tout champ DB utilisé par le LLM doit être explicitement ajouté au contexte — `buildCivContext` ne lit pas automatiquement toutes les colonnes.
+- **Statut** : ✅ Résolu — migration vers civPromptFree (contexte reconstruit entièrement)
 
-### [2026-03-31] last_consequences jamais retourné par buildCivContext et jamais vidé
-- **Symptôme** : Le LLM décide dans le vide — il ne voit jamais les conséquences de ses propres décisions du tick précédent. La colonne `last_consequences` grossit à l'infini en DB.
-- **Cause** : `buildCivContext()` (`civActionResolver.js`) ne retourne pas `last_consequences` dans l'objet ctx. `civGeminiLLM.js:189` référence `ctx.last_consequences` qui est donc toujours `undefined`. De plus, personne ne vide ce champ après que le LLM l'ait consommé.
-- **Fix attendu** : (1) Ajouter `last_consequences: parseJ(civ.last_consequences, [])` dans le retour de `buildCivContext`. (2) Après la décision LLM dans `civEngine.js`, vider le champ : `UPDATE civilizations SET last_consequences='[]' WHERE id=?`.
-- **Fichiers** : `civActionResolver.js`, `civEngine.js`
-- **Statut** : 🔴 Ouvert
-- **Leçon** : La boucle cause→conséquence→LLM est le cœur du système. Vérifier systématiquement que chaque donnée écrite en DB est bien relue ET consommée (vidée).
+### [2026-03-31] last_consequences jamais retourné par buildCivContext
+- **Statut** : ✅ Résolu — civPromptFree + civParserLLM gèrent la boucle cause→conséquence
 
 ### [2026-03-31] Reliques possédées jamais injectées dans le prompt LLM
-- **Symptôme** : `getRelicsPossessedText()` existe dans `civGeminiLLM.js` et est appelée dans `buildPromptV0()`, mais `ctx.relics` est toujours vide → le LLM ignore les reliques qu'il possède.
-- **Cause** : `buildCivContext()` n'interroge jamais la table `relics`. La fonction existe, le prompt l'utilise, mais le câblage DB→contexte est absent.
-- **Fix attendu** : Dans `buildCivContext()`, ajouter une requête `SELECT * FROM relics WHERE world_id=? AND discovered_by=? AND taken=1 AND used=0` et retourner le résultat dans `ctx.relics`.
-- **Fichiers** : `civActionResolver.js`
-- **Statut** : 🔴 Ouvert
-- **Leçon** : Quand une fonction de formatage est créée (getRelicsPossessedText), vérifier immédiatement que la donnée source arrive bien dans le contexte.
+- **Statut** : ✅ Résolu — ctx.relics ajouté dans buildCivContext
 
-### [2026-03-31] Double colonne mémoire — memoire vs civ_memory
-- **Symptôme** : La mémoire stratégique des civs est perdue à chaque tick — le LLM repart de zéro à chaque décision.
-- **Cause** : `civEngine.js` écrit dans la colonne `memoire`, mais `civGeminiLLM.js` (ligne 37) lit `civ_memory`. Les deux colonnes coexistent en DB sans jamais être synchronisées.
-- **Fix attendu** : Supprimer la colonne `memoire`, tout migrer vers `civ_memory`. Mettre à jour `civEngine.js` pour écrire dans `civ_memory`.
-- **Fichiers** : `civEngine.js`, `migrate.js`
-- **Statut** : 🔴 Ouvert
-- **Leçon** : Lors d'un renommage de colonne DB, chercher toutes les occurrences de l'ancien nom avant de fermer le ticket.
+### [2026-03-31] Double colonne mémoire (memoire vs civ_memory)
+- **Statut** : ✅ Résolu
 
 ### [2026-03-31] Événements de tension de valeur non transmis au LLM
-- **Symptôme** : `checkValueTensionEvents()` génère des crises internes (frustration élevée) mais le LLM ne les voit jamais — il ne réagit pas à ses propres tensions sociales.
-- **Cause** : `checkValueTensionEvents()` (`civEngine.js`) ne pousse pas les événements dans `last_consequences` de la civ concernée.
-- **Fix attendu** : Dans `checkValueTensionEvents()`, après avoir généré un événement de tension, l'ajouter dans `last_consequences` de la civ avec `type: 'tension_valeur'`.
-- **Fichiers** : `civEngine.js`
-- **Statut** : 🔴 Ouvert
-
-### [2026-03-29] chat-server.js à la racine
-- **Symptôme** : Fichier `chat-server.js` présent à la racine, usage inconnu.
-- **Fix attendu** : Identifier l'origine et supprimer si obsolète.
-- **Statut** : 🔴 Ouvert
+- **Statut** : ✅ Résolu
 
 ---
 

@@ -11,7 +11,7 @@ const VALID_VALUES = ['expansion', 'commerce', 'guerre', 'spiritualite', 'isolat
   'liberte', 'ordre', 'survie', 'exploration', 'art', 'savoir'];
 
 const DEMO_CIVS = [
-  // V0 — Baseline Ollama (prompt actuel, référence)
+  // V0 — Conquérants (pop finale 2090, moral 86)
   {
     nom: "Les Conquérants du Feu Sacré",
     creator_name: 'Demo', prompt_variant: 'V0',
@@ -20,34 +20,7 @@ const DEMO_CIVS = [
     description: 'Un peuple conquérant guidé par une foi ardente.',
     color: '#ef4444', capital_x: 30, capital_y: 20,
   },
-  // V1 — Minimal
-  {
-    nom: "Les Nomades du Fer",
-    creator_name: 'Demo', prompt_variant: 'V1',
-    valeurs: ['survie', 'guerre', 'exploration'],
-    gouvernement: 'tribu',
-    description: 'Des errants forgés par la dureté du monde, pragmatiques et sans illusions.',
-    color: '#78716c', capital_x: 55, capital_y: 20,
-  },
-  // V2 — Psychologique (trauma/mystère)
-  {
-    nom: "Les Enfants de la Terre Mère",
-    creator_name: 'Demo', prompt_variant: 'V2',
-    valeurs: ['spiritualite', 'survie', 'isolationnisme'],
-    gouvernement: 'théocratie',
-    description: 'Un peuple profondément lié à leur terre, guidé par des chamanes et des anciens.',
-    color: '#22c55e', capital_x: 30, capital_y: 45,
-  },
-  // V3 — Corps (faits bruts)
-  {
-    nom: "Les Marchands de l'Aube",
-    creator_name: 'Demo', prompt_variant: 'V3',
-    valeurs: ['commerce', 'exploration', 'liberte'],
-    gouvernement: 'republique',
-    description: 'Des négociants audacieux qui ont fondé leur prospérité sur les routes commerciales.',
-    color: '#f59e0b', capital_x: 55, capital_y: 45,
-  },
-  // V4 — Urgence pure
+  // V4 — Gardiens (pop finale 1652, moral 86)
   {
     nom: "Les Gardiens du Mur",
     creator_name: 'Demo', prompt_variant: 'V4',
@@ -56,50 +29,74 @@ const DEMO_CIVS = [
     description: 'Une société militarisée née d\'une catastrophe passée, obsédée par la défense.',
     color: '#6366f1', capital_x: 15, capital_y: 32,
   },
-  // V5 — Géopolitique
+  // V5 — Grand Khaganat (score 5/7, dominant militaire)
   {
     nom: "Le Grand Khaganat",
     creator_name: 'Demo', prompt_variant: 'V5',
     valeurs: ['expansion', 'guerre', 'ordre'],
     gouvernement: 'monarchie',
     description: 'Un empire en construction dont la diplomatie est aussi redoutable que les armées.',
-    color: '#dc2626', capital_x: 68, capital_y: 32,
+    color: '#dc2626', capital_x: 55, capital_y: 20,
   },
-  // V6 — Économique
-  {
-    nom: "Le Syndicat des Forges",
-    creator_name: 'Demo', prompt_variant: 'V6',
-    valeurs: ['savoir', 'commerce', 'ordre'],
-    gouvernement: 'aristocratie',
-    description: 'Une société d\'artisans et d\'ingénieurs gouvernée par les guildes marchandes.',
-    color: '#f97316', capital_x: 15, capital_y: 55,
-  },
-  // V7 — Chronique
-  {
-    nom: "Les Érudits d'Aristos",
-    creator_name: 'Demo', prompt_variant: 'V7',
-    valeurs: ['savoir', 'art', 'exploration'],
-    gouvernement: 'aristocratie',
-    description: 'Une société où le savoir est sacré et où chaque acte est consigné dans des annales.',
-    color: '#3b82f6', capital_x: 68, capital_y: 55,
-  },
-  // V8 — Valeurs-Tension
+  // V8 — Ascètes (actif, 5 révoltes à surveiller)
   {
     nom: "Les Ascètes de la Pierre",
     creator_name: 'Demo', prompt_variant: 'V8',
     valeurs: ['isolationnisme', 'spiritualite', 'art'],
     gouvernement: 'théocratie',
     description: 'Des mystiques reclus dont toute décision est pesée à l\'aune de leurs valeurs sacrées.',
-    color: '#a855f7', capital_x: 40, capital_y: 55,
+    color: '#a855f7', capital_x: 40, capital_y: 45,
   },
-  // V9 — Oracle
+  // V9 — Mystiques (pop finale 1935, moral 94)
   {
     nom: "Les Mystiques des Brumes",
     creator_name: 'Demo', prompt_variant: 'V9',
     valeurs: ['spiritualite', 'savoir', 'liberte'],
     gouvernement: 'théocratie',
     description: 'Un peuple guidé par des voyants dont les prophéties façonnent chaque décision.',
-    color: '#14b8a6', capital_x: 55, capital_y: 32,
+    color: '#14b8a6', capital_x: 68, capital_y: 32,
+  },
+
+  // 5 nouvelles civs — profils complémentaires
+  {
+    nom: "Les Marchands de la Route d'Or",
+    creator_name: 'Demo', prompt_variant: 'V0',
+    valeurs: ['commerce', 'exploration', 'liberte'],
+    gouvernement: 'oligarchie_marchande',
+    description: 'Un réseau de cités-comptoirs dont la richesse et l\'influence s\'étendent par le commerce.',
+    color: '#f59e0b', capital_x: 80, capital_y: 15,
+  },
+  {
+    nom: "La Cité des Sages",
+    creator_name: 'Demo', prompt_variant: 'V9',
+    valeurs: ['savoir', 'art', 'commerce'],
+    gouvernement: 'conseil_des_anciens',
+    description: 'Une cité-état dont les bibliothèques et ateliers attirent les esprits du monde entier.',
+    color: '#0ea5e9', capital_x: 85, capital_y: 42,
+  },
+  {
+    nom: "Les Chasseurs du Vent",
+    creator_name: 'Demo', prompt_variant: 'V5',
+    valeurs: ['exploration', 'survie', 'liberte'],
+    gouvernement: 'tribu',
+    description: 'Des nomades infatigables qui cartographient le monde et ne s\'attachent à aucune terre.',
+    color: '#22c55e', capital_x: 15, capital_y: 58,
+  },
+  {
+    nom: "L'Empire des Forges",
+    creator_name: 'Demo', prompt_variant: 'V4',
+    valeurs: ['ordre', 'savoir', 'survie'],
+    gouvernement: 'oligarchie',
+    description: 'Une puissance industrielle dont la maîtrise des métaux et des techniques surpasse tous.',
+    color: '#f97316', capital_x: 45, capital_y: 62,
+  },
+  {
+    nom: "Les Pillards de la Côte",
+    creator_name: 'Demo', prompt_variant: 'V8',
+    valeurs: ['guerre', 'expansion', 'liberte'],
+    gouvernement: 'monarchie',
+    description: 'Des raiders marins dont les raids éclair sèment la terreur sur les côtes et les rivières.',
+    color: '#e11d48', capital_x: 68, capital_y: 62,
   },
 ];
 

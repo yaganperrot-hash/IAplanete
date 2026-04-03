@@ -6,6 +6,12 @@ const OCEAN_BIOMES = ['ocean_deep', 'ocean', 'reef'];
 const FOOD_BIOMES  = ['prairie', 'tropical_forest', 'temperate_forest', 'savanna', 'coast', 'swamp'];
 const TECH_AGES    = ['primitif', 'neolithique', 'bronze', 'fer', 'classique', 'medieval', 'industriel', 'moderne', 'spatial'];
 
+const KNOWN_ACTION_TYPES = [
+  'affecter', 'construire', 'explorer', 'coloniser', 'attaquer',
+  'diplomatie', 'envoyer_emissaire', 'envoyer_marchands', 'espionner',
+  'loi', 'recruter', 'abandonner', 'chasser', 'utiliser_relique', 'etudier_relique'
+];
+
 const parseJ = (v, fb) => { try { return JSON.parse(v != null ? v : JSON.stringify(fb)); } catch { return fb; } };
 
 function addMemoryEntry(civId, domain, entry) {
@@ -450,6 +456,14 @@ function parseEffets(text) {
       const m = main.match(/^SURVEILLER_FRONTIERE\s+(.+)$/i);
       if (m) effects.push({ verb: 'SURVEILLER_FRONTIERE', direction: m[1].trim(), params });
 
+    } else if (/^UTILISER_RELIQUE\b/i.test(main)) {
+      const m = main.match(/^UTILISER_RELIQUE\s+(.+)$/i);
+      effects.push({ verb: 'UTILISER_RELIQUE', target_name: m ? m[1].trim() : '', params });
+
+    } else if (/^ETUDIER_RELIQUE\b/i.test(main)) {
+      const m = main.match(/^ETUDIER_RELIQUE\s+(.+)$/i);
+      effects.push({ verb: 'ETUDIER_RELIQUE', target_name: m ? m[1].trim() : '', params });
+
     } else if (/^RIEN\b/i.test(main)) {
       effects.push({ verb: 'RIEN', params });
     }
@@ -626,6 +640,18 @@ function resolveEffect(effect, civ, allCivs, worldId, biomesMap, events, current
   const constructionWorkers = constructionRow ? constructionRow.total : 0;
   const totalLabor    = Math.floor((civ.population || 0) * 0.6);
   const freeWorkforce = Math.max(0, totalLabor - activeWorkers - constructionWorkers);
+  const echecsDuTick = [];
+
+  // Logger les types d'actions inconnus
+  if (!KNOWN_ACTION_TYPES.includes(effect.verb.toLowerCase())) {
+    try {
+      db.prepare(
+        'INSERT INTO unknown_actions (world_id, civ_id, tick, action_type, description_brute, confiance) VALUES (?, ?, ?, ?, ?, ?)'
+      ).run(worldId, civ.id, currentTick, effect.verb, effect.description_brute || '', effect.confiance || 0.5);
+    } catch (e) {
+      console.warn('[UNKNOWN_ACTION] Erreur insert:', e.message);
+    }
+  }
 
   switch (effect.verb) {
 
@@ -634,6 +660,15 @@ function resolveEffect(effect, civ, allCivs, worldId, biomesMap, events, current
       console.log(`[PARSE] AFFECTER ${effect.count || 0} → ${effect.task} | libre: ${freeWorkforce} → réel: ${count}`);
       if (count <= 0) {
         console.log(`[ECHEC] main-d'œuvre libre insuffisante (libre: ${freeWorkforce})`);
+        echecsDuTick.push({
+          intention: effect.description_brute || '',
+          raison: 'population_insuffisante',
+          ressource_manquante: null,
+          besoin: effect.count || 0,
+          dispo: freeWorkforce,
+          population_dispo: freeWorkforce,
+          cible: effect.task || ''
+        });
         events.push({ type: 'echec', description: `${civ.nom} : pas assez de main-d'œuvre libre pour "${effect.task}" (libre: ${freeWorkforce}).`, civ_ids: [civ.id] });
         break;
       }
@@ -654,6 +689,15 @@ function resolveEffect(effect, civ, allCivs, worldId, biomesMap, events, current
         const boisAvail  = resources.bois || 0;
         if (boisAvail < cost) {
           console.log(`[ECHEC] bois insuffisant — besoin: ${cost}, dispo: ${boisAvail}`);
+          echecsDuTick.push({
+            intention: effect.description_brute || '',
+            raison: 'ressource_manquante',
+            ressource_manquante: 'bois',
+            besoin: cost,
+            dispo: boisAvail,
+            population_dispo: freeWorkforce,
+            cible: effect.task || ''
+          });
           events.push({ type: 'echec', description: `${civ.nom} : pas assez de bois pour affecter des travailleurs (besoin: ${cost}).`, civ_ids: [civ.id] });
           break;
         }
@@ -706,6 +750,15 @@ function resolveEffect(effect, civ, allCivs, worldId, biomesMap, events, current
       const isPassive = passiveCategories.includes(category) || (buildRole && passiveCategories.includes(buildRole));
       if (cWorkers === 0 && !isPassive) {
         console.log(`[ECHEC] aucun worker affecté pour un bâtiment non passif (${category}${buildRole ? `, rôle:${buildRole}` : ''})`);
+        echecsDuTick.push({
+          intention: effect.description_brute || '',
+          raison: 'population_insuffisante',
+          ressource_manquante: null,
+          besoin: askedWorkers,
+          dispo: freeWorkforce,
+          population_dispo: freeWorkforce,
+          cible: effect.name || ''
+        });
         events.push({ type: 'echec', description: `${civ.nom} voulait construire "${effect.name}" mais n'a affecté aucun constructeur.`, civ_ids: [civ.id] });
         break;
       }
@@ -718,6 +771,15 @@ function resolveEffect(effect, civ, allCivs, worldId, biomesMap, events, current
       for (const [res, amt] of Object.entries(costs)) {
         if ((resources[res] || 0) < amt) {
           console.log(`[ECHEC] ${res} insuffisant — besoin: ${amt}, dispo: ${resources[res] || 0}`);
+          echecsDuTick.push({
+            intention: effect.description_brute || '',
+            raison: 'ressource_manquante',
+            ressource_manquante: res,
+            besoin: amt,
+            dispo: resources[res] || 0,
+            population_dispo: freeWorkforce,
+            cible: effect.name || ''
+          });
           events.push({ type: 'echec', description: `${civ.nom} voulait construire "${effect.name}" mais manque de ${res} (besoin: ${amt}, dispo: ${resources[res] || 0}).`, civ_ids: [civ.id] });
           break;
         }
@@ -756,6 +818,15 @@ function resolveEffect(effect, civ, allCivs, worldId, biomesMap, events, current
         ).get(worldId, civ.id);
         if (!coastTile) {
           console.log(`[ECHEC] ${effect.name} nécessite un accès côtier`);
+          echecsDuTick.push({
+            intention: effect.description_brute || '',
+            raison: 'cible_introuvable',
+            ressource_manquante: null,
+            besoin: 1,
+            dispo: 0,
+            population_dispo: freeWorkforce,
+            cible: 'côte'
+          });
           events.push({ type: 'echec', description: `${civ.nom} voulait construire "${effect.name}" mais n'a pas accès à la côte.`, civ_ids: [civ.id] });
           break;
         }
@@ -767,6 +838,15 @@ function resolveEffect(effect, civ, allCivs, worldId, biomesMap, events, current
       ).get(civ.id);
       if (activeConstructions.n >= 2) {
         console.log(`[ECHEC] Déjà ${activeConstructions.n} constructions en cours — max 2 simultanées`);
+        echecsDuTick.push({
+          intention: effect.description_brute || '',
+          raison: 'limite_construction',
+          ressource_manquante: null,
+          besoin: 1,
+          dispo: activeConstructions.n,
+          population_dispo: freeWorkforce,
+          cible: effect.name || ''
+        });
         break;
       }
 
@@ -781,7 +861,19 @@ function resolveEffect(effect, civ, allCivs, worldId, biomesMap, events, current
     case 'ENVOYER': {
       const count = Math.min(effect.count || 0, freeWorkforce);
       console.log(`[PARSE] ENVOYER ${effect.count || 0} → ${effect.destination} | réel: ${count}`);
-      if (count <= 0) { console.log(`[ECHEC] main-d'œuvre libre insuffisante`); break; }
+      if (count <= 0) {
+        console.log(`[ECHEC] main-d'œuvre libre insuffisante`);
+        echecsDuTick.push({
+          intention: effect.description_brute || '',
+          raison: 'population_insuffisante',
+          ressource_manquante: null,
+          besoin: effect.count || 0,
+          dispo: freeWorkforce,
+          population_dispo: freeWorkforce,
+          cible: effect.destination || ''
+        });
+        break;
+      }
       const durStr = effect.params['durée'] || effect.params.duree || '2 ticks';
       const ticks  = Math.min(8, Math.max(2, parseDuration(durStr) || 3)); // 2-8 ticks
       const dest   = effect.destination || '';
@@ -857,7 +949,19 @@ function resolveEffect(effect, civ, allCivs, worldId, biomesMap, events, current
         c.nom.toLowerCase() === targetName.toLowerCase() ||
         c.nom.toLowerCase().includes(targetName.toLowerCase())
       );
-      if (!targetCiv || targetCiv.id === civ.id) break;
+      if (!targetCiv || targetCiv.id === civ.id) {
+        console.log(`[ECHEC] cible introuvable ou soi-même : ${targetName}`);
+        echecsDuTick.push({
+          intention: effect.description_brute || '',
+          raison: 'cible_introuvable',
+          ressource_manquante: null,
+          besoin: 1,
+          dispo: 0,
+          population_dispo: freeWorkforce,
+          cible: targetName || ''
+        });
+        break;
+      }
 
       const pairMin = Math.min(civ.id, targetCiv.id);
       const pairMax = Math.max(civ.id, targetCiv.id);
@@ -919,6 +1023,16 @@ function resolveEffect(effect, civ, allCivs, worldId, biomesMap, events, current
         c.nom.toLowerCase().includes(targetName.toLowerCase())
       );
       if (!targetCiv || targetCiv.id === civ.id) {
+        console.log(`[ECHEC] cible introuvable ou soi-même : ${targetName}`);
+        echecsDuTick.push({
+          intention: effect.description_brute || '',
+          raison: 'cible_introuvable',
+          ressource_manquante: null,
+          besoin: 1,
+          dispo: 0,
+          population_dispo: freeWorkforce,
+          cible: targetName || ''
+        });
         events.push({ type: 'echec', description: `${civ.nom} : cible "${targetName}" introuvable.`, civ_ids: [civ.id] });
         break;
       }
@@ -968,6 +1082,16 @@ function resolveEffect(effect, civ, allCivs, worldId, biomesMap, events, current
       const askedW     = parseInt(effect.params.personnes || '5') || 5;
       const spyCount   = Math.min(askedW, freeWorkforce, 15);
       if (spyCount <= 0) {
+        console.log(`[ECHEC] pas assez de main-d'œuvre pour espionner (libre: ${freeWorkforce})`);
+        echecsDuTick.push({
+          intention: effect.description_brute || '',
+          raison: 'population_insuffisante',
+          ressource_manquante: null,
+          besoin: askedW,
+          dispo: freeWorkforce,
+          population_dispo: freeWorkforce,
+          cible: targetName || ''
+        });
         events.push({ type: 'echec', description: `${civ.nom} : pas assez de gens pour espionner "${targetName}".`, civ_ids: [civ.id] });
         break;
       }
@@ -987,7 +1111,19 @@ function resolveEffect(effect, civ, allCivs, worldId, biomesMap, events, current
       const targetName = effect.target_name || '';
       const askedW     = parseInt(effect.params.personnes || '3') || 3;
       const emCount    = Math.min(askedW, freeWorkforce, 10);
-      if (emCount <= 0) { break; }
+      if (emCount <= 0) {
+        console.log(`[ECHEC] pas assez de main-d'œuvre pour envoyer un émissaire (libre: ${freeWorkforce})`);
+        echecsDuTick.push({
+          intention: effect.description_brute || '',
+          raison: 'population_insuffisante',
+          ressource_manquante: null,
+          besoin: askedW,
+          dispo: freeWorkforce,
+          population_dispo: freeWorkforce,
+          cible: targetName || ''
+        });
+        break;
+      }
       const durTicks = Math.max(3, Math.min(6, parseDuration(effect.params['durée'] || '4 ticks') || 4));
       const targetCiv = allCivs.find(c =>
         c.nom.toLowerCase() === targetName.toLowerCase() ||
@@ -1004,7 +1140,19 @@ function resolveEffect(effect, civ, allCivs, worldId, biomesMap, events, current
       const targetName = effect.target_name || '';
       const askedW     = parseInt(effect.params.personnes || '10') || 10;
       const mCount     = Math.min(askedW, freeWorkforce, 30);
-      if (mCount <= 0) { break; }
+      if (mCount <= 0) {
+        console.log(`[ECHEC] pas assez de main-d'œuvre pour envoyer des marchands (libre: ${freeWorkforce})`);
+        echecsDuTick.push({
+          intention: effect.description_brute || '',
+          raison: 'population_insuffisante',
+          ressource_manquante: null,
+          besoin: askedW,
+          dispo: freeWorkforce,
+          population_dispo: freeWorkforce,
+          cible: targetName || ''
+        });
+        break;
+      }
       const durTicks = Math.max(3, Math.min(7, parseDuration(effect.params['durée'] || '5 ticks') || 5));
       const targetCiv = allCivs.find(c =>
         c.nom.toLowerCase() === targetName.toLowerCase() ||
@@ -1021,7 +1169,19 @@ function resolveEffect(effect, civ, allCivs, worldId, biomesMap, events, current
       const direction  = effect.direction || 'nord';
       const askedW     = parseInt(effect.params.personnes || '5') || 5;
       const guardCount = Math.min(askedW, freeWorkforce);
-      if (guardCount <= 0) { break; }
+      if (guardCount <= 0) {
+        console.log(`[ECHEC] pas assez de main-d'œuvre pour surveiller frontière (libre: ${freeWorkforce})`);
+        echecsDuTick.push({
+          intention: effect.description_brute || '',
+          raison: 'population_insuffisante',
+          ressource_manquante: null,
+          besoin: askedW,
+          dispo: freeWorkforce,
+          population_dispo: freeWorkforce,
+          cible: direction || ''
+        });
+        break;
+      }
       const structName = `poste de surveillance ${direction}`;
       const cat = 'surveillance';
       const nameParts  = structName.toLowerCase().split(' ').slice(0, 3).join(' ');
@@ -1041,6 +1201,16 @@ function resolveEffect(effect, civ, allCivs, worldId, biomesMap, events, current
       const askedHunters = parseInt(effect.params.personnes || '5') || 5;
       const hunters = Math.min(askedHunters, freeWorkforce);
       if (hunters <= 0) {
+        console.log(`[ECHEC] pas assez de main-d'œuvre pour chasser (libre: ${freeWorkforce})`);
+        echecsDuTick.push({
+          intention: effect.description_brute || '',
+          raison: 'population_insuffisante',
+          ressource_manquante: null,
+          besoin: askedHunters,
+          dispo: freeWorkforce,
+          population_dispo: freeWorkforce,
+          cible: cible || ''
+        });
         events.push({ type: 'echec', description: `${civ.nom} : pas assez de main-d'œuvre libre pour chasser "${cible}".`, civ_ids: [civ.id] });
         break;
       }
@@ -1048,6 +1218,16 @@ function resolveEffect(effect, civ, allCivs, worldId, biomesMap, events, current
       // Trouver le groupe animal le plus proche correspondant au nom
       const groups = db.prepare('SELECT * FROM animal_groups WHERE world_id = ? AND nom LIKE ?').all(worldId, `%${cible}%`);
       if (groups.length === 0) {
+        console.log(`[ECHEC] aucun groupe animal trouvé pour "${cible}"`);
+        echecsDuTick.push({
+          intention: effect.description_brute || '',
+          raison: 'cible_introuvable',
+          ressource_manquante: null,
+          besoin: 1,
+          dispo: 0,
+          population_dispo: freeWorkforce,
+          cible: cible || ''
+        });
         events.push({ type: 'echec', description: `${civ.nom} : aucun groupe animal nommé "${cible}" n'a été trouvé.`, civ_ids: [civ.id] });
         break;
       }
@@ -1065,6 +1245,16 @@ function resolveEffect(effect, civ, allCivs, worldId, biomesMap, events, current
         }
       }
       if (!bestGroup) {
+        console.log(`[ECHEC] impossible de localiser le groupe animal "${cible}"`);
+        echecsDuTick.push({
+          intention: effect.description_brute || '',
+          raison: 'cible_introuvable',
+          ressource_manquante: null,
+          besoin: 1,
+          dispo: 0,
+          population_dispo: freeWorkforce,
+          cible: cible || ''
+        });
         events.push({ type: 'echec', description: `${civ.nom} : impossible de localiser "${cible}".`, civ_ids: [civ.id] });
         break;
       }
@@ -1077,6 +1267,16 @@ function resolveEffect(effect, civ, allCivs, worldId, biomesMap, events, current
       if (!hasWeapons && bestGroup.dangerosite >= 3) {
         deaths = Math.floor(bestGroup.dangerosite * hunters * 0.1);
         updates.population = Math.max(0, (civ.population || 0) - deaths);
+        console.log(`[ECHEC] armes insuffisantes pour chasser ${bestGroup.nom}, dangerosité ${bestGroup.dangerosite}`);
+        echecsDuTick.push({
+          intention: effect.description_brute || '',
+          raison: 'equipement_insuffisant',
+          ressource_manquante: 'armes',
+          besoin: 1,
+          dispo: 0,
+          population_dispo: freeWorkforce,
+          cible: bestGroup.nom || ''
+        });
         events.push({ type: 'echec', description: `${civ.nom} a attaqué ${bestGroup.nom} sans armes suffisantes : ${deaths} chasseurs ont péri.`, civ_ids: [civ.id] });
       } else {
         success = true;
@@ -1111,12 +1311,71 @@ function resolveEffect(effect, civ, allCivs, worldId, biomesMap, events, current
       break;
     }
 
+    case 'UTILISER_RELIQUE': {
+      const relicName = effect.target_name || '';
+      const relic = db.prepare(
+        'SELECT * FROM relics WHERE world_id=? AND discovered_by=? AND taken=1 AND used=0 AND name LIKE ?'
+      ).get(worldId, civ.id, `%${relicName}%`);
+
+      if (!relic) {
+        console.log(`[ECHEC] Relique "${relicName}" introuvable ou déjà utilisée`);
+        echecsDuTick.push({ intention: effect.description_brute || '', raison: 'cible_inconnue', cible: relicName });
+        break;
+      }
+
+      db.prepare('UPDATE relics SET used=1 WHERE id=?').run(relic.id);
+
+      let moralBonus = 8;
+      if (relic.domain === 'arme') {
+        updates.army_soldiers = (civ.army_soldiers || 0) + 5;
+        updates.military_power = getMilitaryPower(updates.army_soldiers || civ.army_soldiers, civ.age_tech);
+        moralBonus = 5;
+      } else if (relic.domain === 'art') {
+        moralBonus = 15;
+      } else if (relic.domain === 'ruines') {
+        moralBonus = 10;
+      }
+      updates.moral = Math.min(100, (civ.moral || 50) + moralBonus);
+
+      const lcUtiliser = parseJ(civ.last_consequences, []);
+      lcUtiliser.push({ type: 'relique_utilisee', data: { relicName: relic.name, effet: `moral +${moralBonus}` } });
+      updates.last_consequences = JSON.stringify(lcUtiliser);
+
+      addMemoryEntry(civ.id, 'histoire', `Relique utilisée : ${relic.name}`);
+      events.push({ type: 'relique', description: `${civ.nom} utilise la relique ${relic.name} (+${moralBonus} moral).`, civ_ids: [civ.id] });
+      break;
+    }
+
+    case 'ETUDIER_RELIQUE': {
+      const relicName = effect.target_name || '';
+      const relic = db.prepare(
+        'SELECT * FROM relics WHERE world_id=? AND discovered_by=? AND taken=1 AND used=0 AND name LIKE ?'
+      ).get(worldId, civ.id, `%${relicName}%`);
+
+      if (!relic) {
+        console.log(`[ECHEC] Relique "${relicName}" introuvable pour étude`);
+        echecsDuTick.push({ intention: effect.description_brute || '', raison: 'cible_inconnue', cible: relicName });
+        break;
+      }
+
+      const yearStudy = Math.floor((currentTick - 1) / 12) + 1;
+      addMemoryEntry(civ.id, 'savoir', `An ${yearStudy} — Relique étudiée : ${relic.name} (${relic.domain})`);
+      updates.moral = Math.min(100, (civ.moral || 50) + 5);
+
+      const lcEtudier = parseJ(civ.last_consequences, []);
+      lcEtudier.push({ type: 'relique_etudiee', data: { relicName: relic.name, domain: relic.domain } });
+      updates.last_consequences = JSON.stringify(lcEtudier);
+
+      events.push({ type: 'relique', description: `${civ.nom} étudie la relique ${relic.name} (+5 moral, savoir enrichi).`, civ_ids: [civ.id] });
+      break;
+    }
+
     case 'RIEN':
     default:
       break;
   }
 
-  return updates;
+  return { updates, echecs: echecsDuTick };
 }
 
 // ─── Dépendances logiques (mots-clés → catégorie requise) ────────────────────
@@ -1399,10 +1658,17 @@ function buildCivContext(civ, allCivs, worldId, currentTick, biomesMap, season =
 // V3 — Événements actifs
 const active_events = parseJ(civ.active_events, []);
 
+// Échecs du tick précédent
+const echecs_tick_precedent = parseJ(civ.last_echecs, []);
+
 // V4 — Reliques découvertes
 const reliques_decouvertes = db.prepare('SELECT id, name, description, type, domain, x, y, taken, used FROM relics WHERE world_id=? AND discovered_by=?').all(worldId, civ.id);
 // Reliques actives (prises et non utilisées)
 const reliques_actives = db.prepare('SELECT id, name, description, type, domain, x, y, taken, used FROM relics WHERE world_id=? AND discovered_by=? AND taken=1 AND used=0').all(worldId, civ.id);
+// Reliques utilisées (pour describeTechnology)
+const reliques_used = db.prepare('SELECT id, name, description, type, domain, x, y, taken, used FROM relics WHERE world_id=? AND discovered_by=? AND used=1').all(worldId, civ.id);
+// Reliques mystère (prises mais non utilisées)
+const reliques_mystere = reliques_actives;
 
 // Groupes animaux découverts
 const animal_groups = db.prepare('SELECT * FROM animal_groups WHERE world_id = ?').all(worldId)
@@ -1448,11 +1714,12 @@ const animal_groups = db.prepare('SELECT * FROM animal_groups WHERE world_id = ?
     territory_capacity, pop_vs_capacity, is_overpopulated,
     // V3
     housed, homeless, homeless_deaths, territory_used, territory_free,
-    last_consequences, active_events,
+    last_consequences, active_events, echecs_tick_precedent,
     civ_memory: civ.civ_memory || '{}',
     _known_count: discoveredIds.size,
     prompt_variant: civ.prompt_variant || 'V0',
-    reliques_decouvertes, reliques_actives, animal_groups,
+    reliques_decouvertes, reliques_actives, reliques_mystere, reliques_used, animal_groups,
+    last_narrative: civ.last_narrative || '',
   };
 }
 

@@ -1,6 +1,7 @@
 // Civ LLM — Gemini 2.0 Flash (fallback : civMockLLM)
 const { decide: mockDecide } = require('./civMockLLM');
-const { buildVariantBody } = require('./civPromptVariants');
+const { buildPromptFree } = require('./civPromptFree');
+const { parseCivNarrative } = require('./civParserLLM');
 
 let model = null;
 
@@ -71,183 +72,8 @@ function getRelicsPossessedText(ctx) {
   return lines.join('\n');
 }
 
-function buildPromptV0(ctx) {
-  const valeurs = (ctx.valeurs || []).join(', ') || 'aucune';
 
-  // ── Moral avec frustrations/satisfactions ──
-  const moralLabel = ctx.moralLabel || 'neutre';
-  const moralLine  = `MORAL : ${ctx.moral || 50}/100 (${moralLabel})`;
-  const satisfLines = (ctx.satisfactions || []).map(s => `  ✅ ${s}`).join('\n');
-  const frustLines = (ctx.frustrations || []).map(f => {
-    const tickMatch = f.match(/tick (\d+)/);
-    const ticks = tickMatch ? parseInt(tickMatch[1]) : 0;
-    if (ticks >= 20) return `  💀 CRISE (${ticks} mois) — ${f.replace(/\(tick \d+\)/, '').trim()}`;
-    if (ticks >= 10) return `  🔥 TENSION PROFONDE (${ticks} mois) — ${f.replace(/\(tick \d+\)/, '').trim()}`;
-    if (ticks >= 5)  return `  ⚠️ TENSION (${ticks} mois) — ${f.replace(/\(tick \d+\)/, '').trim()}`;
-    return `  — ${f}`;
-  }).join('\n');
-  const urgentFrusts = (ctx.frustrations || []).filter(f => {
-    const m = f.match(/tick (\d+)/); return m && parseInt(m[1]) >= 10;
-  });
-  const urgentBlock = urgentFrusts.length
-    ? `\n⚡ PRESSIONS INTERNES URGENTES :\n${urgentFrusts.map(f => {
-        const t = parseInt(f.match(/tick (\d+)/)[1]);
-        return t >= 20 ? `💀 ${f}` : `🔥 ${f}`;
-      }).join('\n')}\n`
-    : '';
-  const moralAlert  = '';
-  const moralBlock  = [moralLine, satisfLines, frustLines, moralAlert].filter(Boolean).join('\n');
 
-  // ── Ressources ──
-  const rb = ctx.resourceBilan || {};
-  const resLines = Object.entries(rb)
-    .filter(([res, v]) => v.stock > 0 || v.production > 0 || res === 'peaux' || res === 'os')
-    .map(([res, v]) => {
-      const icon   = RES_EMOJI[res] || '📦';
-      const detail = v.production > 0 || v.consumption > 0
-        ? ` (prod:+${v.production}, conso:-${v.consumption}, bilan:${v.balance >= 0 ? '+' : ''}${v.balance})`
-        : '';
-      const warn   = res === 'nourriture' && ctx.food_famine_in != null
-        ? ` (épuisement dans ${ctx.food_famine_in} mois)` : '';
-      return `  ${icon} ${res.charAt(0).toUpperCase() + res.slice(1)} : ${v.stock}${detail}${warn}`;
-    })
-    .join('\n') || '  (aucune ressource — les personnes libres font de la cueillette de subsistance)';
-
-  // ── Biomes ──
-  const biomeLines = (ctx.territory_biomes || []).slice(0, 5)
-    .map(b => `  - ${b.biome} (${b.count} cases) : ${b.produces}`)
-    .join('\n') || '  (aucun)';
-
-  // ── Structures ──
-  const structList = (ctx.structures || []).length
-    ? ctx.structures.map(s => {
-        const prod = s.prod_per_tick > 0 ? ` → +${s.prod_per_tick} ${s.production}/tick` : '';
-        return `  🏠 ${s.name} (${s.workers} pers.${prod})`;
-      }).join('\n')
-    : '  (aucune structure construite)';
-
-  // ── Processus ──
-  const processes = (ctx.active_processes || []).length
-    ? ctx.active_processes.map(p => `  ${p.type}:${p.target} (${p.progress}/${p.max_ticks} ticks, ${p.workers || 0} pers.)`).join('\n')
-    : '  aucun';
-
-  // ── Armée ──
-  const armyLine = `${ctx.army_soldiers || 0} soldats, équipement: ${ctx.army_equipment || 'aucun'} (puissance: ${ctx.army_power || 0})${ctx.last_combat_tick ? ` — dernier combat : tick ${ctx.last_combat_tick}` : ' — aucun combat enregistré'}`;
-
-  // ── Voisins (knowledge-based) ──
-  const neighborsText = ctx.neighbors_info || (
-    (ctx.neighbors || []).length
-      ? ctx.neighbors.map(n => `▸ ${n.nom} (${n.relation}, force=${n.military_power})`).join('\n  ')
-      : 'Aucun. Territoire inexploré dans toutes les directions.'
-  );
-
-  // ── Question dynamique ──
-  const faits = [];
-  if (ctx.food_famine_in != null && ctx.food_famine_in < 10)
-    faits.push(`Les réserves alimentaires s'épuisent dans ${ctx.food_famine_in} mois.`);
-  const density = (ctx.population || 0) / Math.max(1, ctx.territory_count || 1);
-  if (density > 40)
-    faits.push(`${ctx.population} habitants sur ${ctx.territory_count} cases.`);
-  if (ctx.free_workforce === 0)
-    faits.push(`Toute ta population est occupée. Aucune main-d'œuvre disponible. Pour lancer une nouvelle action, des travailleurs doivent être libérés d'une tâche existante (ABANDONNER).`);
-
-  const dynamicQuestion = faits.length > 0
-    ? `${faits.join(' ')}\n\nQue décides-tu ?`
-    : `Que décides-tu ?`;
-
-  const capLine = ctx.territory_capacity
-    ? ` | Capacité du territoire : ${ctx.pop_vs_capacity}${ctx.is_overpopulated ? ' (territoire saturé)' : ''}`
-    : '';
-
-  const reliquesPossedeesText = getRelicsPossessedText(ctx);
-
-  return `Tu es le dirigeant de "${ctx.nom}" (${ctx.gouvernement}, âge: ${ctx.age_tech}).
-Valeurs fondamentales : ${valeurs}${ctx.description ? ` | ${ctx.description}` : ''}
-${formatMemory(ctx.civ_memory, ctx) ? formatMemory(ctx.civ_memory, ctx) + '\n' : ''}${urgentBlock}
-Population : ${ctx.population} (${ctx.population_trend}) | Territoire : ${ctx.territory_count} cases${capLine} | Main-d'œuvre libre : ${ctx.free_workforce} pers.
-
-${moralBlock}
-
-RESSOURCES (stock → bilan/tick) :
-${resLines}
-
-BIOMES SUR TON TERRITOIRE :
-${biomeLines}
-
-STRUCTURES EXISTANTES (NE PAS RECRÉER CE QUI EXISTE) :
-${structList}
-
-EN COURS :
-${processes}
-
-ARMÉE : ${armyLine}
-
-VOISINS CONNUS :
-  ${neighborsText}
-
-CONSÉQUENCES DU DERNIER TICK :
-${(ctx.last_consequences || []).map(c =>
-  c.type === 'relique_decouverte' ? `  - Vos explorateurs viennent de découvrir une relique : ${c.nom || 'une relique'}. Cette découverte pourrait influencer votre stratégie.` :
-  c.type === 'relique_utilisee' ? `  - Votre peuple a utilisé la relique ${c.nom || 'une relique'} pour ${c.data?.effet || 'obtenir un bonus'}. Cela pourrait ouvrir de nouvelles possibilités.` :
-  c.type === 'relique_incomprise' ? `  - Vos explorateurs ont ramené quelque chose d'étrange : ${c.nom || 'un objet mystérieux'}. Personne dans votre peuple ne comprend à quoi cela sert. Les artisans l'observent avec curiosité.` :
-  c.type === 'animal_decouvert' ? `  - Vos éclaireurs ont repéré un groupe : ${c.nom}. ${c.description || ''}` :
-  c.type === 'chasse' && c.succes
-    ? `  - Chasse de ${c.nom} réussie : +${c.gains?.nourriture || 0} nourriture, +${c.gains?.peaux || 0} peaux, +${c.gains?.os || 0} os.` :
-  c.type === 'chasse' && !c.succes
-    ? `  - Chasse de ${c.nom} échouée : ${c.morts || 0} chasseurs tués.` :
-  c.type === 'combat' ? `  - ${c.description}` :
-  `  - ${c}`
-).join('\n') || '  (aucune)'}
-
----
-
-${reliquesPossedeesText ? reliquesPossedeesText + '\n\n' : ''}${dynamicQuestion}
-
-Décris ta stratégie, puis résume en effets.
-
-STRATÉGIE: [une phrase en français]
-EFFETS:
-- CRÉER [nom libre] (personnes: X, durée: Y ticks)
-- AFFECTER X personnes → [tâche]
-- ENVOYER X personnes → exploration [direction] (durée: Y ticks)
-- MODIFIER [existant] → [changement]
-- ABANDONNER [structure]
-- ESPIONNER [civ cible] (personnes: X, durée: Y ticks)
-- ENVOYER_EMISSAIRE [civ cible] (personnes: X, durée: Y ticks)
-- ENVOYER_MARCHANDS [civ cible] (personnes: X, durée: Y ticks)
-- ATTAQUER [nom_civ] (déclarer la guerre et mener un assaut immédiat)
-- SURVEILLER_FRONTIERE [direction] (personnes: X, permanent)
-- DIPLOMATIE [action] → [civ cible]
-- LOI [description]
-- RIEN
-SOUHAIT: [un besoin ou désir de ta civilisation en une phrase]`;
-}
-
-const FORMAT_GEMINI = `
-Décris ta stratégie, puis résume en effets.
-
-STRATÉGIE: [une phrase en français]
-EFFETS:
-- CRÉER [nom libre] (personnes: X, durée: Y ticks)
-- AFFECTER X personnes → [tâche]
-- ENVOYER X personnes → exploration [direction] (durée: Y ticks)
-- MODIFIER [existant] → [changement]
-- ABANDONNER [structure]
-- ESPIONNER [civ cible] (personnes: X, durée: Y ticks)
-- ENVOYER_EMISSAIRE [civ cible] (personnes: X, durée: Y ticks)
-- ENVOYER_MARCHANDS [civ cible] (personnes: X, durée: Y ticks)
-- SURVEILLER_FRONTIERE [direction] (personnes: X, permanent)
-- ATTAQUER [nom_civ]
-- DIPLOMATIE [alliance|paix|commerce] → [civ cible]
-- LOI [description]
-- RIEN
-SOUHAIT: [un besoin ou désir de ta civilisation en une phrase]`;
-
-function buildPrompt(ctx) {
-  const variant = ctx.prompt_variant || 'V0';
-  if (variant === 'V0') return buildPromptV0(ctx);
-  return buildVariantBody(ctx, variant) + '\n\n' + FORMAT_GEMINI;
-}
 
 function parseResponse(text) {
   // Supprimer le markdown bold/italic
@@ -276,24 +102,192 @@ function parseResponse(text) {
   };
 }
 
+// Provider for Gemini that matches the signature expected by parseCivNarrative
+async function geminiProvider({ model: _, messages, stream, options }) {
+  // Combine messages into a single prompt (Gemini 2.0 Flash can handle system/user via roles)
+  const combined = messages.map(m => `${m.role}: ${m.content}`).join('\n\n');
+  const result = await model.generateContent(combined);
+  return {
+    message: { content: result.response.text() },
+    content: result.response.text(),
+  };
+}
+
+// Convert parsed action to old format (compatible with actionToEffetLine)
+function parsedActionToOld(action) {
+  const verbMap = {
+    affecter: 'AFFECTER',
+    construire: 'CONSTRUIRE',
+    explorer: 'EXPLORER',
+    coloniser: 'COLONISER',
+    attaquer: 'ATTAQUER',
+    diplomatie: 'DIPLOMATIE',
+    envoyer_emissaire: 'ENVOYER_EMISSAIRE',
+    envoyer_marchands: 'ENVOYER_MARCHANDS',
+    espionner: 'ESPIONNER',
+    loi: 'LOI',
+    recruter: 'RECRUTER',
+    abandonner: 'ABANDONNER',
+    chasser: 'CHASSER',
+    utiliser_relique: 'UTILISER_RELIQUE',
+    etudier_relique: 'ETUDIER_RELIQUE',
+  };
+  const verbe = verbMap[action.type] || action.type.toUpperCase();
+  let parametres = '';
+  if (action.quantite) parametres += action.quantite + ' ';
+  if (action.cible) parametres += action.cible + ' ';
+  if (action.direction) parametres += 'direction:' + action.direction;
+  parametres = parametres.trim();
+  return {
+    type: verbe,
+    raw: action.description_brute || '',
+    parametres,
+    cible: action.cible,
+    quantite: action.quantite,
+    direction: action.direction,
+  };
+}
+
+// Convert old‑format action to effet line (compatible with existing resolver)
+function actionToEffetLine(action) {
+  const p = action.parametres || '';
+
+  switch (action.type) {
+    case 'AFFECTER': {
+      const nb    = action.nombre || 10;
+      const tache = action.tache  || p || 'tâche générale';
+      return `AFFECTER ${nb} personnes → ${tache}`;
+    }
+    case 'CONSTRUIRE': {
+      const nom     = action.nomStructure || p.split(/\s+/)[0] || 'construction';
+      const rolePart = action.role     ? `, rôle: ${action.role}`           : '';
+      const capPart  = action.capacity ? `, capacité: ${action.capacity}`   : '';
+      return `CRÉER ${nom} (personnes: 5, durée: 5${rolePart}${capPart})`;
+    }
+    case 'EXPLORER': {
+      const dir = action.direction || 'nord';
+      return `ENVOYER 5 personnes → exploration ${dir} (durée: 3, but: explorer)`;
+    }
+    case 'COLONISER': {
+      const dirM = p.match(/direction\s*:\s*([^\s,]+)/i) || p.match(/(nord|sud|est|ouest)/i);
+      const dir   = dirM ? dirM[1].toLowerCase() : 'nord';
+      return `ENVOYER 30 personnes → fondation ${dir} (durée: 5, but: coloniser)`;
+    }
+    case 'ESPIONNER': {
+      const nbM    = p.match(/personnes\s*:\s*(\d+)/i);
+      const nb     = nbM ? nbM[1] : '5';
+      const target = p.replace(/personnes\s*:\s*\d+/gi, '').trim();
+      return `ESPIONNER ${target} (personnes: ${nb})`;
+    }
+    case 'ENVOYER_EMISSAIRE': {
+      const nbM    = p.match(/personnes\s*:\s*(\d+)/i);
+      const nb     = nbM ? nbM[1] : '3';
+      const target = p.replace(/personnes\s*:\s*\d+/gi, '').trim();
+      return `ENVOYER_EMISSAIRE ${target} (personnes: ${nb})`;
+    }
+    case 'ENVOYER_MARCHANDS': {
+      const offM   = p.match(/offre\s*:\s*(\w+)/i);
+      const demM   = p.match(/demande\s*:\s*(\w+)/i);
+      const target = p
+        .replace(/offre\s*:\s*\w+/gi, '')
+        .replace(/demande\s*:\s*\w+/gi, '')
+        .replace(/personnes\s*:\s*\d+/gi, '')
+        .trim();
+      const extras = [offM ? `offre: ${offM[1]}` : '', demM ? `demande: ${demM[1]}` : ''].filter(Boolean).join(', ');
+      return `ENVOYER_MARCHANDS ${target} (${extras})`;
+    }
+    case 'DEVELOPPER': {
+      // Affecter des travailleurs à un développement
+      const nbM  = p.match(/(\d+)/);
+      const nb   = nbM ? parseInt(nbM[1]) : 10;
+      const task = p.replace(/\d+/g, '').replace(/travailleurs?/gi, '').trim() || 'développement';
+      return `AFFECTER ${nb} personnes → ${task}`;
+    }
+    case 'ABANDONNER':
+      return `ABANDONNER ${p}`;
+    case 'LOI':
+      return `LOI ${p}`;
+    case 'DIPLOMATIE': {
+      const parts = p.split(/\s*(?:→|->|avec|contre)\s*/i);
+      const act   = parts[0]?.trim() || p;
+      const tgt   = parts[1]?.trim() || '';
+      return tgt ? `DIPLOMATIE ${act} → ${tgt}` : 'RIEN';
+    }
+    case 'CHASSER': {
+      const cible = action.cible || p.split(/\s+/)[0] || '';
+      const nombre = action.nombre || 5;
+      return `CHASSER ${cible} (personnes: ${nombre})`;
+    }
+    case 'ATTAQUER': {
+      const cible = action.cible || p.trim();
+      return `ATTAQUER ${cible}`;
+    }
+    case 'RECRUTER': {
+      const nb = action.quantite || parseInt(action.parametres) || 10;
+      return `AFFECTER ${nb} personnes → armée`;
+    }
+
+    case 'UTILISER_RELIQUE': {
+      const cible = action.cible || action.parametres || '';
+      return `UTILISER_RELIQUE ${cible}`;
+    }
+
+    case 'ETUDIER_RELIQUE': {
+      const cible = action.cible || action.parametres || '';
+      return `ETUDIER_RELIQUE ${cible}`;
+    }
+
+    case 'REORGANISER':
+    case 'RIEN':
+    default:
+      return 'RIEN';
+  }
+}
+
 async function decide(context) {
   if (!model) {
     const r = mockDecide(context);
-    return { ...r, souhait: null };
+    return { ...r, nouveauCap: null, analyseInterne: r.strategie };
   }
+
   try {
-    const prompt = buildPrompt(context);
-    const result = await Promise.race([
+    const prompt = buildPromptFree(context);
+    const response = await Promise.race([
       model.generateContent(prompt),
       new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 15000)),
     ]);
-    const rawText = result.response.text().trim();
-    console.log('[LLM RAW]', rawText.slice(0, 200));
-    return parseResponse(rawText);
+    const narrative = response.response.text().trim();
+    console.log('[GEMINI CIV NARRATIVE]', narrative.slice(0, 300));
+
+    const { actions: parsedActions, etat_psychologique, memoire_a_conserver } = await parseCivNarrative(
+      narrative,
+      geminiProvider,
+      { model: null, stream: false, options: { temperature: 0.8, maxOutputTokens: 300 } }
+    );
+
+    // Dériver souhait
+    const souhait = memoire_a_conserver || etat_psychologique || null;
+
+    // Convertir les actions parsées en format ancien pour effet_text
+    const oldActions = parsedActions.map(parsedActionToOld);
+    const effets_text = oldActions.map(a => actionToEffetLine(a)).join('\n') || 'RIEN';
+    const actions = parsedActions.map(a => a.type);
+
+    console.log('[LLM] Actions parsées:', actions.join(', ') || 'RIEN');
+
+    return {
+      strategie: narrative,
+      effets_text,
+      actions: actions.length ? actions : ['RIEN'],
+      raison: etat_psychologique,
+      nouveauCap: null,
+      souhait,
+      analyseInterne: narrative,
+    };
   } catch (err) {
     console.warn(`Gemini civ → mock (${err.message})`);
     const r = mockDecide(context);
-    return { ...r, souhait: null };
+    return { ...r, nouveauCap: null, souhait: null, analyseInterne: r.strategie };
   }
 }
 
