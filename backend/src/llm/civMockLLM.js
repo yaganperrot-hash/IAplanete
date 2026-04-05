@@ -99,7 +99,7 @@ function decide(context) {
   } = context;
 
   const warlike   = valeurs.includes('guerre') || valeurs.includes('expansion');
-  const peaceful  = valeurs.includes('commerce') || valeurs.includes('savoir') || valeurs.includes('isolationnisme');
+  const peaceful  = valeurs.includes('commerce') || valeurs.includes('connaissance') || valeurs.includes('isolationnisme');
   const spiritual = valeurs.includes('spiritualite') || valeurs.includes('art_culture');
   const canAttack = !['primitif', 'neolithique'].includes(age_tech);
   const hasConstruction = active_processes.some(p => p.type === 'construction');

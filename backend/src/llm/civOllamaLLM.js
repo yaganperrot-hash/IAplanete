@@ -8,18 +8,37 @@ const DEFAULT_HOST  = 'http://localhost:11434';
 
 let ollamaChat = null;
 let model      = DEFAULT_MODEL;
+let ollamaHost  = DEFAULT_HOST;
+let llamaModel = DEFAULT_MODEL;
+
+async function ollamaApiChat({ model, messages, options = {} }) {
+  const res = await fetch(`${ollamaHost}/api/chat`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      model,
+      messages,
+      stream: false,
+      options: {
+        temperature: options.temperature || 0.8,
+        num_predict: options.num_predict || 1200,
+        top_p: options.top_p || 0.95,
+      },
+    }),
+  });
+  const data = await res.json();
+  return { message: { content: data.message.content } };
+}
 
 function init() {
   try {
-    const { Ollama } = require('ollama');
-    const host = process.env.OLLAMA_HOST || DEFAULT_HOST;
-    model = process.env.OLLAMA_MODEL || DEFAULT_MODEL;
-    const client = new Ollama({ host });
-    ollamaChat = client.chat.bind(client);
-    console.log(`✓ Ollama (Civilisations V4) initialisé — modèle : ${model} sur ${host}`);
+    ollamaHost = process.env.OLLAMA_URL || DEFAULT_HOST;
+    model      = process.env.OLLAMA_MODEL || DEFAULT_MODEL;
+    ollamaChat = ollamaApiChat;
+    console.log(`✓ Ollama initialisé — ${ollamaHost} — ${model}`);
     return true;
   } catch (err) {
-    console.warn(`⚠️  Ollama init échoué: ${err.message} — mock activé`);
+    console.warn(`⚠️ Ollama init échoué: ${err.message} — mock activé`);
     return false;
   }
 }
@@ -578,7 +597,10 @@ function actionToEffetLine(action) {
     }
 
     case 'CONSTRUIRE': {
-      const nom     = action.nomStructure || p.split(/\s+/)[0] || 'construction';
+      let nom = action.nomStructure || p.split(/\s+/)[0] || 'construction';
+      if (!nom || /^\d+$/.test(nom)) {
+        nom = action.cible || 'Construction';
+      }
       const rolePart = action.role     ? `, rôle: ${action.role}`           : '';
       const capPart  = action.capacity ? `, capacité: ${action.capacity}`   : '';
       return `CRÉER ${nom} (personnes: 5, durée: 5${rolePart}${capPart})`;
@@ -668,6 +690,15 @@ function actionToEffetLine(action) {
       return `ETUDIER_RELIQUE ${cible}`;
     }
 
+    case 'TRANSFORMER': {
+      const input = action.input || '?';
+      const output = action.output || '?';
+      const quantite = action.quantite || 1;
+      const personnes = action.personnes || 5;
+      const typeOriginal = action.typeOriginal || 'transformer';
+      return `TRANSFORMER ${typeOriginal} (input:${input}, output:${output}, quantite:${quantite}, personnes:${personnes})`;
+    }
+
     case 'REORGANISER':
     case 'RIEN':
     default:
@@ -708,7 +739,7 @@ async function decide(context) {
     const { actions: parsedActions, etat_psychologique, memoire_a_conserver } = await parseCivNarrative(
       narrative,
       ollamaChat,
-      { model, stream: false, options: { temperature: 0.8, num_predict: 1200 } }
+      { model, stream: false, options: { temperature: 0.3, num_predict: 800 } }
     );
 
     // Dériver souhait
@@ -734,20 +765,32 @@ async function decide(context) {
         utiliser_relique: 'UTILISER_RELIQUE',
         etudier_relique: 'ETUDIER_RELIQUE',
       };
-      const verbe = verbMap[action.type] || action.type.toUpperCase();
-      let parametres = '';
-      if (action.quantite) parametres += action.quantite + ' ';
-      if (action.cible) parametres += action.cible + ' ';
-      if (action.direction) parametres += 'direction:' + action.direction;
-      parametres = parametres.trim();
-      return {
-        type: verbe,
-        raw: action.description_brute || '',
-        parametres,
-        cible: action.cible,
-        quantite: action.quantite,
-        direction: action.direction,
-      };
+      // Si le type est dans verbMap, on garde le comportement actuel
+      if (verbMap[action.type]) {
+        const verbe = verbMap[action.type];
+        let parametres = '';
+        if (action.quantite) parametres += action.quantite + ' ';
+        if (action.cible) parametres += action.cible + ' ';
+        if (action.direction) parametres += 'direction:' + action.direction;
+        parametres = parametres.trim();
+        return {
+          type: verbe,
+          raw: action.description_brute || '',
+          parametres,
+          cible: action.cible,
+          quantite: action.quantite,
+          direction: action.direction,
+        };
+      } else {
+        // Type inconnu → transformer
+        if (action.ressource_entree && action.ressource_sortie) {
+          return { type: 'TRANSFORMER', typeOriginal: action.type,
+                   input: action.ressource_entree, output: action.ressource_sortie,
+                   quantite: action.quantite || 1, personnes: action.nb_personnes || 5,
+                   raw: action.description_brute || '' };
+        }
+        return { type: 'RIEN', typeOriginal: action.type, raw: action.description_brute || '' };
+      }
     }
 
     const oldActions = parsedActions.map(parsedActionToOld);

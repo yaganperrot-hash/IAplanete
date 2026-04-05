@@ -14,6 +14,48 @@
 
 ## Bugs ouverts (vrais)
 
+### [2026-04-05] `no such table: structures` — nightMonitor crash snapshot
+- **Symptôme** : `ERREUR snapshot: no such table: structures` — tous les snapshots horaires échouent.
+- **Cause** : La tâche Deepseek d'ajout des types de construction dans nightMonitor a requêté une table `structures` qui n'existe pas. Le vrai nom de la table est différent (à confirmer via `sqlite_master`).
+- **Fix attendu** : Soit corriger le nom de table, soit protéger la query dans un try/catch pour ne pas bloquer le snapshot.
+- **Fichiers** : `nightMonitor.js`
+- **Statut** : 🟡 Partiel (simulation lancée sans la section structures)
+
+### [2026-04-05] Pop stagnante — naissances bloquées par condition surplus
+- **Symptôme** : Population ~100 après 130 ticks (~11 ans). Greniers pleins mais 0 naissances.
+- **Cause** : `canBirth` exigeait `surplus >= 0`. Avec tous les workers occupés sur tâches non-alimentaires, le surplus de nourriture était négatif même avec 3000+ unités en stock.
+- **Fix** : `surplus >= 0` remplacé par `nourriture > 200`. Seuil moral 40→30. Taux natalité 1.5%→2.5%.
+- **Fichiers** : `civActionResolver.js`
+- **Statut** : ✅ Résolu
+
+### [2026-04-05] PARSER_WARN — JSON tronqué à 1200 tokens
+- **Symptôme** : `[PARSER_WARN] Impossible de parser la réponse LLM: Expected ',' or ']' after array element in JSON at position 1718` — récurrent sur plusieurs civs.
+- **Cause** : `civOllamaLLM.js` passait `num_predict: 1200` et `temperature: 0.8` au parseur, écrasant ses defaults. Le JSON se générait trop verbeux et se coupait.
+- **Fix** : Parser appelé avec `{ temperature: 0.3, num_predict: 800 }`. JSON repair ajouté dans le catch de `civParserLLM.js` (troncature au dernier `}` complet + fermeture du tableau).
+- **Fichiers** : `civOllamaLLM.js`, `civParserLLM.js`
+- **Statut** : ✅ Résolu
+
+### [2026-04-04] KNOWN_ACTION_TYPES incomplet → faux positifs dans unknown_actions
+- **Symptôme** : `CRÉER` (401x), `ENVOYER` (164x), `RIEN` (932x) loggués comme types inconnus alors qu'ils sont gérés par `resolveEffect()`.
+- **Cause** : `KNOWN_ACTION_TYPES` dans `civActionResolver.js` contient les types parseur en minuscules (`construire`, `affecter`...) mais pas les verbes résolveur majuscules (`CRÉER`, `ENVOYER`, `RIEN`). Le check `!KNOWN_ACTION_TYPES.includes(effect.verb.toLowerCase())` échoue car `créer` et `envoyer` ne sont pas dans la liste.
+- **Fix attendu** : Ajouter `'créer'`, `'envoyer'`, `'rien'`, `'transformer'` à `KNOWN_ACTION_TYPES`.
+- **Fichiers** : `civActionResolver.js`
+- **Statut** : ✅ Résolu
+
+### [2026-04-04] Noms de bâtiments absurdes (`5`, `10`, `20`, `42`, `tâche générale`)
+- **Symptôme** : Des bâtiments avec noms numériques ou génériques apparaissent dans `buildings[]`. Ex : `7x 5`, `6x 10`, `5x tâche générale`.
+- **Cause** : `actionToEffetLine()` pour `CONSTRUIRE` utilise `p.split(/\s+/)[0]` comme nom de bâtiment. Si le parseur retourne `quantite` ou `tache` comme premier token, le nom devient un chiffre ou une tâche.
+- **Fix** : Validation `/^\d+$/` ajoutée — fallback sur `action.cible || 'Construction'` si nom numérique ou vide.
+- **Fichiers** : `civOllamaLLM.js`, `civGeminiLLM.js`
+- **Statut** : ✅ Résolu
+
+### [2026-04-04] `last_consequences_narratif` absent du contexte — section [ÉVÉNEMENTS] toujours vide
+- **Symptôme** : Section `[ÉVÉNEMENTS] CE QUI VIENT DE SE PASSER` vide à chaque tick. Le LLM ne voit jamais les combats, chasses, reliques, premiers contacts du tick précédent.
+- **Cause** : `civPromptFree.js` lisait `ctx.last_consequences_narratif` qui n'existait pas dans `buildCivContext`. Seul `last_consequences` (array brut) était retourné.
+- **Fix** : Ajout de `formatLastConsequences(ctx)` dans `civPromptFree.js` qui traduit le tableau en texte narratif. Ligne remplacée : `ctx.last_consequences_narratif || ''` → `formatLastConsequences(ctx)`.
+- **Fichiers** : `civPromptFree.js`
+- **Statut** : ✅ Résolu
+
 ### [2026-04-03] RECRUTER / UTILISER_RELIQUE / ETUDIER_RELIQUE tombaient en RIEN
 - **Symptôme** : Le parseur produisait des actions `recruter`, `utiliser_relique`, `etudier_relique` mais elles étaient converties en `RIEN` par `actionToEffetLine()` → jamais exécutées. Résultat : 0 armée malgré valeur `guerre`, 0 relique utilisée.
 - **Cause** : `actionToEffetLine()` dans civOllamaLLM.js et civGeminiLLM.js n'avait pas de `case` pour ces 3 verbes → tombait en `default: return 'RIEN'`. `parseEffets()` et `resolveEffect()` dans civActionResolver.js idem.

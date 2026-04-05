@@ -457,7 +457,7 @@ function checkValueTensionEvents(civ, frustTicks, currentTick, worldId, events, 
           ).run(civ.id, worldId, 'exploration', direction, workers, ticksRemaining, 'en_cours');
           consequences.push(`Un groupe de ${workers} personnes part explorer vers le ${direction} pour ${ticksRemaining} mois, sans ordre du dirigeant.`);
         }
-      } else if (valeur === 'savoir' || valeur === 'connaissance') {
+      } else if (valeur === 'connaissance') {
         // Vérifier si bâtiment savoir existe
         const buildings = parseJ(civ.buildings, []);
         const hasSavoir = buildings.some(b => b.category === 'savoir');
@@ -507,6 +507,13 @@ function checkValueTensionEvents(civ, frustTicks, currentTick, worldId, events, 
       } else if (valeur === 'art') {
         moralDelta += 6;
         consequences.push('Un festival de rue spontané éclate. Musiciens et conteurs envahissent les places.');
+      } else if (valeur === 'technologie') {
+        const buildings = parseJ(civ.buildings, []);
+        const hasProduction = buildings.some(b => ['production', 'mine_cuivre', 'mine_fer', 'mine_charbon'].includes(b.category) || /forge|atelier|fonderie/i.test(b.name));
+        if (!hasProduction) {
+          newBuilding = { name: 'Atelier des artisans', category: 'production', workers: 0, status: 'active' };
+          consequences.push('Des artisans s\'organisent seuls et ouvrent un atelier rudimentaire.');
+        }
       }
       // Mettre à jour le cooldown
       valueEventTicks[valeur] = currentTick;
@@ -550,7 +557,7 @@ function checkValueTensionEvents(civ, frustTicks, currentTick, worldId, events, 
             consequences.push('Une second groupe d\'explorateurs part, refusant d\'attendre.');
           }
         }
-      } else if (valeur === 'savoir' || valeur === 'connaissance') {
+      } else if (valeur === 'connaissance') {
         resourceDelta.silex = (resourceDelta.silex || 0) + 30;
         consequences.push('Les savants expérimentent avec les matériaux disponibles et font une découverte.');
       } else if (valeur === 'spiritualite') {
@@ -580,6 +587,12 @@ function checkValueTensionEvents(civ, frustTicks, currentTick, worldId, events, 
           newBuilding = { name: 'Atelier collectif', category: 'art', workers: 0, status: 'active' };
           consequences.push('Des artistes construisent leur propre atelier, las d\'attendre une décision.');
         }
+      } else if (valeur === 'technologie') {
+        const resources = parseJ(civ.resources, {});
+        resources.fer = (resources.fer || 0) + 20;
+        resources.cuivre = (resources.cuivre || 0) + 15;
+        db.prepare('UPDATE civilizations SET resources = ? WHERE id = ?').run(JSON.stringify(resources), civ.id);
+        consequences.push('Des prospecteurs trouvent des gisements et rapportent du métal brut. L\'impatience technique du peuple ouvre de nouvelles voies.');
       }
       // Mettre à jour le cooldown aussi pour l'événement fort (même tick)
       valueEventTicks[valeur] = currentTick;

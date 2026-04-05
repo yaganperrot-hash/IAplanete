@@ -92,7 +92,7 @@ function getMemoryShort(ctx) {
 const TENSION_LATENTE = {
   expansion:      "posséder davantage pour ne plus jamais manquer",
   commerce:       "être reconnu par ceux qui refusent de traiter",
-  savoir:         "comprendre ce qu'aucun autre ne comprend",
+  connaissance:   "comprendre ce qu'aucun autre ne comprend",
   guerre:         "que la force seule décide, une fois pour toutes",
   spiritualite:   "trouver un sens là où il n'y en a peut-être aucun",
   isolationnisme: "être laissé en paix, définitivement",
@@ -448,7 +448,7 @@ function buildV8_ValeursTension(ctx) {
   const TENSIONS_DESC = {
     expansion: { sat: "Votre territoire s'étend. La soif de terres est apaisée.", fru: "Vos frontières n'ont pas bougé. L'expansion est trahie." },
     commerce: { sat: "Les échanges avec l'extérieur enrichissent votre peuple.", fru: "Pas d'échanges. Le talent marchand se consume dans l'inaction." },
-    savoir: { sat: "De nouvelles connaissances ont été acquises.", fru: "Aucune découverte. L'ignorance pèse sur les esprits savants." },
+    connaissance: { sat: "De nouvelles connaissances ont été acquises.", fru: "Aucune découverte. L'ignorance pèse sur les esprits savants." },
     guerre: { sat: "Le combat a prouvé la valeur de votre armée.", fru: "Aucun combat. Les guerriers s'impatientent." },
     spiritualite: { sat: "Les lieux sacrés guident les âmes.", fru: "Pas de temple. Le vide spirituel érode la cohésion." },
     isolationnisme: { sat: "Aucun étranger ne trouble votre paix.", fru: "Trop de contacts extérieurs. L'intégrité est menacée." },

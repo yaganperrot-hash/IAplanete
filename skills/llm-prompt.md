@@ -56,8 +56,8 @@ CE QUE TON PEUPLE SAIT FAIRE :
 [RELIQUES MYSTÉRIEUSES — conditionnel si taken=1 AND used=0]
 {describeReliquesMysterieuses(ctx)}
 
-[ÉVÉNEMENTS]
-{last_consequences_narratif}
+[ÉVÉNEMENTS — conditionnel si last_consequences non vide]
+{formatLastConsequences(ctx)}   ← traduit last_consequences[] en texte narratif
 
 [ÉCHECS — conditionnel si echecs_tick_precedent non vide]
 {buildEchecsNarratif(echecs_tick_precedent)}
@@ -79,6 +79,13 @@ Parle à la première personne. Raconte ce que tu décides, pourquoi, avec qui, 
 Chaque civ a une `tension` (désir inavoué) et une `voix` (style narratif).
 10 civs actives : Conquérants, Gardiens, Khaganat, Ascètes, Mystiques, Marchands de la Route d'Or, Cité des Sages, Chasseurs du Vent, Empire des Forges, Pillards de la Côte.
 
+### ctx.description — champ libre créateur
+- Injecté en position [IDENTITÉ], première section du prompt
+- Déjà prouvé efficace : Cité des Sages → bibliothèque émergente depuis sa description
+- Actuellement : 1 phrase courte (seed statique)
+- Cible v1 : textarea 500 chars à la création de civ (frontend) — backend déjà prêt
+- 500 chars ≈ 4-6 phrases comportementales concrètes → impact fort sur décisions LLM
+
 ### Helpers narratifs
 | Fonction | Rôle |
 |---|---|
@@ -88,8 +95,7 @@ Chaque civ a une `tension` (désir inavoué) et une `voix` (style narratif).
 | `describeReliquesMysterieuses(ctx)` | Reliques taken=1 AND used=0 |
 | `buildEchecsNarratif(echecs)` | Traduction des échecs en phrases dramatiques |
 | `describeNeighborsNarrative(ctx)` | Voisins en qualitatif (guerre/commerce/neutre) |
-
-**Bug connu corrigé** : `describeTechnology` ligne extraction — vérifier `s.role` avant `.includes()`.
+| `formatLastConsequences(ctx)` | Traduit `last_consequences[]` en texte narratif pour [ÉVÉNEMENTS] |
 
 ---
 
@@ -107,24 +113,43 @@ Règle : traduit fidèlement, n'invente pas, types inconnus → snake_case inven
 ### Retour
 ```js
 {
-  actions: [{ type, cible, quantite, direction, description_brute, confiance }],
+  actions: [{
+    type, cible, quantite, direction, description_brute, confiance,
+    ressource_entree,   // nouveau — ressource consommée (string|null)
+    ressource_sortie,   // nouveau — ressource produite (string|null)
+    nb_personnes        // nouveau — personnes impliquées (int|null)
+  }],
   etat_psychologique: "max 15 mots",
   memoire_a_conserver: "max 20 mots"
 }
 ```
 - Confiance < 0.4 → log `[PARSER_WARN]`
-- Type inconnu → log `[PARSER_NEW_TYPE]` + INSERT `unknown_actions`
+- Type inconnu → priorité 3 étapes :
+  1. Mapper vers verbe existant (cartographier→explorer, route commerciale→envoyer_marchands, etc.)
+  2. Si transformation matériau → snake_case + ressource_entree/sortie → TRANSFORMER
+  3. Si purement narratif (divination, méditation...) → snake_case, ressources null → RIEN loggué
+- Clarification (2e appel) uniquement si type inconnu + ressources null + description contient mot matériau
 - Parse échoue → `{ actions: [], etat_psychologique: 'inconnu', memoire_a_conserver: '' }`
 
 ---
 
 ## Paramètres Ollama
+
+### Appel 1 — LLM Civ (narrative)
 ```
 model: process.env.OLLAMA_MODEL || 'mistral-nemo'
 temperature: 0.8
 num_predict: 1200
 timeout: 60000ms
 ```
+
+### Appel 2 — Parser (civParserLLM.js)
+```
+temperature: 0.3   ← déterministe, JSON compact
+num_predict: 800   ← suffisant pour JSON structuré
+```
+JSON repair activé : si parse échoue → troncature au dernier `}` complet + fermeture `]}`.
+
 Fallback → `civMockLLM.js` si Ollama unavailable ou timeout.
 
 ---

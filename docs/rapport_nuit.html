@@ -28,19 +28,23 @@
     .rank1 td:first-child { color: #f7c948; font-weight: bold; }
     .rank1 { background: #1a2010; }
     .dead { opacity: 0.5; text-decoration: line-through; }
+    .civ-fiche { background: #1a202c; border: 1px solid #2d3748; border-radius: 8px; padding: 15px 20px; margin: 12px 0; }
+    .fiche-header { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; flex-wrap: wrap; }
+    .fiche-stats { font-size: 0.85em; color: #a0aec0; line-height: 1.8; }
+    .fiche-events ul { margin: 4px 0; padding-left: 20px; font-size: 0.83em; color: #cbd5e0; }
   </style>
 </head>
 <body>
 <div class="page">
   <h1>🌙 Rapport nocturne — WorldIA Civilisations</h1>
-  <p class="meta">mercredi 1 avril 2026 | tick 240 → 240 | 12 snapshots horaires | Généré à 05:59:59</p>
+  <p class="meta">dimanche 5 avril 2026 | tick 2 → 113 | 9 snapshots horaires | Généré à 08:00:00</p>
   
     <div class="summary-box">
       <h3>Résumé de la nuit</h3>
-      <p>Durée : 12 snapshots | Ticks joués : 0 (tick 240 → 240)</p>
-      <p>Événements totaux : 450 | Types : echec, epidemie, catastrophe, construction, exploration, affectation, diplomatie, mission, bonus, guerre, recrutement, loi, revolte, relique_utilisee, decouverte</p>
-      <p>Reliques découvertes : 8 | Guerres/combats : 82 | Échanges commerciaux : 2</p>
-      <p>Relations diplomatiques finales : 12 (dont 0 alliances)</p>
+      <p>Durée : 9 snapshots | Ticks joués : 111 (tick 2 → 113)</p>
+      <p>Événements totaux : 360 | Types : naissance, construction, transformation, affectation, echec, exploration, recrutement, mission, catastrophe, bonus, loi, revolte</p>
+      <p>Reliques découvertes : 0 | Guerres/combats : 0 | Échanges commerciaux : 0</p>
+      <p>Relations diplomatiques finales : 0 (dont 0 alliances)</p>
     </div>
 
   <h2>📊 Tableau comparatif des variants (classé par score d'activité)</h2>
@@ -54,242 +58,186 @@
         <th>Révoltes</th><th>Catastrophes</th><th>Reliques</th>
         <th>Armée</th><th>Score</th>
       </tr><tr class="rank1">
-      <td><span class="badge badge-blue">V5</span></td>
-      <td>Le Grand Khaganat</td>
-      <td>196 → 196</td>
-      <td class="neutral">+0</td>
-      <td class="good">94</td>
-      <td>+0</td>
-      <td>46</td>
-      <td>12</td>
-      <td>15</td>
-      <td>0</td>
-      <td>0</td>
-      <td><span class="good">1</span></td>
-      <td>⚔️ 3</td>
-      <td><strong>5/7</strong></td>
-    </tr><tr>
       <td><span class="badge badge-blue">V8</span></td>
-      <td>Les Ascètes de la Pierre</td>
-      <td>213 → 213</td>
-      <td class="neutral">+0</td>
-      <td class="good">86</td>
-      <td>+0</td>
-      <td>11</td>
-      <td>21</td>
-      <td>1</td>
-      <td><span class="bad">5</span></td>
-      <td><span class="badge-yellow badge">3</span></td>
-      <td><span class="good">3</span></td>
-      <td>—</td>
-      <td><strong>5/7</strong></td>
-    </tr><tr>
-      <td><span class="badge badge-blue">V0</span></td>
-      <td>Les Conquérants du Feu Sacré</td>
-      <td>230 → 230</td>
-      <td class="neutral">+0</td>
-      <td class="good">86</td>
-      <td>+0</td>
-      <td>16</td>
-      <td>20</td>
-      <td>9</td>
-      <td>0</td>
-      <td><span class="badge-yellow badge">3</span></td>
-      <td>0</td>
-      <td>⚔️ 5</td>
-      <td><strong>4/7</strong></td>
-    </tr><tr>
-      <td><span class="badge badge-blue">V1</span></td>
-      <td>Les Nomades du Fer</td>
-      <td>22 → 22</td>
-      <td class="neutral">+0</td>
-      <td class="bad">0</td>
-      <td>+0</td>
-      <td>4</td>
-      <td>1</td>
-      <td>1</td>
-      <td><span class="bad">1</span></td>
-      <td>0</td>
-      <td>0</td>
-      <td>⚔️ 13</td>
-      <td><strong>4/7</strong></td>
-    </tr><tr>
-      <td><span class="badge badge-blue">V4</span></td>
-      <td>Les Gardiens du Mur</td>
-      <td>227 → 227</td>
-      <td class="neutral">+0</td>
-      <td class="good">86</td>
-      <td>+0</td>
-      <td>6</td>
-      <td>12</td>
+      <td>Les Pillards de la Côte</td>
+      <td>100 → 128</td>
+      <td class="good">+28</td>
+      <td class="good">84</td>
+      <td>+39</td>
       <td>3</td>
+      <td>4</td>
       <td>0</td>
-      <td><span class="badge-yellow badge">2</span></td>
-      <td><span class="good">2</span></td>
-      <td>⚔️ 1</td>
+      <td>0</td>
+      <td><span class="badge-yellow badge">3</span></td>
+      <td>0</td>
+      <td>—</td>
       <td><strong>4/7</strong></td>
     </tr><tr>
       <td><span class="badge badge-blue">V9</span></td>
-      <td>Les Mystiques des Brumes</td>
-      <td>214 → 214</td>
-      <td class="neutral">+0</td>
-      <td class="good">94</td>
-      <td>+0</td>
-      <td>23</td>
-      <td>13</td>
-      <td>13</td>
+      <td>La Cité des Sages</td>
+      <td>100 → 133</td>
+      <td class="good">+33</td>
+      <td class="good">70</td>
+      <td>+28</td>
       <td>0</td>
-      <td><span class="badge-yellow badge">3</span></td>
+      <td>2</td>
+      <td>2</td>
       <td>0</td>
-      <td>—</td>
+      <td>0</td>
+      <td>0</td>
+      <td>⚔️ 31</td>
       <td><strong>4/7</strong></td>
     </tr><tr>
-      <td><span class="badge badge-blue">V2</span></td>
-      <td>Les Enfants de la Terre Mère</td>
-      <td>107 → 107</td>
-      <td class="neutral">+0</td>
-      <td class="good">75</td>
-      <td>+0</td>
-      <td>1</td>
-      <td>3</td>
-      <td>1</td>
-      <td><span class="bad">3</span></td>
+      <td><span class="badge badge-blue">V5</span></td>
+      <td>Les Chasseurs du Vent</td>
+      <td>100 → 68</td>
+      <td class="bad">-32</td>
+      <td class="bad">0</td>
+      <td>+29</td>
+      <td>2</td>
+      <td>4</td>
+      <td>0</td>
+      <td><span class="bad">1</span></td>
       <td><span class="badge-yellow badge">1</span></td>
       <td>0</td>
       <td>—</td>
       <td><strong>3/7</strong></td>
     </tr><tr>
-      <td><span class="badge badge-blue">V7</span></td>
-      <td>Les Érudits d'Aristos</td>
-      <td>34 → 34</td>
-      <td class="neutral">+0</td>
-      <td class="bad">0</td>
-      <td>+0</td>
-      <td>4</td>
-      <td>2</td>
-      <td>0</td>
-      <td><span class="bad">2</span></td>
-      <td>0</td>
-      <td><span class="good">2</span></td>
-      <td>—</td>
-      <td><strong>3/7</strong></td>
-    </tr><tr>
-      <td><span class="badge badge-blue">V3</span></td>
-      <td>Les Marchands de l'Aube</td>
-      <td>0 → 0</td>
-      <td class="neutral">+0</td>
+      <td><span class="badge badge-blue">V0</span></td>
+      <td>Les Marchands de la Route d'Or</td>
+      <td>100 → 49</td>
+      <td class="bad">-51</td>
       <td class="bad">0</td>
       <td>+0</td>
       <td>2</td>
+      <td>2</td>
       <td>0</td>
       <td>0</td>
-      <td>0</td>
-      <td>0</td>
+      <td><span class="badge-yellow badge">1</span></td>
       <td>0</td>
       <td>—</td>
       <td><strong>2/7</strong></td>
     </tr><tr>
-      <td><span class="badge badge-blue">V6</span></td>
-      <td>Le Syndicat des Forges</td>
-      <td>50 → 50</td>
-      <td class="neutral">+0</td>
-      <td class="bad">0</td>
-      <td>+0</td>
-      <td>1</td>
-      <td>6</td>
+      <td><span class="badge badge-blue">V4</span></td>
+      <td>L'Empire des Forges</td>
+      <td>100 → 99</td>
+      <td class="bad">-1</td>
+      <td class="good">86</td>
+      <td>+16</td>
       <td>0</td>
-      <td><span class="bad">1</span></td>
-      <td><span class="badge-yellow badge">2</span></td>
+      <td>3</td>
       <td>0</td>
-      <td>—</td>
+      <td>0</td>
+      <td><span class="badge-yellow badge">1</span></td>
+      <td>0</td>
+      <td>⚔️ 10</td>
       <td><strong>2/7</strong></td>
     </tr></table>
 
   <h2>📈 Évolution de la population par heure</h2>
-  <table><tr><th>Heure</th><th>Tick</th><th>V0</th><th>V1</th><th>V2</th><th>V3</th><th>V4</th><th>V5</th><th>V6</th><th>V7</th><th>V8</th><th>V9</th></tr><tr><td>00:00</td><td>240</td><td class="good">230</td><td class="bad">22</td><td class="good">107</td><td class="bad">0</td><td class="good">227</td><td class="good">196</td><td class="bad">50</td><td class="bad">34</td><td class="good">213</td><td class="good">214</td></tr><tr><td>00:59</td><td>336</td><td class="good">310</td><td class="bad">0</td><td class="bad">0</td><td class="bad">0</td><td class="good">322</td><td class="good">200</td><td class="bad">47</td><td class="bad">0</td><td class="good">227</td><td class="good">286</td></tr><tr><td>01:00</td><td>336</td><td class="good">310</td><td class="bad">0</td><td class="bad">0</td><td class="bad">0</td><td class="good">322</td><td class="good">200</td><td class="bad">47</td><td class="bad">0</td><td class="good">227</td><td class="good">286</td></tr><tr><td>01:59</td><td>444</td><td class="good">542</td><td class="bad">0</td><td class="bad">0</td><td class="bad">0</td><td class="good">491</td><td class="good">228</td><td class="bad">45</td><td class="bad">0</td><td class="good">275</td><td class="good">426</td></tr><tr><td>02:59</td><td>551</td><td class="good">842</td><td class="bad">0</td><td class="bad">0</td><td class="bad">0</td><td class="good">716</td><td class="good">291</td><td class="bad">45</td><td class="bad">0</td><td class="good">404</td><td class="good">690</td></tr><tr><td>03:59</td><td>656</td><td class="good">1182</td><td class="bad">0</td><td class="bad">0</td><td class="bad">0</td><td class="good">943</td><td class="good">367</td><td class="bad">41</td><td class="bad">0</td><td class="good">645</td><td class="good">1120</td></tr><tr><td>04:59</td><td>767</td><td class="good">1632</td><td class="bad">0</td><td class="bad">0</td><td class="bad">0</td><td class="good">1375</td><td class="good">514</td><td class="bad">39</td><td class="bad">0</td><td class="bad">390</td><td class="good">1630</td></tr><tr><td>05:59</td><td>877</td><td class="good">2090</td><td class="bad">0</td><td class="bad">0</td><td class="bad">0</td><td class="good">1652</td><td class="good">626</td><td class="bad">38</td><td class="bad">0</td><td class="bad">78</td><td class="good">1935</td></tr><tr><td>22:30</td><td>102</td><td class="good">175</td><td class="bad">85</td><td class="good">198</td><td class="bad">24</td><td class="good">166</td><td class="good">187</td><td class="neutral">167</td><td class="bad">116</td><td class="good">191</td><td class="good">163</td></tr><tr><td>22:59</td><td>149</td><td class="good">199</td><td class="bad">44</td><td class="good">211</td><td class="bad">0</td><td class="good">179</td><td class="good">197.5</td><td class="bad">117</td><td class="bad">48</td><td class="good">192</td><td class="good">182</td></tr><tr><td>23:00</td><td>149</td><td class="good">199</td><td class="bad">44</td><td class="good">211</td><td class="bad">0</td><td class="good">179</td><td class="good">197.5</td><td class="bad">117</td><td class="bad">48</td><td class="good">192</td><td class="good">182</td></tr><tr><td>23:59</td><td>240</td><td class="good">230</td><td class="bad">22</td><td class="good">107</td><td class="bad">0</td><td class="good">227</td><td class="good">196</td><td class="bad">50</td><td class="bad">34</td><td class="good">213</td><td class="good">214</td></tr></table>
+  <table><tr><th>Heure</th><th>Tick</th><th>V0</th><th>V4</th><th>V5</th><th>V8</th><th>V9</th><th>V0</th><th>V9</th><th>V5</th><th>V4</th><th>V8</th></tr><tr><td>00:32</td><td>2</td><td class="good">100</td><td class="good">100</td><td class="good">100</td><td class="good">100</td><td class="good">100</td><td class="good">100</td><td class="good">100</td><td class="good">100</td><td class="good">100</td><td class="good">100</td></tr><tr><td>01:00</td><td>12</td><td class="good">111</td><td class="good">92</td><td class="good">102</td><td class="good">74</td><td class="good">111</td><td class="good">105</td><td class="good">86</td><td class="good">111</td><td class="good">111</td><td class="good">111</td></tr><tr><td>02:00</td><td>29</td><td class="good">90</td><td class="good">87</td><td class="good">86.5</td><td class="good">70</td><td class="good">99</td><td class="neutral">94</td><td class="good">82</td><td class="good">95</td><td class="good">85</td><td class="good">99</td></tr><tr><td>03:00</td><td>42</td><td class="good">87</td><td class="good">88</td><td class="good">81.5</td><td class="good">71</td><td class="good">96</td><td class="neutral">85</td><td class="good">88</td><td class="good">91</td><td class="good">83</td><td class="good">96</td></tr><tr><td>04:00</td><td>56</td><td class="good">84</td><td class="good">89</td><td class="good">77.5</td><td class="good">73</td><td class="good">92</td><td class="neutral">74</td><td class="good">90</td><td class="neutral">88</td><td class="good">80</td><td class="good">97</td></tr><tr><td>05:00</td><td>69</td><td class="good">86</td><td class="good">95</td><td class="good">75</td><td class="good">76</td><td class="good">90</td><td class="bad">64</td><td class="good">98</td><td class="neutral">90</td><td class="good">81</td><td class="good">110</td></tr><tr><td>06:00</td><td>83</td><td class="good">83</td><td class="good">100</td><td class="good">76</td><td class="good">81</td><td class="good">83</td><td class="bad">55</td><td class="good">108</td><td class="neutral">79</td><td class="good">86</td><td class="good">119</td></tr><tr><td>07:00</td><td>99</td><td class="good">83</td><td class="good">109</td><td class="good">74</td><td class="good">83</td><td class="good">75</td><td class="bad">49</td><td class="good">121</td><td class="bad">76</td><td class="good">92</td><td class="good">122</td></tr><tr><td>08:00</td><td>113</td><td class="good">87</td><td class="good">118</td><td class="good">80</td><td class="good">85</td><td class="good">75</td><td class="bad">49</td><td class="good">133</td><td class="bad">68</td><td class="good">99</td><td class="good">128</td></tr></table>
 
-  <h2>🏺 Reliques découvertes</h2><table>
-      <tr><th>Nom</th><th>Type</th><th>Ère</th><th>Tick</th><th>Découverte par</th><th>Variant</th><th>Prise</th><th>Utilisée</th></tr><tr>
-        <td>Statuette de déesse</td><td>art</td><td>undefined</td><td>280</td>
-        <td>Les Érudits d'Aristos</td><td><span class="badge badge-blue">V7</span></td>
-        <td><span class="good">✓</span></td>
-        <td>✗</td>
-      </tr><tr>
-        <td>Aqueduc souterrain</td><td>construction</td><td>undefined</td><td>438</td>
-        <td>Les Gardiens du Mur</td><td><span class="badge badge-blue">V4</span></td>
-        <td>✗</td>
-        <td>✗</td>
-      </tr><tr>
-        <td>Calendrier astronomique</td><td>objet</td><td>undefined</td><td>87</td>
-        <td>Les Gardiens du Mur</td><td><span class="badge badge-blue">V4</span></td>
-        <td><span class="good">✓</span></td>
-        <td><span class="good">✓</span></td>
-      </tr><tr>
-        <td>Aqueduc souterrain</td><td>construction</td><td>undefined</td><td>103</td>
-        <td>Les Ascètes de la Pierre</td><td><span class="badge badge-blue">V8</span></td>
-        <td>✗</td>
-        <td>✗</td>
-      </tr><tr>
-        <td>Tour d'observation</td><td>construction</td><td>undefined</td><td>103</td>
-        <td>Les Ascètes de la Pierre</td><td><span class="badge badge-blue">V8</span></td>
-        <td>✗</td>
-        <td>✗</td>
-      </tr><tr>
-        <td>Calendrier astronomique</td><td>objet</td><td>undefined</td><td>144</td>
-        <td>Le Grand Khaganat</td><td><span class="badge badge-blue">V5</span></td>
-        <td><span class="good">✓</span></td>
-        <td>✗</td>
-      </tr><tr>
-        <td>Portique de pierre</td><td>construction</td><td>undefined</td><td>153</td>
-        <td>Les Ascètes de la Pierre</td><td><span class="badge badge-blue">V8</span></td>
-        <td>✗</td>
-        <td>✗</td>
-      </tr><tr>
-        <td>Lame courbe gravée</td><td>objet</td><td>undefined</td><td>200</td>
-        <td>Les Érudits d'Aristos</td><td><span class="badge badge-blue">V7</span></td>
-        <td><span class="good">✓</span></td>
-        <td>✗</td>
-      </tr></table>
-  <h2>🤝 Diplomatie (état final)</h2><table><tr><th>Civ A</th><th>Civ B</th><th>Relation</th></tr><tr><td>Les Conquérants du Feu Sacré (V0)</td>
-        <td>Les Enfants de la Terre Mère (V2)</td>
-        <td class="neutral">neutre</td></tr><tr><td>Les Conquérants du Feu Sacré (V0)</td>
-        <td>Les Gardiens du Mur (V4)</td>
-        <td class="neutral">neutre</td></tr><tr><td>Les Nomades du Fer (V1)</td>
-        <td>Le Grand Khaganat (V5)</td>
-        <td class="bad">guerre</td></tr><tr><td>Les Nomades du Fer (V1)</td>
-        <td>Les Mystiques des Brumes (V9)</td>
-        <td class="neutral">neutre</td></tr><tr><td>Les Enfants de la Terre Mère (V2)</td>
-        <td>Les Gardiens du Mur (V4)</td>
-        <td class="neutral">neutre</td></tr><tr><td>Les Enfants de la Terre Mère (V2)</td>
-        <td>Le Syndicat des Forges (V6)</td>
-        <td class="neutral">commerce</td></tr><tr><td>Les Enfants de la Terre Mère (V2)</td>
-        <td>Les Ascètes de la Pierre (V8)</td>
-        <td class="neutral">neutre</td></tr><tr><td>Les Marchands de l'Aube (V3)</td>
-        <td>Le Grand Khaganat (V5)</td>
-        <td class="bad">guerre</td></tr><tr><td>Les Marchands de l'Aube (V3)</td>
-        <td>Les Érudits d'Aristos (V7)</td>
-        <td class="neutral">neutre</td></tr><tr><td>Les Marchands de l'Aube (V3)</td>
-        <td>Les Mystiques des Brumes (V9)</td>
-        <td class="neutral">neutre</td></tr><tr><td>Le Grand Khaganat (V5)</td>
-        <td>Les Ascètes de la Pierre (V8)</td>
-        <td class="neutral">neutre</td></tr><tr><td>Le Grand Khaganat (V5)</td>
-        <td>Les Mystiques des Brumes (V9)</td>
-        <td class="neutral">neutre</td></tr></table>
-  <h2>⚔️ Combats / Guerres</h2><table>
-      <tr><th>Tick</th><th>Type</th><th>Description</th></tr><tr><td>247</td><td>guerre</td><td>Le Grand Khaganat a attaqué Les Nomades du Fer mais a été repoussé !</td></tr><tr><td>248</td><td>guerre</td><td>Le Grand Khaganat a attaqué Les Nomades du Fer mais a été repoussé !</td></tr><tr><td>255</td><td>guerre</td><td>Le Grand Khaganat a attaqué Les Nomades du Fer mais a été repoussé !</td></tr><tr><td>257</td><td>guerre</td><td>Le Grand Khaganat a attaqué Les Nomades du Fer mais a été repoussé !</td></tr><tr><td>259</td><td>guerre</td><td>Le Grand Khaganat a attaqué Les Nomades du Fer mais a été repoussé !</td></tr><tr><td>261</td><td>guerre</td><td>Le Grand Khaganat a attaqué Les Nomades du Fer mais a été repoussé !</td></tr><tr><td>264</td><td>guerre</td><td>Le Grand Khaganat a attaqué Les Nomades du Fer mais a été repoussé !</td></tr><tr><td>271</td><td>guerre</td><td>Le Grand Khaganat a attaqué Les Nomades du Fer mais a été repoussé !</td></tr><tr><td>276</td><td>guerre</td><td>Le Grand Khaganat a attaqué Les Nomades du Fer mais a été repoussé !</td></tr><tr><td>362</td><td>guerre</td><td>Le Grand Khaganat a attaqué Les Mystiques des Brumes mais a été repoussé !</td></tr><tr><td>414</td><td>guerre</td><td>Le Grand Khaganat a attaqué Les Mystiques des Brumes mais a été repoussé !</td></tr><tr><td>417</td><td>guerre</td><td>Le Grand Khaganat a attaqué Les Mystiques des Brumes mais a été repoussé !</td></tr><tr><td>430</td><td>guerre</td><td>Le Grand Khaganat a attaqué Les Mystiques des Brumes mais a été repoussé !</td></tr><tr><td>433</td><td>guerre</td><td>Le Grand Khaganat a attaqué Les Mystiques des Brumes mais a été repoussé !</td></tr><tr><td>440</td><td>guerre</td><td>Le Grand Khaganat a attaqué Les Mystiques des Brumes mais a été repoussé !</td></tr><tr><td>441</td><td>guerre</td><td>Le Grand Khaganat a attaqué Les Mystiques des Brumes mais a été repoussé !</td></tr><tr><td>443</td><td>guerre</td><td>Le Grand Khaganat a attaqué Les Mystiques des Brumes mais a été repoussé !</td></tr><tr><td>463</td><td>guerre</td><td>Le Grand Khaganat a attaqué Les Mystiques des Brumes mais a été repoussé !</td></tr><tr><td>465</td><td>guerre</td><td>Les Mystiques des Brumes a attaqué Le Grand Khaganat mais a été repoussé !</td></tr><tr><td>466</td><td>guerre</td><td>Le Grand Khaganat a attaqué Les Mystiques des Brumes mais a été repoussé !</td></tr><tr><td>466</td><td>guerre</td><td>Les Mystiques des Brumes a attaqué Le Grand Khaganat mais a été repoussé !</td></tr><tr><td>471</td><td>guerre</td><td>Les Mystiques des Brumes a attaqué Le Grand Khaganat mais a été repoussé !</td></tr><tr><td>474</td><td>guerre</td><td>Le Grand Khaganat a attaqué Les Mystiques des Brumes mais a été repoussé !</td></tr><tr><td>480</td><td>guerre</td><td>Le Grand Khaganat a attaqué Les Mystiques des Brumes mais a été repoussé !</td></tr><tr><td>482</td><td>guerre</td><td>Le Grand Khaganat a attaqué Les Mystiques des Brumes mais a été repoussé !</td></tr><tr><td>485</td><td>guerre</td><td>Le Grand Khaganat a attaqué Les Mystiques des Brumes mais a été repoussé !</td></tr><tr><td>497</td><td>guerre</td><td>Le Grand Khaganat a attaqué Les Mystiques des Brumes mais a été repoussé !</td></tr><tr><td>502</td><td>guerre</td><td>Le Grand Khaganat a attaqué Les Mystiques des Brumes mais a été repoussé !</td></tr><tr><td>505</td><td>guerre</td><td>Le Grand Khaganat a attaqué Les Mystiques des Brumes mais a été repoussé !</td></tr><tr><td>571</td><td>guerre</td><td>Le Grand Khaganat a vaincu Les Mystiques des Brumes et pris 3 territoires !</td></tr><tr><td>574</td><td>guerre</td><td>Le Grand Khaganat a vaincu Les Mystiques des Brumes et pris 3 territoires !</td></tr><tr><td>576</td><td>guerre</td><td>Le Grand Khaganat a vaincu Les Mystiques des Brumes et pris 3 territoires !</td></tr><tr><td>579</td><td>guerre</td><td>Le Grand Khaganat a attaqué Les Mystiques des Brumes mais a été repoussé !</td></tr><tr><td>583</td><td>guerre</td><td>Le Grand Khaganat a attaqué Les Mystiques des Brumes mais a été repoussé !</td></tr><tr><td>592</td><td>guerre</td><td>Le Grand Khaganat a attaqué Les Mystiques des Brumes mais a été repoussé !</td></tr><tr><td>593</td><td>guerre</td><td>Le Grand Khaganat a attaqué Les Mystiques des Brumes mais a été repoussé !</td></tr><tr><td>595</td><td>guerre</td><td>Le Grand Khaganat a attaqué Les Mystiques des Brumes mais a été repoussé !</td></tr><tr><td>601</td><td>guerre</td><td>Le Grand Khaganat a attaqué Les Mystiques des Brumes mais a été repoussé !</td></tr><tr><td>608</td><td>guerre</td><td>Le Grand Khaganat a attaqué Les Mystiques des Brumes mais a été repoussé !</td></tr><tr><td>616</td><td>guerre</td><td>Le Grand Khaganat a attaqué Les Mystiques des Brumes mais a été repoussé !</td></tr><tr><td>641</td><td>guerre</td><td>Le Grand Khaganat a vaincu Les Mystiques des Brumes et pris 3 territoires !</td></tr><tr><td>658</td><td>guerre</td><td>Le Grand Khaganat a vaincu Les Conquérants du Feu Sacré et pris 3 territoires !</td></tr><tr><td>673</td><td>guerre</td><td>Le Grand Khaganat a vaincu Les Conquérants du Feu Sacré et pris 3 territoires !</td></tr><tr><td>676</td><td>guerre</td><td>Le Grand Khaganat a vaincu Les Conquérants du Feu Sacré et pris 3 territoires !</td></tr><tr><td>745</td><td>guerre</td><td>Le Grand Khaganat a vaincu Les Ascètes de la Pierre et pris 3 territoires !</td></tr><tr><td>746</td><td>guerre</td><td>Le Grand Khaganat a vaincu Les Mystiques des Brumes et pris 3 territoires !</td></tr><tr><td>747</td><td>guerre</td><td>Le Grand Khaganat a vaincu Les Ascètes de la Pierre et pris 3 territoires !</td></tr><tr><td>766</td><td>guerre</td><td>Le Grand Khaganat a vaincu Les Mystiques des Brumes et pris 3 territoires !</td></tr><tr><td>768</td><td>guerre</td><td>Le Grand Khaganat a vaincu Les Mystiques des Brumes et pris 3 territoires !</td></tr><tr><td>799</td><td>guerre</td><td>Le Grand Khaganat a vaincu Les Conquérants du Feu Sacré et pris 3 territoires !</td></tr><tr><td>820</td><td>guerre</td><td>Le Grand Khaganat a attaqué Les Conquérants du Feu Sacré mais a été repoussé !</td></tr><tr><td>826</td><td>guerre</td><td>Le Grand Khaganat a attaqué Les Conquérants du Feu Sacré mais a été repoussé !</td></tr><tr><td>829</td><td>guerre</td><td>Le Grand Khaganat a attaqué Les Conquérants du Feu Sacré mais a été repoussé !</td></tr><tr><td>839</td><td>guerre</td><td>Le Grand Khaganat a attaqué Les Conquérants du Feu Sacré mais a été repoussé !</td></tr><tr><td>845</td><td>guerre</td><td>Le Grand Khaganat a attaqué Les Conquérants du Feu Sacré mais a été repoussé !</td></tr><tr><td>850</td><td>guerre</td><td>Le Grand Khaganat a attaqué Les Conquérants du Feu Sacré mais a été repoussé !</td></tr><tr><td>855</td><td>guerre</td><td>Le Grand Khaganat a attaqué Les Conquérants du Feu Sacré mais a été repoussé !</td></tr><tr><td>862</td><td>guerre</td><td>Le Grand Khaganat a attaqué Les Conquérants du Feu Sacré mais a été repoussé !</td></tr><tr><td>76</td><td>guerre</td><td>Le Grand Khaganat a vaincu Les Marchands de l'Aube et pris 3 territoires !</td></tr><tr><td>91</td><td>guerre</td><td>Les Marchands de l'Aube a attaqué Le Grand Khaganat mais a été repoussé !</td></tr><tr><td>94</td><td>guerre</td><td>Le Grand Khaganat a vaincu Les Marchands de l'Aube et pris 3 territoires !</td></tr><tr><td>105</td><td>guerre</td><td>Le Grand Khaganat a vaincu Les Marchands de l'Aube et pris 3 territoires !</td></tr><tr><td>107</td><td>guerre</td><td>Le Grand Khaganat a vaincu Les Marchands de l'Aube et pris 3 territoires !</td></tr><tr><td>108</td><td>guerre</td><td>Le Grand Khaganat a vaincu Les Mystiques des Brumes et pris 3 territoires !</td></tr><tr><td>109</td><td>guerre</td><td>Le Grand Khaganat a attaqué Les Mystiques des Brumes mais a été repoussé !</td></tr><tr><td>112</td><td>guerre</td><td>Le Grand Khaganat a attaqué Les Mystiques des Brumes mais a été repoussé !</td></tr><tr><td>120</td><td>guerre</td><td>Le Grand Khaganat a vaincu Les Mystiques des Brumes et pris 3 territoires !</td></tr><tr><td>126</td><td>guerre</td><td>Les Nomades du Fer a vaincu Le Grand Khaganat et pris 3 territoires !</td></tr><tr><td>136</td><td>guerre</td><td>Le Grand Khaganat a attaqué Les Mystiques des Brumes mais a été repoussé !</td></tr><tr><td>139</td><td>guerre</td><td>Le Grand Khaganat a attaqué Les Mystiques des Brumes mais a été repoussé !</td></tr><tr><td>145</td><td>guerre</td><td>Le Grand Khaganat a attaqué Les Mystiques des Brumes mais a été repoussé !</td></tr><tr><td>149</td><td>guerre</td><td>Le Grand Khaganat a attaqué Les Mystiques des Brumes mais a été repoussé !</td></tr><tr><td>155</td><td>guerre</td><td>Le Grand Khaganat a attaqué Les Mystiques des Brumes mais a été repoussé !</td></tr><tr><td>170</td><td>guerre</td><td>Le Grand Khaganat a attaqué Les Mystiques des Brumes mais a été repoussé !</td></tr><tr><td>179</td><td>guerre</td><td>Le Grand Khaganat a attaqué Les Mystiques des Brumes mais a été repoussé !</td></tr><tr><td>182</td><td>guerre</td><td>Le Grand Khaganat a attaqué Les Mystiques des Brumes mais a été repoussé !</td></tr><tr><td>186</td><td>guerre</td><td>Le Grand Khaganat a attaqué Les Mystiques des Brumes mais a été repoussé !</td></tr><tr><td>217</td><td>guerre</td><td>Le Grand Khaganat a attaqué Les Nomades du Fer mais a été repoussé !</td></tr><tr><td>221</td><td>guerre</td><td>Le Grand Khaganat a attaqué Les Nomades du Fer mais a été repoussé !</td></tr><tr><td>223</td><td>guerre</td><td>Le Grand Khaganat a attaqué Les Nomades du Fer mais a été repoussé !</td></tr><tr><td>236</td><td>guerre</td><td>Le Grand Khaganat a attaqué Les Nomades du Fer mais a été repoussé !</td></tr><tr><td>237</td><td>guerre</td><td>Le Grand Khaganat a attaqué Les Nomades du Fer mais a été repoussé !</td></tr></table>
-  <h2>💰 Échanges commerciaux</h2><table>
-      <tr><th>Tick</th><th>Description</th></tr><tr><td>633</td><td>Les Mystiques des Brumes : Échange avec Le Grand Khaganat : donné 50 nourriture, reçu 30 bois.</td></tr><tr><td>727</td><td>Les Gardiens du Mur : Échange avec Les Conquérants du Feu Sacré : donné 50 nourriture, reçu 30 bois.</td></tr></table>
-  <h2>🌪️ Catastrophes</h2><table><tr><th>Tick</th><th>Description</th></tr><tr><td>332</td><td>Sécheresse dans Les Ascètes de la Pierre ! Récoltes quasi-nulles.</td></tr><tr><td>336</td><td>Grand froid dans Les Mystiques des Brumes !</td></tr><tr><td>551</td><td>Tempête dans Les Conquérants du Feu Sacré ! -50 bois.</td></tr><tr><td>655</td><td>Incendie dans Les Ascètes de la Pierre !</td></tr><tr><td>655</td><td>Incendie dans Les Mystiques des Brumes !</td></tr><tr><td>656</td><td>Sécheresse dans Les Ascètes de la Pierre ! Récoltes quasi-nulles.</td></tr><tr><td>98</td><td>Grand froid dans Les Conquérants du Feu Sacré !</td></tr><tr><td>98</td><td>Grand froid dans Le Syndicat des Forges !</td></tr><tr><td>146</td><td>Grand froid dans Les Enfants de la Terre Mère !</td></tr><tr><td>146</td><td>Grand froid dans Les Gardiens du Mur !</td></tr><tr><td>147</td><td>Inondation dans Les Mystiques des Brumes ! -4 morts.</td></tr><tr><td>238</td><td>Tempête dans Le Syndicat des Forges ! -60 bois.</td></tr><tr><td>239</td><td>Tempête dans Les Conquérants du Feu Sacré ! -94 bois.</td></tr><tr><td>239</td><td>Tempête dans Les Gardiens du Mur ! -67 bois.</td></tr></table>
-  <h2>📚 Leçons & Analyse des prompts</h2><div class="lecon"><strong>🏆 Meilleur variant : V5 (Le Grand Khaganat)</strong><br>
-    Score d'activité 5/7 — Pop +0, territoire +0,
-    46 explorations, 12 constructions, 15 actions diplo.</div><div class="lecon"><strong>⚠️ Variant le moins actif : V6 (Le Syndicat des Forges)</strong><br>
-    Score 2/7 — 43 events au total.
-    1 révolte(s).
-    </div><div class="lecon"><strong>🔧 Variants avec beaucoup d'échecs :</strong> V5 (16 échecs), V8 (22 échecs), V9 (13 échecs), V6 (32 échecs)<br>
-      → Ces prompts produisent des intentions mais pas de réalisations. Peut indiquer une trop grande ambition ou une mauvaise gestion des ressources.</div><div class="lecon"><strong>🤝 Variants diplomatiquement actifs :</strong> V5 (15 actions), V0 (9 actions), V4 (3 actions), V9 (13 actions)<br>
-      → Ces prompts incitent davantage au contact inter-civilisations.</div><div class="lecon"><strong>💤 Variants peu diversifiés :</strong> V3, V6<br>
-      → Ces prompts produisent des comportements répétitifs ou peu variés. À retravailler.</div><div class="lecon"><strong>🏺 Impact des reliques :</strong> 8 relique(s) découverte(s) par V7, V4, V8, V5<br>
-      → 4 prise(s), 1 utilisée(s).</div>
+  <h2>🧠 Évolution du moral par heure</h2>
+  <table><tr><th>Heure</th><th>Tick</th><th>V0</th><th>V4</th><th>V5</th><th>V8</th><th>V9</th><th>V0</th><th>V9</th><th>V5</th><th>V4</th><th>V8</th></tr><tr><td>00:32</td><td>2</td><td class="good">70</td><td class="good">70</td><td class="good">70</td><td class="good">70</td><td class="good">70</td><td class="good">70</td><td class="good">70</td><td class="good">70</td><td class="good">70</td><td class="good">70</td></tr><tr><td>01:00</td><td>12</td><td class="good">69</td><td class="good">80</td><td class="good">70</td><td class="good">77</td><td class="good">69</td><td class="neutral">58</td><td class="good">64</td><td class="good">85</td><td class="good">69</td><td class="good">77</td></tr><tr><td>02:00</td><td>29</td><td class="good">72</td><td class="good">86</td><td class="good">72</td><td class="good">77</td><td class="good">71</td><td class="neutral">44</td><td class="good">70</td><td class="good">72</td><td class="good">84</td><td class="good">79</td></tr><tr><td>03:00</td><td>42</td><td class="good">72</td><td class="good">86</td><td class="good">76</td><td class="good">77</td><td class="good">71</td><td class="neutral">36</td><td class="good">70</td><td class="good">60</td><td class="good">84</td><td class="good">79</td></tr><tr><td>04:00</td><td>56</td><td class="good">76</td><td class="good">86</td><td class="good">76</td><td class="good">77</td><td class="good">72</td><td class="bad">24</td><td class="good">70</td><td class="neutral">47</td><td class="good">84</td><td class="good">85</td></tr><tr><td>05:00</td><td>69</td><td class="good">72</td><td class="good">86</td><td class="good">76</td><td class="good">78</td><td class="good">72</td><td class="bad">11</td><td class="good">70</td><td class="neutral">38</td><td class="good">86</td><td class="good">86</td></tr><tr><td>06:00</td><td>83</td><td class="good">76</td><td class="good">86</td><td class="good">76</td><td class="good">78</td><td class="good">76</td><td class="bad">7</td><td class="good">70</td><td class="bad">25</td><td class="good">86</td><td class="good">85</td></tr><tr><td>07:00</td><td>99</td><td class="good">78</td><td class="good">86</td><td class="good">78</td><td class="good">78</td><td class="good">76</td><td class="bad">0</td><td class="good">70</td><td class="bad">9</td><td class="good">86</td><td class="good">85</td></tr><tr><td>08:00</td><td>113</td><td class="good">78</td><td class="good">85</td><td class="good">78</td><td class="good">78</td><td class="good">76</td><td class="bad">0</td><td class="good">70</td><td class="bad">0</td><td class="good">86</td><td class="good">84</td></tr></table>
+
+  <h2>🏺 Reliques</h2><p class="meta">Aucune relique découverte cette nuit.</p>
+  <h2>🤝 Diplomatie (état final)</h2><p class="meta">Aucune relation enregistrée.</p>
+  
+  <h2>💰 Commerce</h2><p class="meta">Aucun échange commercial réel cette nuit.</p>
+  <h2>🌪️ Catastrophes</h2><table><tr><th>Tick</th><th>Description</th></tr><tr><td>9</td><td>Tempête dans Les Mystiques des Brumes ! -63 bois.</td></tr><tr><td>12</td><td>Grand froid dans Les Conquérants du Feu Sacré !</td></tr><tr><td>12</td><td>Tempête dans Les Ascètes de la Pierre ! -82 bois.</td></tr><tr><td>12</td><td>Grand froid dans Les Marchands de la Route d'Or !</td></tr><tr><td>29</td><td>Inondation dans Les Gardiens du Mur ! -2 morts.</td></tr><tr><td>29</td><td>Inondation dans Les Chasseurs du Vent ! -2 morts.</td></tr><tr><td>42</td><td>Incendie dans Les Ascètes de la Pierre !</td></tr><tr><td>55</td><td>Incendie dans Les Gardiens du Mur !</td></tr><tr><td>55</td><td>Sécheresse dans Les Pillards de la Côte ! Récoltes quasi-nulles.</td></tr><tr><td>68</td><td>Incendie dans Le Grand Khaganat !</td></tr><tr><td>69</td><td>Tempête dans Les Pillards de la Côte ! -92 bois.</td></tr><tr><td>81</td><td>Tempête dans Les Pillards de la Côte ! -56 bois.</td></tr><tr><td>97</td><td>Grand froid dans L'Empire des Forges !</td></tr><tr><td>98</td><td>Tempête dans Le Grand Khaganat ! -69 bois.</td></tr></table>
+  <h2>📜 Lois adoptées</h2><table><tr><th>Tick</th><th>Description</th></tr><tr><td>28</td><td>La Cité des Sages promulgue : "1 travailleurs des champs collectifs". Moral +5.</td></tr></table>
+  
+  <h2>📚 Leçons & Analyse des prompts</h2><div class="lecon"><strong>🏆 Meilleur variant : V8 (Les Pillards de la Côte)</strong><br>
+    Score d'activité 4/7 — Pop +28, territoire +39,
+    3 explorations, 4 constructions, 0 actions diplo.</div><div class="lecon"><strong>⚠️ Variant le moins actif : V4 (L'Empire des Forges)</strong><br>
+    Score 2/7 — 44 events au total.
+    
+    </div><div class="lecon"><strong>🔧 Variants avec beaucoup d'échecs :</strong> V8 (16 échecs), V9 (11 échecs), V5 (11 échecs), V0 (28 échecs), V4 (31 échecs)<br>
+      → Ces prompts produisent des intentions mais pas de réalisations. Peut indiquer une trop grande ambition ou une mauvaise gestion des ressources.</div><div class="lecon"><strong>💤 Variants peu diversifiés :</strong> V0, V4<br>
+      → Ces prompts produisent des comportements répétitifs ou peu variés. À retravailler.</div><div class="lecon"><strong>💰 Commerce : 0 échange réel</strong><br>
+      → Aucun variant n'a produit d'échange commercial concret. Le système de commerce nécessite soit un meilleur prompt
+      (inciter à finaliser les échanges), soit une correction mécanique (trigger automatique sur contact frontalier marchand).</div>
+  <h2>🏛️ Fiches civilisations</h2>
+  <div class="civ-fiche">
+    <div class="fiche-header">
+      <span class="badge badge-blue">V8</span>
+      <strong>Les Pillards de la Côte</strong>
+      
+      <span class="meta" style="font-size:0.85em">théocratie</span>
+    </div>
+    <div class="fiche-stats">
+      <strong>Population :</strong> 100 → 128 (+28) &nbsp;|&nbsp;
+      <strong>Moral :</strong> 70 → 78 &nbsp;|&nbsp;
+      <strong>Territoire Δ :</strong> +39 &nbsp;|&nbsp;
+      <strong>Armée :</strong> 37<br>
+      <strong>Ressources finales :</strong> 🌾 2617 &nbsp; 🪵 596 &nbsp; 🪨 79<br>
+      <strong>Valeurs :</strong> isolationnisme, spiritualite, art<br>
+      <strong>Activité :</strong> 3 explor. · 4 constru. · 0 diplo. · 16 échecs · 0 révolte(s)
+    </div></div>
+  <div class="civ-fiche">
+    <div class="fiche-header">
+      <span class="badge badge-blue">V9</span>
+      <strong>La Cité des Sages</strong>
+      
+      <span class="meta" style="font-size:0.85em">théocratie</span>
+    </div>
+    <div class="fiche-stats">
+      <strong>Population :</strong> 100 → 133 (+33) &nbsp;|&nbsp;
+      <strong>Moral :</strong> 70 → 76 &nbsp;|&nbsp;
+      <strong>Territoire Δ :</strong> +28 &nbsp;|&nbsp;
+      <strong>Armée :</strong> 0<br>
+      <strong>Ressources finales :</strong> 🌾 4940 &nbsp; 🪵 616 &nbsp; 🪨 80<br>
+      <strong>Valeurs :</strong> spiritualite, connaissance, liberte<br>
+      <strong>Activité :</strong> 0 explor. · 2 constru. · 2 diplo. · 11 échecs · 0 révolte(s)
+    </div><div class="fiche-events"><strong>📜 Lois adoptées :</strong><ul><li>[tick 28] La Cité des Sages promulgue : "1 travailleurs des champs collectifs". Moral +5.</li></ul></div></div>
+  <div class="civ-fiche">
+    <div class="fiche-header">
+      <span class="badge badge-blue">V5</span>
+      <strong>Les Chasseurs du Vent</strong>
+      
+      <span class="meta" style="font-size:0.85em">monarchie</span>
+    </div>
+    <div class="fiche-stats">
+      <strong>Population :</strong> 100 → 68 (-32) &nbsp;|&nbsp;
+      <strong>Moral :</strong> 70 → 78 &nbsp;|&nbsp;
+      <strong>Territoire Δ :</strong> +29 &nbsp;|&nbsp;
+      <strong>Armée :</strong> 13<br>
+      <strong>Ressources finales :</strong> 🌾 3145 &nbsp; 🪵 436 &nbsp; 🪨 78<br>
+      <strong>Valeurs :</strong> expansion, guerre, ordre<br>
+      <strong>Activité :</strong> 2 explor. · 4 constru. · 0 diplo. · 11 échecs · 1 révolte(s)
+    </div></div>
+  <div class="civ-fiche">
+    <div class="fiche-header">
+      <span class="badge badge-blue">V0</span>
+      <strong>Les Marchands de la Route d'Or</strong>
+      
+      <span class="meta" style="font-size:0.85em">monarchie</span>
+    </div>
+    <div class="fiche-stats">
+      <strong>Population :</strong> 100 → 49 (-51) &nbsp;|&nbsp;
+      <strong>Moral :</strong> 70 → 78 &nbsp;|&nbsp;
+      <strong>Territoire Δ :</strong> +0 &nbsp;|&nbsp;
+      <strong>Armée :</strong> 7<br>
+      <strong>Ressources finales :</strong> 🌾 3199 &nbsp; 🪵 847 &nbsp; 🪨 79<br>
+      <strong>Valeurs :</strong> expansion, guerre, spiritualite<br>
+      <strong>Activité :</strong> 2 explor. · 2 constru. · 0 diplo. · 28 échecs · 0 révolte(s)
+    </div></div>
+  <div class="civ-fiche">
+    <div class="fiche-header">
+      <span class="badge badge-blue">V4</span>
+      <strong>L'Empire des Forges</strong>
+      
+      <span class="meta" style="font-size:0.85em">dictature_militaire</span>
+    </div>
+    <div class="fiche-stats">
+      <strong>Population :</strong> 100 → 99 (-1) &nbsp;|&nbsp;
+      <strong>Moral :</strong> 70 → 85 &nbsp;|&nbsp;
+      <strong>Territoire Δ :</strong> +16 &nbsp;|&nbsp;
+      <strong>Armée :</strong> 16<br>
+      <strong>Ressources finales :</strong> 🌾 4586 &nbsp; 🪵 326 &nbsp; 🪨 79<br>
+      <strong>Valeurs :</strong> ordre, survie, guerre<br>
+      <strong>Activité :</strong> 0 explor. · 3 constru. · 0 diplo. · 31 échecs · 0 révolte(s)
+    </div></div>
 </div>
 </body>
 </html>

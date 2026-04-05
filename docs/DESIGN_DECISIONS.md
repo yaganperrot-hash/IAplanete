@@ -80,6 +80,29 @@ Seul vecteur d'information à distance.
 
 ---
 
+## Outils & Objets fabriqués
+
+### Outils de départ — symboliques d'abord (2026-04-04)
+Chaque civ démarre avec des outils basiques dans ses ressources :
+`hache_silex`, `lance_silex`, `couteau_silex`, `poteries`, `panier_tresse`.
+
+**Philosophie** : symbolique avant mécanique. Les outils existent dans le contexte pour que le LLM
+comprenne que des objets se fabriquent par combinaison. Ils n'ont pas d'effet mécanique immédiat.
+Quand le LLM inventera spontanément `fabriquer_hache` ou `utiliser_outil`, on observera via
+`unknown_actions` puis on implémentera l'effet réel.
+
+**Identique pour toutes les civs** : même dotation de départ, les valeurs guident ce que l'IA
+fabrique ensuite — pas le stock initial.
+
+**Stockage (poteries)** : capacité de conservation de la nourriture — deviendra mécanique plus tard
+(stocker nourriture dans poteries = meilleure conservation hivernale).
+
+### Durabilité — reportée
+Dégradation douce (condition 0-100%, pas de rupture franche). À implémenter après stabilisation.
+Voir TODO #1.
+
+---
+
 ## Ce qui a été délibérément supprimé
 - ❌ Âges technologiques (`TECH_THRESHOLDS`) → remplacés par découverte libre
 - ❌ Production automatique des biomes

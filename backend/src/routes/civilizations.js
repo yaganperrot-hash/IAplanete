@@ -61,7 +61,7 @@ router.post('/', (req, res) => {
     if (!VALID_GOUVERNEMENTS.includes(gouvernement)) return res.status(400).json({ error: 'Gouvernement invalide' });
 
     const VALID_VALUES = ['expansion', 'commerce', 'guerre', 'spiritualite', 'isolationnisme',
-      'liberte', 'ordre', 'survie', 'exploration', 'art', 'savoir'];
+      'liberte', 'ordre', 'survie', 'exploration', 'art', 'connaissance', 'technologie'];
     // Validation des valeurs
     const validatedValeurs = valeurs.map(v => {
       if (VALID_VALUES.includes(v)) return v;

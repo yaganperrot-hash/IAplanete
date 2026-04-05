@@ -34,6 +34,26 @@ function collectSnapshot(prevTickRange) {
     FROM civilizations ORDER BY id
   `).all();
 
+  let structures = [];
+  const structuresByCiv = {};
+  try {
+    structures = db.prepare(`
+      SELECT civ_id, name, role, workers, COUNT(*) as count
+      FROM structures
+      WHERE world_id = ${worldId}
+      GROUP BY civ_id, role
+      ORDER BY civ_id, count DESC
+    `).all();
+
+    // Regrouper par civ_id
+    structures.forEach(s => {
+      if (!structuresByCiv[s.civ_id]) structuresByCiv[s.civ_id] = [];
+      structuresByCiv[s.civ_id].push({ role: s.role, name: s.name, count: s.count, workers: s.workers });
+    });
+  } catch (e) {
+    // table absente — ignoré
+  }
+
   const civData = civs.map(c => {
     const res = safeJSON(c.resources, {});
     const frut = safeJSON(c.frustration_ticks, {});
@@ -57,6 +77,7 @@ function collectSnapshot(prevTickRange) {
       status: c.status,
       gouvernement: c.gouvernement ?? '?',
       valeurs: safeJSON(c.valeurs, []),
+      structures: structuresByCiv[c.id] || [],
     };
   });
 
@@ -555,6 +576,14 @@ function buildHTMLReport(snaps) {
       <strong>Activité :</strong> ${s.explorations} explor. · ${s.constructions} constru. · ${s.diplomatie} diplo. · ${s.echecs} échecs · ${s.revoltes} révolte(s)
     </div>`;
 
+    if (civLast?.structures?.length > 0) {
+      fichesSection += `<div class="fiche-events"><strong>🏗️ Structures principales :</strong><ul>`;
+      civLast.structures.slice(0, 8).forEach(s => {
+        fichesSection += `<li>${s.role ?? '?'} — ${s.name} ×${s.count} (${s.workers} travailleurs)</li>`;
+      });
+      fichesSection += `</ul></div>`;
+    }
+
     if (civLoisCiv.length > 0) {
       fichesSection += `<div class="fiche-events"><strong>📜 Lois adoptées :</strong><ul>`;
       civLoisCiv.forEach(l => { fichesSection += `<li>[tick ${l.tick}] ${l.description}</li>`; });
@@ -629,7 +658,11 @@ function buildHTMLReport(snaps) {
 function msUntilNextReport() {
   const now = new Date();
   const target = new Date(now);
-  target.setHours(22, 0, 0, 0);
+  // --report-at HH ou REPORT_HOUR=HH (ex: 12 pour midi)
+  const argAt = process.argv.find(a => a.startsWith('--report-at='))?.split('=')[1]
+    || process.env.REPORT_HOUR;
+  const reportHour = argAt ? parseInt(argAt, 10) : 22;
+  target.setHours(reportHour, 0, 0, 0);
   if (target <= now) target.setDate(target.getDate() + 1);
   return target - now;
 }

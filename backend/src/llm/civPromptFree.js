@@ -74,6 +74,46 @@ const CIV_VOICES = {
     tension: "prendre avant d'être pris",
     voix: "Tu parles vite, tu décides plus vite encore. La lenteur est une forme de mort."
   },
+  'La République des Ingénieurs': {
+    tension: "bâtir quelque chose que personne d'autre ne sait encore construire",
+    voix: "Tu penses en systèmes, en contraintes, en solutions. L'impossible est juste un problème non encore résolu."
+  },
+  "Les Académiciens de l'Enclume": {
+    tension: "détenir un savoir que les autres ne pourront jamais acheter assez cher",
+    voix: "Tu mesures tout. Chaque échange, chaque découverte a une valeur précise. Le mystère est un actif à monétiser."
+  },
+  'Les Ermites des Cimes': {
+    tension: "être oublié du monde, enfin",
+    voix: "Tu parles peu. Chaque mot adressé au monde extérieur est une concession. Le silence est ta forteresse."
+  },
+  'La Confrérie des Arts': {
+    tension: "créer quelque chose que personne ne pourra jamais détruire",
+    voix: "Tu parles en images et en symboles. La beauté est ta seule vérité, la laideur ta seule ennemie."
+  },
+  "Les Éclaireurs du Bout du Monde": {
+    tension: "atteindre l'endroit où personne n'est encore allé",
+    voix: "Tu penses en cartes et en saisons. Ce qui n'a pas été vu n'existe pas encore — et tu veux être le premier à le voir."
+  },
+  'Le Peuple des Cendres': {
+    tension: "ne plus jamais avoir peur d'être anéanti",
+    voix: "Tu parles avec la lenteur de ceux qui ont tout perdu. Chaque décision est pesée comme une question de survie."
+  },
+  "Les Bâtisseurs d'Éternité": {
+    tension: "laisser une marque que le temps ne pourra pas effacer",
+    voix: "Tu penses en générations, pas en mois. Chaque pierre posée est un serment fait aux descendants."
+  },
+  'La Ligue Franche': {
+    tension: "que personne n'ait jamais le droit de te dire non",
+    voix: "Tu négocies tout. Chaque contrainte est une opportunité déguisée. La liberté se construit transaction par transaction."
+  },
+  'Les Cavaliers de la Plaine': {
+    tension: "que le monde soit assez grand pour ne jamais avoir à s'arrêter",
+    voix: "Tu penses en mouvements, en raids, en migrations. S'arrêter c'est mourir. L'horizon est toujours trop proche."
+  },
+  'Les Gardiens du Silence': {
+    tension: "comprendre le monde sans avoir à y participer",
+    voix: "Tu observes plus que tu n'agis. Chaque décision est précédée d'un long silence. L'action non nécessaire est une erreur."
+  },
 };
 
 // Helpers de contexte narratif
@@ -218,9 +258,11 @@ function buildUrgencesNarratives(ctx) {
  * Traduit ctx.resourceBilan en 2-3 phrases qualitatives (pas de chiffres bruts).
  */
 function describeResourcesNarrative(ctx) {
+  const resources = ctx.resources || {};
   const rb = ctx.resourceBilan || {};
   const lines = [];
 
+  // nourriture special case (balance)
   const nourriture = rb.nourriture || {};
   if (nourriture.balance > 0) {
     lines.push("Les greniers sont bien fournis.");
@@ -228,6 +270,7 @@ function describeResourcesNarrative(ctx) {
     lines.push("La nourriture diminue mois après mois.");
   }
 
+  // bois special case (stock)
   const bois = rb.bois || {};
   if (bois.stock <= 0) {
     lines.push("Le bois manque pour toute nouvelle construction.");
@@ -235,9 +278,25 @@ function describeResourcesNarrative(ctx) {
     lines.push("Vos forêts fournissent assez de bois.");
   }
 
+  // fer special case (stock)
   const fer = rb.fer || {};
   if (fer.stock > 0) {
     lines.push("Vos forges ont du métal à travailler.");
+  }
+
+  // autres ressources avec stock > 0
+  const qual = (n) => {
+    if (n === 0) return 'aucun';
+    if (n <= 2) return 'quelques-uns';
+    if (n <= 5) return 'une petite quantité';
+    if (n <= 10) return 'en bonne quantité';
+    return 'abondant';
+  };
+
+  for (const [res, qty] of Object.entries(resources)) {
+    if (qty > 0 && !['nourriture', 'bois', 'fer'].includes(res)) {
+      lines.push(`Vous avez ${qual(qty)} de ${res}.`);
+    }
   }
 
   if (lines.length === 0) {
@@ -292,7 +351,90 @@ function describePopulation(ctx) {
   } else if (trend === 'déclin') {
     text += ' La population diminue.';
   }
+
+  // Liste des travailleurs actifs par bâtiment
+  const activeStructures = (ctx.structures || []).filter(s => s.workers > 0);
+  if (activeStructures.length > 0) {
+    const workersList = activeStructures.map(s => `${s.workers} ${s.name}`).join(', ');
+    text += ` Travailleurs actifs : ${workersList}.`;
+  } else {
+    text += ' Aucun travailleur affecté à un bâtiment.';
+  }
+
+  if ((ctx.free_workforce || 0) === 0) {
+    text += ' Pour engager une nouvelle initiative, des personnes devront être détachées de leurs occupations actuelles.';
+  }
+
   return text;
+}
+
+/**
+ * Décrit les outils disponibles (qualitatif).
+ */
+function describeOutils(ctx) {
+  const resources = ctx.resources || {};
+  const rawMaterials = ['nourriture', 'bois', 'pierre', 'glaise', 'silex', 'sable', 'sel', 'cuivre', 'etain', 'fer', 'or', 'charbon', 'peaux', 'os'];
+  const toolLabels = {
+    hache_silex: 'haches de silex',
+    lance_silex: 'lances de silex',
+    couteau_silex: 'couteaux de silex',
+    poteries: 'poteries en glaise',
+  };
+
+  // Convertir en qualitatif
+  const qual = (n) => {
+    if (n === 0) return 'aucun';
+    if (n <= 2) return 'quelques-uns';
+    if (n <= 5) return 'une petite quantité';
+    if (n <= 10) return 'en bonne quantité';
+    return 'abondant';
+  };
+
+  const lines = [];
+  for (const [key, qty] of Object.entries(resources)) {
+    if (qty > 0 && !rawMaterials.includes(key)) {
+      const label = toolLabels[key] || key.replace(/_/g, ' ');
+      lines.push(`${label} : ${qual(qty)}`);
+    }
+  }
+
+  if (lines.length === 0) {
+    return 'Aucun outil ni objet fabriqué.';
+  }
+  return `Outils et objets : ${lines.join(', ')}.`;
+}
+
+/**
+ * Traduit ctx.last_consequences (array) en texte narratif pour la section [ÉVÉNEMENTS].
+ */
+function formatLastConsequences(ctx) {
+  const conseqs = ctx.last_consequences || [];
+  if (conseqs.length === 0) return '';
+  const lines = [];
+  for (const c of conseqs) {
+    if (c.type === 'relique_decouverte') {
+      lines.push(`Tes explorateurs ont découvert une relique : ${c.data?.relicName || 'un objet ancien'}.`);
+    } else if (c.type === 'relique_utilisee') {
+      lines.push(`La relique ${c.data?.relicName || 'un objet'} a été utilisée. Effet : ${c.data?.effet || 'inconnu'}.`);
+    } else if (c.type === 'relique_incomprise') {
+      lines.push(`Un objet mystérieux a été rapporté : ${c.data?.relicName || c.nom || 'quelque chose d\'étrange'}. Personne ne comprend à quoi cela sert.`);
+    } else if (c.type === 'animal_decouvert') {
+      lines.push(`Tes éclaireurs ont repéré : ${c.nom}. ${c.description || ''}`);
+    } else if (c.type === 'attaque_animaux') {
+      lines.push(`Des animaux ont attaqué ce mois-ci. ${c.morts || 0} habitants ont péri.`);
+    } else if (c.type === 'chasse') {
+      if (c.succes) {
+        lines.push(`La chasse de ${c.nom} a réussi : nourriture récupérée, peaux et os engrangés.`);
+      } else {
+        lines.push(`La chasse de ${c.nom} a échoué. Des chasseurs ont été tués.`);
+      }
+    } else if (c.type === 'combat') {
+      lines.push(c.description || 'Un combat a eu lieu.');
+    } else if (c.type === 'premier_contact') {
+      lines.push(`Premier contact établi avec ${c.nom || 'une autre civilisation'}.`);
+    }
+  }
+  return lines.join('\n') || '';
 }
 
 /**
@@ -348,7 +490,7 @@ ${describeArmee(ctx)}`;
 ${reliquesMystere}`
     : '';
 
-  const evenements = ctx.last_consequences_narratif || '';
+  const evenements = formatLastConsequences(ctx);
 
   const echecs = ctx.echecs_tick_precedent && ctx.echecs_tick_precedent.length > 0
     ? `CE QUI N'A PAS PU SE FAIRE — ET POURQUOI :
@@ -358,6 +500,9 @@ ${buildEchecsNarratif(ctx.echecs_tick_precedent)}`
   const memoire = getMemoryShort(ctx);
 
   const voisins = describeNeighborsNarrative(ctx);
+
+  const outilsText = describeOutils(ctx);
+  const hasOutils = outilsText !== 'Aucun outil ni objet fabriqué.';
 
   const instruction = `Tu prends des décisions pour les 30 prochains jours. Pas plus.
 Parle à la première personne.
@@ -372,9 +517,10 @@ Sois précis sur ce que tu mets en mouvement.`;
     `[TEMPS]\n${temps}`,
     `[URGENCES]\nCE QUE TU NE PEUX PAS IGNORER CE MOIS-CI :\n${urgences}`,
     `[RÉALITÉ]\n${realite}`,
+    hasOutils ? `[OUTILS & OBJETS]\n${outilsText}` : '',
     `CE QUE TON PEUPLE SAIT FAIRE :\n${technologie}`,
     reliquesMystere ? `[RELIQUES MYSTÉRIEUSES]\n${reliquesSection}` : '',
-    `[ÉVÉNEMENTS]\nCE QUI VIENT DE SE PASSER :\n${evenements}`,
+    evenements ? `[ÉVÉNEMENTS]\nCE QUI VIENT DE SE PASSER :\n${evenements}` : '',
     echecs ? `[ÉCHECS]\n${echecs}` : '',
     `[MÉMOIRE]\nCE QUE TU N'OUBLIES PAS :\n${memoire}`,
     `[VOISINS]\nCE QUE TU SAIS DE TES VOISINS :\n${voisins}`,

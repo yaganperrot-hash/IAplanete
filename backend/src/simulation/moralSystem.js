@@ -94,11 +94,19 @@ const VALUE_SATISFACTION = {
     moralBonus: +8, moralMalus: -8,
   },
 
-  savoir: {
+  connaissance: {
     satisfied:    (c) => (c._buildings || []).some(s => s.category === 'savoir'),
     frustrated:   (c) => !(c._buildings || []).some(s => s.category === 'savoir') && (c.population || 0) > 200,
     satisfiedText:  'Tes savants progressent et enrichissent le peuple de leur savoir',
     frustratedText: 'Aucun lieu de savoir, ton peuple stagne intellectuellement',
+    moralBonus: +8, moralMalus: -10,
+  },
+
+  technologie: {
+    satisfied:    (c) => (c._buildings || []).some(s => ['production', 'mine_cuivre', 'mine_fer', 'mine_charbon'].includes(s.category) || /forge|atelier|fonderie|mine/i.test(s.name)),
+    frustrated:   (c) => !(c._buildings || []).some(s => ['production', 'mine_cuivre', 'mine_fer', 'mine_charbon'].includes(s.category) || /forge|atelier|fonderie|mine/i.test(s.name)) && (c.population || 0) > 150,
+    satisfiedText:  'Tes artisans maîtrisent des techniques que les autres n\'ont pas encore',
+    frustratedText: 'Aucune forge, aucun atelier — ton peuple technologique stagne',
     moralBonus: +8, moralMalus: -10,
   },
 };

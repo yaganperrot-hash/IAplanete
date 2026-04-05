@@ -9,7 +9,7 @@ const TECH_AGES    = ['primitif', 'neolithique', 'bronze', 'fer', 'classique', '
 const KNOWN_ACTION_TYPES = [
   'affecter', 'construire', 'explorer', 'coloniser', 'attaquer',
   'diplomatie', 'envoyer_emissaire', 'envoyer_marchands', 'espionner',
-  'loi', 'recruter', 'abandonner', 'chasser', 'utiliser_relique', 'etudier_relique'
+  'loi', 'recruter', 'abandonner', 'chasser', 'utiliser_relique', 'etudier_relique', 'créer', 'envoyer', 'rien', 'transformer'
 ];
 
 const parseJ = (v, fb) => { try { return JSON.parse(v != null ? v : JSON.stringify(fb)); } catch { return fb; } };
@@ -44,8 +44,8 @@ function getCivEra(civ) {
   return 'primitif';
 }
 
-// ─── 14 ressources (ajout peaux et os) ───────────────────────────────────────
-const RESOURCES = ['nourriture', 'bois', 'pierre', 'glaise', 'silex', 'sable', 'sel', 'cuivre', 'etain', 'fer', 'or', 'charbon', 'peaux', 'os'];
+// ─── 18 ressources (ajout peaux et os, outils) ───────────────────────────────────────
+const RESOURCES = ['nourriture', 'bois', 'pierre', 'glaise', 'silex', 'sable', 'sel', 'cuivre', 'etain', 'fer', 'or', 'charbon', 'peaux', 'os', 'hache_silex', 'lance_silex', 'couteau_silex', 'poteries'];
 const ZERO_RESOURCES = Object.fromEntries(RESOURCES.map(r => [r, 0]));
 
 // ─── Taux de production par catégorie de structure ───────────────────────────
@@ -281,8 +281,8 @@ function updateResources(civ, biomesMap, season = 'ete') {
     : 0;
 
   // Naissances bloquées si famine/surpop
-  const canBirth = resources.nourriture > 0 && surplus >= 0 && (civ.moral || 0) > 40 && !overPop;
-  const births   = canBirth ? Math.max(1, Math.round(pop * 0.015)) : 0;
+  const canBirth = resources.nourriture > 200 && (civ.moral || 0) > 30 && !overPop;
+  const births   = canBirth ? Math.max(1, Math.round(pop * 0.025)) : 0;
 
   const naturalDeaths = Math.max(0, Math.round(pop * 0.003));
 
@@ -463,6 +463,27 @@ function parseEffets(text) {
     } else if (/^ETUDIER_RELIQUE\b/i.test(main)) {
       const m = main.match(/^ETUDIER_RELIQUE\s+(.+)$/i);
       effects.push({ verb: 'ETUDIER_RELIQUE', target_name: m ? m[1].trim() : '', params });
+
+    } else if (/^TRANSFORMER\b/i.test(main)) {
+      const m = main.match(/^TRANSFORMER\s+(\w+)/i);
+      if (m) {
+        const typeOriginal = m[1];
+        const input = params.input || '?';
+        const output = params.output || '?';
+        const quantite = parseInt(params.quantite) || 1;
+        const personnes = parseInt(params.personnes) || 5;
+        effects.push({
+          verb: 'TRANSFORMER',
+          typeOriginal,
+          input,
+          output,
+          quantite,
+          personnes,
+          description_brute: line,
+          confiance: 0.8,
+          params
+        });
+      }
 
     } else if (/^RIEN\b/i.test(main)) {
       effects.push({ verb: 'RIEN', params });
@@ -1370,6 +1391,52 @@ function resolveEffect(effect, civ, allCivs, worldId, biomesMap, events, current
       break;
     }
 
+    case 'TRANSFORMER': {
+      // 1. Lire effect.input, effect.output, effect.quantite, effect.personnes
+      const input = effect.input || '?';
+      const output = effect.output || '?';
+      const quantite = effect.quantite || 1;
+      const personnes = effect.personnes || 5;
+      
+      // 2. const resources = parseJ(civ.resources, ZERO_RESOURCES)
+      const resources = parseJ(civ.resources, ZERO_RESOURCES);
+      
+      // 3. Vérifier si la ressource d'entrée est suffisante
+      if (!input || input === '?' || resources[input] < quantite) {
+        const dispo = resources[input] || 0;
+        console.log(`[ECHEC] ressource insuffisante — besoin: ${quantite} ${input}, dispo: ${dispo}`);
+        echecsDuTick.push({
+          intention: effect.description_brute || '',
+          raison: 'ressource_insuffisante',
+          ressource_manquante: input,
+          besoin: quantite,
+          dispo,
+          population_dispo: freeWorkforce,
+          cible: output || ''
+        });
+        events.push({ type: 'echec', description: `${civ.nom} : pas assez de ${input} pour transformer (besoin: ${quantite}, dispo: ${dispo}).`, civ_ids: [civ.id] });
+        break;
+      }
+      
+      // 4. Exécuter la transformation
+      resources[input] -= quantite;
+      resources[output] = (resources[output] || 0) + quantite;
+      updates.resources = JSON.stringify(resources);
+      
+      // 5. Insérer dans unknown_actions avec le type original
+      try {
+        db.prepare(
+          'INSERT INTO unknown_actions (world_id, civ_id, tick, action_type, description_brute, confiance) VALUES (?, ?, ?, ?, ?, ?)'
+        ).run(worldId, civ.id, currentTick, effect.typeOriginal || 'transformer', effect.description_brute || effect.typeOriginal || '', effect.confiance || 0.8);
+      } catch (e) {
+        console.warn('[UNKNOWN_ACTION] Erreur insert:', e.message);
+      }
+      
+      // 6. Événement de transformation
+      events.push({ type: 'transformation', description: `${civ.nom} transforme ${quantite} ${input} en ${quantite} ${output}.`, civ_ids: [civ.id] });
+      break;
+    }
+
     case 'RIEN':
     default:
       break;
@@ -1719,6 +1786,8 @@ const animal_groups = db.prepare('SELECT * FROM animal_groups WHERE world_id = ?
     _known_count: discoveredIds.size,
     prompt_variant: civ.prompt_variant || 'V0',
     reliques_decouvertes, reliques_actives, reliques_mystere, reliques_used, animal_groups,
+    resources: currentResources,
+    outils: { hache_silex: currentResources.hache_silex, lance_silex: currentResources.lance_silex, couteau_silex: currentResources.couteau_silex, poteries: currentResources.poteries },
     last_narrative: civ.last_narrative || '',
   };
 }

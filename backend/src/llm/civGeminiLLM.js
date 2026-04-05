@@ -106,7 +106,16 @@ function parseResponse(text) {
 async function geminiProvider({ model: _, messages, stream, options }) {
   // Combine messages into a single prompt (Gemini 2.0 Flash can handle system/user via roles)
   const combined = messages.map(m => `${m.role}: ${m.content}`).join('\n\n');
-  const result = await model.generateContent(combined);
+  const request = {
+    contents: [{ role: 'user', parts: [{ text: combined }] }],
+  };
+  if (options) {
+    request.generationConfig = {};
+    if (options.temperature !== undefined) request.generationConfig.temperature = options.temperature;
+    if (options.maxOutputTokens !== undefined) request.generationConfig.maxOutputTokens = options.maxOutputTokens;
+    if (options.num_predict !== undefined) request.generationConfig.maxOutputTokens = options.num_predict;
+  }
+  const result = await model.generateContent(request);
   return {
     message: { content: result.response.text() },
     content: result.response.text(),
@@ -132,20 +141,32 @@ function parsedActionToOld(action) {
     utiliser_relique: 'UTILISER_RELIQUE',
     etudier_relique: 'ETUDIER_RELIQUE',
   };
-  const verbe = verbMap[action.type] || action.type.toUpperCase();
-  let parametres = '';
-  if (action.quantite) parametres += action.quantite + ' ';
-  if (action.cible) parametres += action.cible + ' ';
-  if (action.direction) parametres += 'direction:' + action.direction;
-  parametres = parametres.trim();
-  return {
-    type: verbe,
-    raw: action.description_brute || '',
-    parametres,
-    cible: action.cible,
-    quantite: action.quantite,
-    direction: action.direction,
-  };
+  // Si le type est dans verbMap, on garde le comportement actuel
+  if (verbMap[action.type]) {
+    const verbe = verbMap[action.type];
+    let parametres = '';
+    if (action.quantite) parametres += action.quantite + ' ';
+    if (action.cible) parametres += action.cible + ' ';
+    if (action.direction) parametres += 'direction:' + action.direction;
+    parametres = parametres.trim();
+    return {
+      type: verbe,
+      raw: action.description_brute || '',
+      parametres,
+      cible: action.cible,
+      quantite: action.quantite,
+      direction: action.direction,
+    };
+  } else {
+    // Type inconnu → transformer
+    if (action.ressource_entree && action.ressource_sortie) {
+      return { type: 'TRANSFORMER', typeOriginal: action.type,
+               input: action.ressource_entree, output: action.ressource_sortie,
+               quantite: action.quantite || 1, personnes: action.nb_personnes || 5,
+               raw: action.description_brute || '' };
+    }
+    return { type: 'RIEN', typeOriginal: action.type, raw: action.description_brute || '' };
+  }
 }
 
 // Convert old‑format action to effet line (compatible with existing resolver)
@@ -159,7 +180,10 @@ function actionToEffetLine(action) {
       return `AFFECTER ${nb} personnes → ${tache}`;
     }
     case 'CONSTRUIRE': {
-      const nom     = action.nomStructure || p.split(/\s+/)[0] || 'construction';
+      let nom = action.nomStructure || p.split(/\s+/)[0] || 'construction';
+      if (!nom || /^\d+$/.test(nom)) {
+        nom = action.cible || 'Construction';
+      }
       const rolePart = action.role     ? `, rôle: ${action.role}`           : '';
       const capPart  = action.capacity ? `, capacité: ${action.capacity}`   : '';
       return `CRÉER ${nom} (personnes: 5, durée: 5${rolePart}${capPart})`;
@@ -237,6 +261,15 @@ function actionToEffetLine(action) {
       return `ETUDIER_RELIQUE ${cible}`;
     }
 
+    case 'TRANSFORMER': {
+      const input = action.input || '?';
+      const output = action.output || '?';
+      const quantite = action.quantite || 1;
+      const personnes = action.personnes || 5;
+      const typeOriginal = action.typeOriginal || 'transformer';
+      return `TRANSFORMER ${typeOriginal} (input:${input}, output:${output}, quantite:${quantite}, personnes:${personnes})`;
+    }
+
     case 'REORGANISER':
     case 'RIEN':
     default:
@@ -262,7 +295,7 @@ async function decide(context) {
     const { actions: parsedActions, etat_psychologique, memoire_a_conserver } = await parseCivNarrative(
       narrative,
       geminiProvider,
-      { model: null, stream: false, options: { temperature: 0.8, maxOutputTokens: 300 } }
+      { model: null, stream: false, options: { temperature: 0.3, maxOutputTokens: 800 } }
     );
 
     // Dériver souhait

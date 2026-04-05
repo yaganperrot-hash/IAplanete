@@ -38,7 +38,9 @@ puis résolues par `resolveEffect()`.
 | `utiliser_relique` | UTILISER_RELIQUE | Utiliser relique en possession |
 | `etudier_relique` | ETUDIER_RELIQUE | Étudier relique → mémoire |
 
-Types inconnus → loggés dans `unknown_actions` (table DB) pour analyse.
+| tout type inconnu | TRANSFORMER | Transformation générique input→output (verbe inventé par LLM) |
+
+Types vraiment inconnus (ni dans la table, ni transformation) → loggués dans `unknown_actions` (table DB).
 
 ---
 

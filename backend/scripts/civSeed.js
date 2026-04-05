@@ -8,7 +8,7 @@ const relicsPool = require('../src/data/relicsPool');
 const animalsPool = require('../src/data/animalsPool');
 
 const VALID_VALUES = ['expansion', 'commerce', 'guerre', 'spiritualite', 'isolationnisme',
-  'liberte', 'ordre', 'survie', 'exploration', 'art', 'savoir'];
+  'liberte', 'ordre', 'survie', 'exploration', 'art', 'connaissance', 'technologie'];
 
 const DEMO_CIVS = [
   // V0 — Conquérants (pop finale 2090, moral 86)
@@ -51,7 +51,7 @@ const DEMO_CIVS = [
   {
     nom: "Les Mystiques des Brumes",
     creator_name: 'Demo', prompt_variant: 'V9',
-    valeurs: ['spiritualite', 'savoir', 'liberte'],
+    valeurs: ['spiritualite', 'connaissance', 'liberte'],
     gouvernement: 'théocratie',
     description: 'Un peuple guidé par des voyants dont les prophéties façonnent chaque décision.',
     color: '#14b8a6', capital_x: 68, capital_y: 32,
@@ -69,7 +69,7 @@ const DEMO_CIVS = [
   {
     nom: "La Cité des Sages",
     creator_name: 'Demo', prompt_variant: 'V9',
-    valeurs: ['savoir', 'art', 'commerce'],
+    valeurs: ['connaissance', 'art', 'commerce'],
     gouvernement: 'conseil_des_anciens',
     description: 'Une cité-état dont les bibliothèques et ateliers attirent les esprits du monde entier.',
     color: '#0ea5e9', capital_x: 85, capital_y: 42,
@@ -85,7 +85,7 @@ const DEMO_CIVS = [
   {
     nom: "L'Empire des Forges",
     creator_name: 'Demo', prompt_variant: 'V4',
-    valeurs: ['ordre', 'savoir', 'survie'],
+    valeurs: ['ordre', 'connaissance', 'survie'],
     gouvernement: 'oligarchie',
     description: 'Une puissance industrielle dont la maîtrise des métaux et des techniques surpasse tous.',
     color: '#f97316', capital_x: 45, capital_y: 62,
@@ -126,7 +126,7 @@ function seed() {
   for (const b of cells) biomesMap[`${b.x},${b.y}`] = b;
 
   // Ressources initiales pour chaque nouvelle civilisation
-  const INITIAL_RESOURCES = { nourriture: 400, bois: 150, pierre: 80, glaise: 30, silex: 40, sable: 0, sel: 0, cuivre: 0, etain: 0, fer: 0, or: 0, charbon: 0 };
+  const INITIAL_RESOURCES = { nourriture: 400, bois: 150, pierre: 80, glaise: 30, silex: 40, hache_silex: 3, lance_silex: 5, couteau_silex: 3, poteries: 10, sable: 0, sel: 0, cuivre: 0, etain: 0, fer: 0, or: 0, charbon: 0 };
 
   // Créer les civilisations de démo
   const colors = DEMO_CIVS.map(c => c.color);
@@ -159,9 +159,9 @@ function seed() {
 
     // Bâtiments de départ — la civ existait déjà avant le début de la simulation
     const startBuildings = [
-      { name: 'Champs collectifs', category: 'agriculture', role: 'agriculture', workers: 15, status: 'active', capacity: 0 },
-      { name: 'Huttes du peuple',  category: 'habitation',  role: 'habitation',  workers: 0,  status: 'active', capacity: 60 },
-      { name: 'Camp de bûcherons', category: 'bois',        role: 'bois',        workers: 10, status: 'active', capacity: 0 },
+      { name: 'Abris collectifs', role: 'habitation', category: 'habitation', capacity: 40, workers: 0, status: 'active', prod_per_tick: {} },
+      { name: 'Abris collectifs', role: 'habitation', category: 'habitation', capacity: 40, workers: 0, status: 'active', prod_per_tick: {} },
+      { name: 'Abris collectifs', role: 'habitation', category: 'habitation', capacity: 40, workers: 0, status: 'active', prod_per_tick: {} },
     ];
     db.prepare('UPDATE civilizations SET buildings=? WHERE id=?')
       .run(JSON.stringify(startBuildings), civId);
