@@ -30,29 +30,23 @@ function collectSnapshot(prevTickRange) {
   const civs = db.prepare(`
     SELECT id, nom, prompt_variant, population, moral, frustration_ticks,
            territory_count, army_soldiers, military_power, resources, status,
-           active_trade_routes, knowledge_about, gouvernement, valeurs
+           active_trade_routes, knowledge_about, gouvernement, valeurs, buildings
     FROM civilizations ORDER BY id
   `).all();
 
-  let structures = [];
+  // Bâtiments : lus depuis la colonne buildings (JSON array) de chaque civ
   const structuresByCiv = {};
-  try {
-    structures = db.prepare(`
-      SELECT civ_id, name, role, workers, COUNT(*) as count
-      FROM structures
-      WHERE world_id = ${worldId}
-      GROUP BY civ_id, role
-      ORDER BY civ_id, count DESC
-    `).all();
-
-    // Regrouper par civ_id
-    structures.forEach(s => {
-      if (!structuresByCiv[s.civ_id]) structuresByCiv[s.civ_id] = [];
-      structuresByCiv[s.civ_id].push({ role: s.role, name: s.name, count: s.count, workers: s.workers });
+  civs.forEach(c => {
+    const buildings = safeJSON(c.buildings, []);
+    const byRole = {};
+    buildings.forEach(b => {
+      const key = b.category || b.role || 'autre';
+      if (!byRole[key]) byRole[key] = { role: key, name: b.name || key, count: 0, workers: 0 };
+      byRole[key].count++;
+      byRole[key].workers += (b.workers || 0);
     });
-  } catch (e) {
-    // table absente — ignoré
-  }
+    structuresByCiv[c.id] = Object.values(byRole).sort((a, b) => b.count - a.count);
+  });
 
   const civData = civs.map(c => {
     const res = safeJSON(c.resources, {});
@@ -112,6 +106,21 @@ function collectSnapshot(prevTickRange) {
   // Commerce réel (events type 'commerce' ou 'echange')
   const trades = events.filter(e => ['commerce', 'echange', 'trade'].includes(e.type));
 
+  // Actions inconnues (bugs LLM parser)
+  let unknownActions = [];
+  try {
+    unknownActions = db.prepare(`
+      SELECT ua.tick, ua.action_type, ua.description_brute, ua.confiance, c.nom as civ_nom, c.prompt_variant as variant
+      FROM unknown_actions ua
+      LEFT JOIN civilizations c ON c.id = ua.civ_id
+      WHERE ua.tick > ? AND ua.world_id = ${worldId}
+      ORDER BY ua.tick ASC
+    `).all(minTick);
+  } catch {}
+
+  // Erreurs LLM (events type 'erreur' ou 'llm_error')
+  const llmErrors = events.filter(e => ['erreur', 'llm_error', 'parse_error'].includes(e.type));
+
   db.close();
 
   return {
@@ -125,6 +134,8 @@ function collectSnapshot(prevTickRange) {
     diplomacy: diplo,
     wars,
     trades,
+    unknownActions,
+    llmErrors,
     tickRangeChecked: [minTick, tick],
   };
 }
@@ -152,7 +163,8 @@ async function doHourlyCheck() {
     fs.writeFileSync(path.join(LOGS_DIR, fname), JSON.stringify(snap, null, 2));
 
     // Résumé console
-    console.log(`  Tick: ${snap.tick} | Events nouveaux: ${snap.eventsRaw.length} | Reliques découvertes: ${snap.relicsDiscovered.length}`);
+    const bugCount = (snap.unknownActions?.length ?? 0) + (snap.llmErrors?.length ?? 0);
+    console.log(`  Tick: ${snap.tick} | Events: ${snap.eventsRaw.length} | Reliques: ${snap.relicsDiscovered.length} | 🐛 Bugs: ${bugCount}`);
     snap.civs.forEach(c => {
       const flag = c.moral < 20 ? '🔴' : c.moral < 50 ? '🟡' : '🟢';
       console.log(`  ${flag} [${c.variant}] ${c.nom}: pop=${c.pop} moral=${c.moral} frust=${c.frustration} terr=${c.territory}`);
@@ -227,16 +239,19 @@ function buildHTMLReport(snaps) {
   const allRelics = snaps.flatMap(s => s.relicsDiscovered || []);
   const allWars = snaps.flatMap(s => s.wars || []);
   const allTrades = snaps.flatMap(s => s.trades || []);
+  const allUnknownActions = snaps.flatMap(s => s.unknownActions || []);
+  const allLlmErrors = snaps.flatMap(s => s.llmErrors || []);
 
   // Dédupliquer les reliques par nom+tick
   const relicsMap = {};
   allRelics.forEach(r => { relicsMap[`${r.name}_${r.discovered_at_tick}`] = r; });
   const uniqueRelics = Object.values(relicsMap);
 
-  // Stats par variant
+  // Stats par civ (clé = id pour éviter les doublons de variants)
   const variantStats = {};
   first.civs.forEach(c => {
-    variantStats[c.variant] = {
+    variantStats[c.id] = {
+      id: c.id,
       nom: c.nom,
       variant: c.variant,
       popStart: c.pop,
@@ -245,38 +260,38 @@ function buildHTMLReport(snaps) {
     };
   });
   last.civs.forEach(c => {
-    if (variantStats[c.variant]) {
-      variantStats[c.variant].popEnd = c.pop;
-      variantStats[c.variant].moralEnd = c.moral;
-      variantStats[c.variant].territoryEnd = c.territory;
-      variantStats[c.variant].popGrowth = c.pop - variantStats[c.variant].popStart;
-      variantStats[c.variant].territoryGrowth = c.territory - variantStats[c.variant].territoryStart;
-      variantStats[c.variant].moralDelta = c.moral - variantStats[c.variant].moralStart;
-      variantStats[c.variant].armyFinal = c.army;
-      variantStats[c.variant].tradeFinal = c.trade_routes;
-      variantStats[c.variant].knownCivsFinal = c.known_civs;
-      variantStats[c.variant].statusFinal = c.status;
+    if (variantStats[c.id]) {
+      variantStats[c.id].popEnd = c.pop;
+      variantStats[c.id].moralEnd = c.moral;
+      variantStats[c.id].territoryEnd = c.territory;
+      variantStats[c.id].popGrowth = c.pop - variantStats[c.id].popStart;
+      variantStats[c.id].territoryGrowth = c.territory - variantStats[c.id].territoryStart;
+      variantStats[c.id].moralDelta = c.moral - variantStats[c.id].moralStart;
+      variantStats[c.id].armyFinal = c.army;
+      variantStats[c.id].tradeFinal = c.trade_routes;
+      variantStats[c.id].knownCivsFinal = c.known_civs;
+      variantStats[c.id].statusFinal = c.status;
     }
   });
 
-  // Compter events par type et par variant (approximation : on match civ nom dans description)
-  Object.keys(variantStats).forEach(v => {
-    const civNom = variantStats[v].nom;
+  // Compter events par civ (match sur le nom)
+  Object.keys(variantStats).forEach(k => {
+    const civNom = variantStats[k].nom;
     const civEvents = allEvents.filter(e => e.description && e.description.includes(civNom));
-    variantStats[v].eventsTotal = civEvents.length;
-    variantStats[v].revoltes = civEvents.filter(e => e.type === 'revolte').length;
-    variantStats[v].explorations = civEvents.filter(e => e.type === 'exploration').length;
-    variantStats[v].constructions = civEvents.filter(e => e.type === 'construction').length;
-    variantStats[v].echecs = civEvents.filter(e => e.type === 'echec').length;
-    variantStats[v].diplomatie = civEvents.filter(e => e.type === 'diplomatie' || e.type === 'mission').length;
-    variantStats[v].catastrophes = civEvents.filter(e => e.type === 'catastrophe').length;
-    variantStats[v].reliquesDecouvertes = uniqueRelics.filter(r => r.owner_nom && r.owner_nom.includes(civNom)).length;
-    variantStats[v].warEvents = allWars.filter(e => e.description && e.description.includes(civNom)).length;
+    variantStats[k].eventsTotal = civEvents.length;
+    variantStats[k].revoltes = civEvents.filter(e => e.type === 'revolte').length;
+    variantStats[k].explorations = civEvents.filter(e => e.type === 'exploration').length;
+    variantStats[k].constructions = civEvents.filter(e => e.type === 'construction').length;
+    variantStats[k].echecs = civEvents.filter(e => e.type === 'echec').length;
+    variantStats[k].diplomatie = civEvents.filter(e => e.type === 'diplomatie' || e.type === 'mission').length;
+    variantStats[k].catastrophes = civEvents.filter(e => e.type === 'catastrophe').length;
+    variantStats[k].reliquesDecouvertes = uniqueRelics.filter(r => r.owner_nom && r.owner_nom.includes(civNom)).length;
+    variantStats[k].warEvents = allWars.filter(e => e.description && e.description.includes(civNom)).length;
   });
 
   // Score d'activité = actions variées non nulles
-  Object.keys(variantStats).forEach(v => {
-    const s = variantStats[v];
+  Object.keys(variantStats).forEach(k => {
+    const s = variantStats[k];
     s.activityScore = (s.explorations > 0 ? 1 : 0) + (s.constructions > 0 ? 1 : 0)
       + (s.diplomatie > 0 ? 1 : 0) + (s.warEvents > 0 ? 1 : 0) + (s.reliquesDecouvertes > 0 ? 1 : 0)
       + (s.popGrowth > 0 ? 1 : 0) + (s.territoryGrowth > 0 ? 1 : 0);
@@ -291,11 +306,10 @@ function buildHTMLReport(snaps) {
     civs: s.civs.map(c => ({ variant: c.variant, pop: c.pop, moral: c.moral })),
   }));
 
-  // Ligne pop chart data
-  const variants = first.civs.map(c => c.variant);
-  const chartData = variants.map(v => ({
-    label: v,
-    data: popEvolution.map(h => h.civs.find(c => c.variant === v)?.pop ?? null),
+  // Ligne pop chart data (par id pour éviter les doublons de variants)
+  const chartData = first.civs.map(civ => ({
+    label: civ.nom,
+    data: popEvolution.map(h => h.civs.find(c => c.id === civ.id)?.pop ?? null),
   }));
 
   const css = `
@@ -366,15 +380,17 @@ function buildHTMLReport(snaps) {
   });
   variantTable += '</table>';
 
-  // Timeline pop par snapshot
+  // Timeline pop par snapshot (clé id pour éviter doublons variants)
+  const orderedCivIds = first.civs.map(c => ({ id: c.id, nom: c.nom }));
   let popTable = `<table><tr><th>Heure</th><th>Tick</th>`;
-  popEvolution[0]?.civs.forEach(c => { popTable += `<th>${c.variant}</th>`; });
+  orderedCivIds.forEach(c => { popTable += `<th style="font-size:0.78em">${c.nom.split(' ').slice(0,3).join(' ')}</th>`; });
   popTable += '</tr>';
   popEvolution.forEach(h => {
     popTable += `<tr><td>${h.heure}</td><td>${h.tick}</td>`;
-    h.civs.forEach(c => {
-      const cls = c.moral < 20 ? 'bad' : c.moral < 50 ? 'neutral' : 'good';
-      popTable += `<td class="${cls}">${c.pop}</td>`;
+    orderedCivIds.forEach(ref => {
+      const c = h.civs.find(x => x.id === ref.id);
+      const cls = (c?.moral ?? 100) < 20 ? 'bad' : (c?.moral ?? 100) < 50 ? 'neutral' : 'good';
+      popTable += `<td class="${cls}">${c?.pop ?? '—'}</td>`;
     });
     popTable += '</tr>';
   });
@@ -382,13 +398,14 @@ function buildHTMLReport(snaps) {
 
   // Timeline moral par snapshot
   let moralTable = `<table><tr><th>Heure</th><th>Tick</th>`;
-  popEvolution[0]?.civs.forEach(c => { moralTable += `<th>${c.variant}</th>`; });
+  orderedCivIds.forEach(c => { moralTable += `<th style="font-size:0.78em">${c.nom.split(' ').slice(0,3).join(' ')}</th>`; });
   moralTable += '</tr>';
   popEvolution.forEach(h => {
     moralTable += `<tr><td>${h.heure}</td><td>${h.tick}</td>`;
-    h.civs.forEach(c => {
-      const cls = (c.moral ?? 100) < 30 ? 'bad' : (c.moral ?? 100) < 60 ? 'neutral' : 'good';
-      moralTable += `<td class="${cls}">${c.moral ?? '—'}</td>`;
+    orderedCivIds.forEach(ref => {
+      const c = h.civs.find(x => x.id === ref.id);
+      const cls = (c?.moral ?? 100) < 30 ? 'bad' : (c?.moral ?? 100) < 60 ? 'neutral' : 'good';
+      moralTable += `<td class="${cls}">${c?.moral ?? '—'}</td>`;
     });
     moralTable += '</tr>';
   });
@@ -481,6 +498,53 @@ function buildHTMLReport(snaps) {
     decouvertesSection += '</table>';
   }
 
+  // Bugs & Anomalies
+  let bugsSection = `<h2>🐛 Bugs & Anomalies LLM</h2>`;
+  const totalBugs = allUnknownActions.length + allLlmErrors.length;
+  if (totalBugs === 0) {
+    bugsSection += `<p class="meta">Aucune anomalie détectée cette session. ✅</p>`;
+  } else {
+    // Compter par type d'action inconnue
+    const unknownByType = {};
+    allUnknownActions.forEach(u => {
+      unknownByType[u.action_type] = (unknownByType[u.action_type] ?? 0) + 1;
+    });
+    const unknownByVariant = {};
+    allUnknownActions.forEach(u => {
+      const k = u.variant ?? '?';
+      unknownByVariant[k] = (unknownByVariant[k] ?? 0) + 1;
+    });
+
+    if (allUnknownActions.length > 0) {
+      bugsSection += `<div class="summary-box">
+        <strong>Actions inconnues (LLM invente des types) : ${allUnknownActions.length}</strong><br>
+        Par type : ${Object.entries(unknownByType).map(([t, n]) => `<span class="badge badge-yellow badge">${t}</span> ×${n}`).join(' ')}<br>
+        Par variant : ${Object.entries(unknownByVariant).map(([v, n]) => `${v} (${n})`).join(', ')}
+      </div>`;
+      bugsSection += `<table><tr><th>Tick</th><th>Variant</th><th>Civ</th><th>Type inconnu</th><th>Confiance</th><th>Brut (extrait)</th></tr>`;
+      allUnknownActions.slice(0, 50).forEach(u => {
+        bugsSection += `<tr>
+          <td>${u.tick}</td>
+          <td><span class="badge badge-blue">${u.variant ?? '?'}</span></td>
+          <td>${u.civ_nom ?? '?'}</td>
+          <td class="bad">${u.action_type}</td>
+          <td>${u.confiance != null ? Math.round(u.confiance * 100) + '%' : '?'}</td>
+          <td style="font-size:0.75em;color:#718096;max-width:300px;overflow:hidden">${(u.description_brute ?? '').slice(0, 120)}</td>
+        </tr>`;
+      });
+      if (allUnknownActions.length > 50) bugsSection += `<tr><td colspan="6" class="meta">... et ${allUnknownActions.length - 50} autres</td></tr>`;
+      bugsSection += '</table>';
+    }
+
+    if (allLlmErrors.length > 0) {
+      bugsSection += `<h3>Erreurs LLM (${allLlmErrors.length})</h3><table><tr><th>Tick</th><th>Type</th><th>Description</th></tr>`;
+      allLlmErrors.forEach(e => {
+        bugsSection += `<tr><td>${e.tick}</td><td class="bad">${e.type}</td><td>${e.description}</td></tr>`;
+      });
+      bugsSection += '</table>';
+    }
+  }
+
   // Leçons tirées
   const best = sortedVariants[0];
   const worst = sortedVariants[sortedVariants.length - 1];
@@ -548,8 +612,8 @@ function buildHTMLReport(snaps) {
   // Fiches individuelles
   let fichesSection = `<h2>🏛️ Fiches civilisations</h2>`;
   sortedVariants.forEach(s => {
-    const civLast = last.civs.find(c => c.variant === s.variant);
-    const civFirst = first.civs.find(c => c.variant === s.variant);
+    const civLast = last.civs.find(c => c.id === s.id);
+    const civFirst = first.civs.find(c => c.id === s.id);
     const civLoisCiv = allLois.filter(e => e.description && e.description.includes(s.nom));
     const civDecouvertesCiv = allDecouvertes.filter(e => e.description && e.description.includes(s.nom));
     const civEpidemies = allEvents.filter(e => e.type === 'epidemie' && e.description && e.description.includes(s.nom));
@@ -610,11 +674,12 @@ function buildHTMLReport(snaps) {
 
   const summary = `
     <div class="summary-box">
-      <h3>Résumé de la nuit</h3>
+      <h3>Résumé de la session</h3>
       <p>Durée : ${snaps.length} snapshots | Ticks joués : ${totalTicksPlayed} (tick ${first.tick} → ${last.tick})</p>
       <p>Événements totaux : ${totalEventsCounted} | Types : ${uniqueEventTypes.join(', ')}</p>
       <p>Reliques découvertes : ${uniqueRelics.length} | Guerres/combats : ${allWars.length} | Échanges commerciaux : ${allTrades.length}</p>
       <p>Relations diplomatiques finales : ${lastDiplo.length} (dont ${lastDiplo.filter(d => d.relation === 'alliance').length} alliances)</p>
+      <p>🐛 Actions inconnues (parser) : <strong>${allUnknownActions.length}</strong> | Erreurs LLM : <strong>${allLlmErrors.length}</strong></p>
     </div>`;
 
   return `<!DOCTYPE html>
@@ -646,6 +711,7 @@ function buildHTMLReport(snaps) {
   ${cataSection}
   ${loisSection}
   ${decouvertesSection}
+  ${bugsSection}
   ${lecons}
   ${fichesSection}
 </div>
@@ -655,14 +721,17 @@ function buildHTMLReport(snaps) {
 
 // ─── Scheduler ───────────────────────────────────────────────────────────────
 
-function msUntilNextReport() {
-  const now = new Date();
-  const target = new Date(now);
-  // --report-at HH ou REPORT_HOUR=HH (ex: 12 pour midi)
+function getReportHours() {
   const argAt = process.argv.find(a => a.startsWith('--report-at='))?.split('=')[1]
     || process.env.REPORT_HOUR;
-  const reportHour = argAt ? parseInt(argAt, 10) : 22;
-  target.setHours(reportHour, 0, 0, 0);
+  if (!argAt) return [22];
+  return argAt.split(',').map(h => parseInt(h.trim(), 10)).filter(h => !isNaN(h)).sort((a, b) => a - b);
+}
+
+function msUntilHour(hour) {
+  const now = new Date();
+  const target = new Date(now);
+  target.setHours(hour, 0, 0, 0);
   if (target <= now) target.setDate(target.getDate() + 1);
   return target - now;
 }
@@ -675,8 +744,18 @@ function msUntilNextHour() {
 }
 
 async function main() {
+  // Mode rapport immédiat : node nightMonitor.js --now
+  if (process.argv.includes('--now')) {
+    console.log('📊 Mode rapport immédiat...');
+    await doHourlyCheck();
+    await generateFinalReport();
+    process.exit(0);
+    return;
+  }
+
+  const reportHours = getReportHours();
   console.log('🌙 Night Monitor démarré — ' + new Date().toLocaleString('fr-FR'));
-  console.log('Snapshots horaires jusqu\'à 6h00, puis rapport PDF.');
+  console.log(`Snapshots horaires | Rapports PDF à : ${reportHours.map(h => h + 'h').join(', ')}`);
   console.log(`Logs → docs/night_logs/`);
   console.log(`PDF → docs/rapport_nuit.pdf\n`);
 
@@ -699,15 +778,22 @@ async function main() {
   }
   scheduleNextHour();
 
-  // Rapport final à 22h30
-  const ms6am = msUntilNextReport();
-  console.log(`Rapport final dans ${Math.round(ms6am / 3600000 * 10) / 10}h (à 22h00)`);
-  setTimeout(async () => {
-    await doHourlyCheck(); // snapshot final avant rapport
-    await generateFinalReport();
-    console.log('\n✅ Monitoring terminé. Bonne journée !');
-    process.exit(0);
-  }, ms6am);
+  // Rapports PDF aux heures configurées
+  reportHours.forEach((hour, idx) => {
+    const ms = msUntilHour(hour);
+    const isLast = idx === reportHours.length - 1;
+    console.log(`Rapport ${idx + 1}/${reportHours.length} dans ${Math.round(ms / 3600000 * 10) / 10}h (à ${hour}h00)`);
+    setTimeout(async () => {
+      await doHourlyCheck(); // snapshot avant rapport
+      await generateFinalReport();
+      if (isLast) {
+        console.log('\n✅ Monitoring terminé. Bonne journée !');
+        process.exit(0);
+      } else {
+        console.log(`\n✅ Rapport ${hour}h généré. Prochain rapport à ${reportHours[idx + 1]}h.`);
+      }
+    }, ms);
+  });
 }
 
 if (require.main === module) {

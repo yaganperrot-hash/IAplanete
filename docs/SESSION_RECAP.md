@@ -74,3 +74,76 @@
 - Preuve que ça marche : Cité des Sages → bibliothèque émergente depuis sa description
 - Descriptions actuelles trop courtes (1 phrase) → impact limité face au contexte situationnel
 - **Prochaine étape UI** : textarea 500 chars à la création de civ (frontend uniquement — backend déjà prêt)
+
+---
+
+## Session : 2026-04-06
+
+### Système artisanat complet (TRANSFORMER → impact mécanique)
+- ✅ `backend/src/simulation/resourceClassifier.js` (NOUVEAU) : classifie tout nom de ressource par regex → catégorie (arme/outil/stockage/textile/art/spirituel/divers) + stat + per_unit
+- ✅ `migrate.js` : table `resource_types (name, world_id, category, stat, per_unit, first_seen_tick)` — créée et migrée
+- ✅ `civActionResolver.js` — case TRANSFORMER : après création ressource → INSERT OR IGNORE dans resource_types
+- ✅ `civActionResolver.js` — `getFoodCapacity(civ, craftedFoodBonus)` : cap = max(500, pop×10 + stockage_artisanat + greniers_bâtiments)
+- ✅ `civActionResolver.js` — `updateResources` : production boostée par craftedProductionPct, food plafonnée, `stockage_plein` dans last_consequences si perte > 5
+- ✅ `civEngine.js` — `applyCraftedBonuses(civ, worldId, db)` : lit resource_types, calcule 4 bonus (foodBonus, productionPct, militaryBonus, moralBonus), appliqués chaque tick
+- ✅ `civPromptFree.js` — `describeCraftedInventory(resources, resourceTypes)` : affiche l'artisanat groupé par catégorie avec effets. Food cap affiché "(1317/1760 max)"
+
+### Système notifications inter-civs (both sides)
+**Côté récepteur** (civ qui reçoit) :
+- ✅ `emissaire_recu` : quand emissaire arrive → last_consequences cible
+- ✅ `marchands_recus` : commerce réussi → last_consequences cible avec `foodRecu`/`boisDonne` exacts (montants réels de `resolveTradeExpedition`)
+- ✅ `espion_detecte` : spy capturé → last_consequences cible
+- ✅ `message_diplomatique` (action: alliance/commerce/paix/pillage) : DIPLOMATIE → last_consequences cible avec description précise
+
+**Côté émetteur** (civ qui agit) :
+- ✅ `emissaire_arrive` : quand son émissaire est arrivé
+- ✅ `commerce_reussi/echoue` : résultat expédition
+- ✅ `espionnage_reussi/echoue` : résultat + rapport
+
+**Déclenchement LLM** :
+- ✅ `needsDecision` étendu : couvre les 9 nouveaux types d'événements entrants + sortants
+- ✅ `formatLastConsequences` (civPromptFree.js) : couvre tous les types y.c. `relique_etudiee` (était manquant), `stockage_plein`, les 5 nouveaux types émetteur/récepteur
+
+### Fix nightMonitor structures
+- ✅ Query `FROM structures` (table inexistante) → parse du JSON `buildings` de chaque civ
+- Structures groupées par catégorie/role dans le rapport HTML
+
+---
+
+## Session : 2026-04-07
+
+### Problèmes analysés (simulation nocturne — pas d'évolution, pas d'échanges)
+
+5 causes techniques identifiées et corrigées. Philosophie respectée : seule la description de réalité est corrigée, aucune suggestion d'action n'est ajoutée au prompt.
+
+### Fix 1 — describeTechnology() filtre cassé
+- ✅ `civPromptFree.js` : `describeTechnology()` filtrait par `s.production === 'savoir'` — champ inexistant sur les bâtiments (le bon champ est `s.category`).
+- Résultat : la section "CE QUE TON PEUPLE SAIT FAIRE" retournait toujours "aucune technique maîtrisée" même avec des dizaines de bâtiments.
+- Fix : filtres remplacés par `s.category === 'savoir'`, `'production'`, `'extraction'`, `'bois'`, `'commerce'`.
+
+### Fix 2 — Info voisins incomplète dans le prompt
+- ✅ `civPromptFree.js` : section [VOISINS] appelait `describeNeighborsNarrative(ctx)` (simplifié : "ils existent") au lieu d'utiliser les données tactiques riches de `knowledge_about`.
+- ✅ `civActionResolver.js` : `buildNeighborInfo()` de `civInteractions.js` ne pouvait pas être importé (dépendance circulaire). Logique inline directement dans `buildCivContext()`.
+- `ctx.neighbor_info` : lignes ▸ par civ connue + relation + frontière + observations + rapports espions + commerce.
+- Prompt utilise maintenant `ctx.neighbor_info || describeNeighborsNarrative(ctx)`.
+
+### Fix 3 — Chantiers en cours invisibles au LLM
+- ✅ `civActionResolver.js` : `ctx.ongoing_constructions` ajouté — liste des processus `construction` en cours avec `name`, `ticks_restants`, `workers`.
+- ✅ `civPromptFree.js` : section `[CHANTIERS EN COURS]` ajoutée dans le prompt si chantiers présents — le LLM sait qu'il ne peut lancer qu'un 3e chantier (max 2 simultanés) et ne re-propose pas ce qui est déjà en construction.
+
+### Fix 4 — Commerce philosophiquement cassé
+- ✅ `civInteractions.js` : `resolveTradeExpedition()` entièrement réécrit.
+  - Supprimé : vérification isolationnisme/guerre côté cible, échange fixe 50 nourriture / 30 bois.
+  - Nouveau : livre uniquement `marchands_recus` dans `last_consequences` de la cible. La cible décide librement au tick suivant.
+- ✅ `civActionResolver.js` : case `DIPLOMATIE commerce` remplace l'échange fixe 10 or par un échange proportionnel (~15%) de la ressource la plus abondante de chaque civ (≥30 unités). Si ni l'une ni l'autre n'a de surplus → aucun échange.
+
+### Fix 5 — Reliques abstraites et non contextuelles
+- ✅ `backend/src/data/relicsPool.js` : entièrement réécrit. Chaque relique = outil concret légèrement plus avancé que l'ère de la civ qui le trouve.
+  - Champ `base_form` : description physique (ex: "un couteau à lame courte, parfaitement tranchant").
+  - Champ `material_era` : matière dont l'objet est fait (`cuivre`, `fer`, `inconnu`...).
+  - 20 reliques : primitif (outils/armes cuivre/bronze, ruines), metal (outils fer/acier), avance (matière inconnue).
+- ✅ `civPromptFree.js` : `buildRelicPerception(relic, civResources, terrBiomes)` génère une description perceptive contextualisée.
+  - Référence aux ressources connues de la civ : "de la même matière rougeâtre que vos lingots de cuivre, mais travaillée d'une façon que vos artisans ne maîtrisent pas".
+  - Si pas de cuivre en stock mais collines proches : "comme les veines de pierre de vos collines, mais façonnée avec une précision inconnue".
+  - Fallback neutre : "plus lourde que le silex, qui ne s'écaille pas quand on frappe".
+- ✅ `civActionResolver.js` : `discoverRelicsInTerritory()` passe `base_form` et `era` dans `last_consequences`. `buildCivContext()` enrichit `reliques_actives` avec `base_form` depuis le pool.

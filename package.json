@@ -14,6 +14,7 @@
     "concurrently": "^8.2.2"
   },
   "dependencies": {
-    "ollama": "^0.6.3"
+    "ollama": "^0.6.3",
+    "puppeteer": "^24.40.0"
   }
 }

@@ -127,42 +127,98 @@ function describeTechnology(ctx) {
   const structures = ctx.structures || [];
   const reliquesUsed = ctx.reliques_used || [];
 
-  // Filtrer structures par rôle (simplifié)
-  const savoir = structures.filter(s => s.role === 'savoir' || s.production === 'savoir');
-  const production = structures.filter(s => s.role === 'production' || s.production === 'production');
-  const extraction = structures.filter(s => s.role && (s.role.includes('mine') || s.role === 'extraction'));
-  const art = structures.filter(s => s.role === 'art' || s.production === 'art');
+  // Filtrer par category (s.category est le vrai champ dans les structures)
+  const savoir     = structures.filter(s => s.category === 'savoir');
+  const production = structures.filter(s => s.category === 'production');
+  const extraction = structures.filter(s => s.category === 'extraction' || (s.category || '').startsWith('mine_'));
+  const boisTrav   = structures.filter(s => s.category === 'bois');
+  const commerce   = structures.filter(s => s.category === 'commerce');
 
   const parts = [];
 
   if (savoir.length > 0) {
-    const names = savoir.map(s => s.name).join(', ');
-    parts.push(`Tes érudits maîtrisent ${names}.`);
+    const names = [...new Set(savoir.map(s => s.name))].join(', ');
+    parts.push(`Tes érudits travaillent dans : ${names}.`);
   }
   if (production.length > 0) {
-    const names = production.map(s => s.name).join(', ');
-    parts.push(`Tes artisans savent fabriquer ${names}.`);
+    const names = [...new Set(production.map(s => s.name))].join(', ');
+    parts.push(`Tes artisans maîtrisent : ${names}.`);
   }
   if (extraction.length > 0) {
-    const names = extraction.map(s => s.name).join(', ');
-    parts.push(`Tes mineurs extraient ${names}.`);
+    const names = [...new Set(extraction.map(s => s.name))].join(', ');
+    parts.push(`Tes mineurs extraient depuis : ${names}.`);
   }
-  if (art.length > 0) {
-    const names = art.map(s => s.name).join(', ');
-    parts.push(`Tes artistes créent ${names}.`);
+  if (boisTrav.length > 0) {
+    const names = [...new Set(boisTrav.map(s => s.name))].join(', ');
+    parts.push(`Tes bûcherons travaillent à : ${names}.`);
+  }
+  if (commerce.length > 0) {
+    const names = [...new Set(commerce.map(s => s.name))].join(', ');
+    parts.push(`Tes marchands opèrent depuis : ${names}.`);
   }
 
-  // Ajouter les reliques utilisées
+  // Reliques utilisées
   if (reliquesUsed.length > 0) {
     const relicNames = reliquesUsed.map(r => r.name).join(', ');
-    parts.push(`Grâce à ${relicNames}, tes techniques sont améliorées.`);
+    parts.push(`Grâce à ${relicNames}, certaines de tes techniques ont été améliorées.`);
   }
 
   if (parts.length === 0) {
-    return "Ton peuple construit à la main. Aucune technique particulière n'a encore été maîtrisée.";
+    return "Ton peuple travaille à la main. Aucune infrastructure spécialisée n'a encore été construite.";
   }
 
   return parts.join(' ');
+}
+
+/**
+ * Génère la référence matière d'une relique depuis ce que la civ perçoit.
+ * Compare à ce qu'elle connaît déjà : ressources en stock → dépôts biomes → sensoriel.
+ */
+function buildRelicPerception(relic, civResources, terrBiomes) {
+  const era = relic.era || 'primitif';
+  const domain = relic.domain || 'outil';
+  const baseForm = relic.base_form || relic.description || 'un objet ancien';
+
+  // Référence matière selon ce que la civ connaît
+  let materialRef = null;
+
+  if (era === 'primitif') {
+    // L'objet est en cuivre ou bronze — qu'est-ce que la civ connaît de similaire ?
+    if ((civResources.cuivre || 0) > 0) {
+      materialRef = "de la même matière rougeâtre que vos lingots de cuivre, mais travaillée d'une façon que vos artisans ne maîtrisent pas";
+    } else if ((civResources.etain || 0) > 0) {
+      materialRef = "d'une matière semblable à vos métaux connus, mais d'une dureté bien supérieure";
+    } else if (terrBiomes && terrBiomes.some(b => ['hills', 'mountain'].includes(b.biome))) {
+      materialRef = "d'une matière rougeâtre comme les veines de pierre de vos collines, mais façonnée avec une précision inconnue";
+    } else if (terrBiomes && terrBiomes.some(b => b.biome === 'swamp')) {
+      materialRef = "d'une matière dense et rougeâtre, comme les nodules que vos enfants trouvent parfois dans la boue";
+    } else {
+      materialRef = "d'une matière rougeâtre et dense, plus lourde que le silex, qui ne s'écaille pas quand on frappe";
+    }
+  } else if (era === 'metal') {
+    // L'objet est en fer — qu'est-ce que la civ connaît ?
+    if ((civResources.fer || 0) > 0) {
+      materialRef = "du même métal sombre que votre fer, mais d'une pureté et d'une régularité que vos forges n'atteignent pas";
+    } else if ((civResources.cuivre || 0) > 0) {
+      materialRef = "d'un métal sombre et plus lourd que votre cuivre, beaucoup plus résistant à la déformation";
+    } else if (terrBiomes && terrBiomes.some(b => ['mountain', 'hills'].includes(b.biome))) {
+      materialRef = "d'un métal sombre comme les veines noires dans les rochers de votre territoire";
+    } else {
+      materialRef = "d'un métal inconnu, sombre et lourd, d'une dureté que rien dans vos connaissances n'explique";
+    }
+  } else {
+    // Era avancée — hors de portée totale
+    materialRef = "d'une matière que personne dans votre peuple ne peut identifier — ni pierre, ni métal connu, ni os";
+  }
+
+  const domainContext = {
+    outil: "Vos artisans ont essayé de comprendre comment il fonctionne.",
+    arme: "Vos guerriers ont essayé de le manier — il est mieux équilibré que tout ce qu'ils connaissent.",
+    art: "Tes anciens passent du temps à l'observer sans pouvoir l'expliquer.",
+    ruines: "Personne ne sait qui a construit ça, ni pourquoi.",
+  };
+
+  return `— ${baseForm}, ${materialRef}. ${domainContext[domain] || ''}`;
 }
 
 /**
@@ -170,15 +226,12 @@ function describeTechnology(ctx) {
  */
 function describeReliquesMysterieuses(ctx) {
   const reliquesMystere = ctx.reliques_mystere || [];
-  if (reliquesMystere.length === 0) {
-    return null;
-  }
+  if (reliquesMystere.length === 0) return null;
 
-  const lines = reliquesMystere.map(r => {
-    const monthsAgo = r.discovered_at_tick ? Math.floor((ctx.tick || 0) - r.discovered_at_tick) : 'quelques';
-    return `— ${r.name} repose dans ton temple depuis ${monthsAgo} mois. Tes prêtres se disputent sur sa signification.`;
-  });
+  const civResources = ctx.resources || {};
+  const terrBiomes = ctx.territory_biomes || [];
 
+  const lines = reliquesMystere.map(r => buildRelicPerception(r, civResources, terrBiomes));
   return lines.join('\n');
 }
 
@@ -262,12 +315,20 @@ function describeResourcesNarrative(ctx) {
   const rb = ctx.resourceBilan || {};
   const lines = [];
 
-  // nourriture special case (balance)
+  // nourriture special case (balance + cap)
   const nourriture = rb.nourriture || {};
+  const foodCap = ctx.foodCap;
+  const foodStock = nourriture.stock || 0;
+  const foodCapStr = foodCap ? ` (${foodStock}/${foodCap} max)` : '';
   if (nourriture.balance > 0) {
-    lines.push("Les greniers sont bien fournis.");
+    lines.push(`Les greniers sont bien fournis${foodCapStr}.`);
+    if (foodCap && foodStock >= foodCap * 0.9) {
+      lines.push("Les greniers sont presque pleins — sans espace supplémentaire, de la nourriture sera perdue.");
+    }
   } else if (nourriture.balance < 0) {
-    lines.push("La nourriture diminue mois après mois.");
+    lines.push(`La nourriture diminue mois après mois${foodCapStr}.`);
+  } else {
+    if (foodCapStr) lines.push(`Nourriture stable${foodCapStr}.`);
   }
 
   // bois special case (stock)
@@ -413,11 +474,13 @@ function formatLastConsequences(ctx) {
   const lines = [];
   for (const c of conseqs) {
     if (c.type === 'relique_decouverte') {
-      lines.push(`Tes explorateurs ont découvert une relique : ${c.data?.relicName || 'un objet ancien'}.`);
+      const desc = c.base_form ? c.base_form : (c.data?.relicName || 'un objet ancien');
+      lines.push(`Tes éclaireurs ont ramené quelque chose : ${desc}.`);
+    } else if (c.type === 'relique_incomprise') {
+      const desc = c.base_form ? c.base_form : (c.nom || 'un objet étrange');
+      lines.push(`Un objet a été rapporté du territoire : ${desc}. Personne ne comprend encore à quoi cela sert.`);
     } else if (c.type === 'relique_utilisee') {
       lines.push(`La relique ${c.data?.relicName || 'un objet'} a été utilisée. Effet : ${c.data?.effet || 'inconnu'}.`);
-    } else if (c.type === 'relique_incomprise') {
-      lines.push(`Un objet mystérieux a été rapporté : ${c.data?.relicName || c.nom || 'quelque chose d\'étrange'}. Personne ne comprend à quoi cela sert.`);
     } else if (c.type === 'animal_decouvert') {
       lines.push(`Tes éclaireurs ont repéré : ${c.nom}. ${c.description || ''}`);
     } else if (c.type === 'attaque_animaux') {
@@ -432,6 +495,28 @@ function formatLastConsequences(ctx) {
       lines.push(c.description || 'Un combat a eu lieu.');
     } else if (c.type === 'premier_contact') {
       lines.push(`Premier contact établi avec ${c.nom || 'une autre civilisation'}.`);
+    } else if (c.type === 'emissaire_recu') {
+      lines.push(`Un émissaire de ${c.expediteur || 'une civilisation inconnue'} est arrivé. ${c.description || ''}`);
+    } else if (c.type === 'marchands_recus') {
+      lines.push(c.description || `Des marchands de ${c.expediteur || 'une civilisation voisine'} ont proposé un échange.`);
+    } else if (c.type === 'espion_detecte') {
+      lines.push(`ALERTE : ${c.description || `Des espions de ${c.expediteur || 'un ennemi'} ont été capturés.`}`);
+    } else if (c.type === 'message_diplomatique') {
+      lines.push(c.description || `Message diplomatique de ${c.expediteur || 'une civilisation'}.`);
+    } else if (c.type === 'emissaire_arrive') {
+      lines.push(c.description || `Ton émissaire est arrivé à destination.`);
+    } else if (c.type === 'commerce_reussi') {
+      lines.push(c.description || `L'expédition commerciale vers ${c.cible || 'une civ voisine'} a réussi.`);
+    } else if (c.type === 'commerce_echoue') {
+      lines.push(`L'expédition commerciale vers ${c.cible || 'une civ voisine'} a échoué : ${c.description || 'refoulée.'}`);
+    } else if (c.type === 'espionnage_reussi') {
+      lines.push(c.description || `Tes espions sont revenus avec un rapport sur ${c.cible || 'la cible'}.`);
+    } else if (c.type === 'espionnage_echoue') {
+      lines.push(c.description || `Tes espions ont été capturés chez ${c.cible || 'la cible'}.`);
+    } else if (c.type === 'relique_etudiee') {
+      lines.push(`Tes savants ont étudié la relique "${c.data?.relicName || 'inconnue'}" (domaine : ${c.data?.domain || '?'}). La connaissance s'approfondit.`);
+    } else if (c.type === 'stockage_plein') {
+      lines.push(`Tes greniers débordent — de la nourriture a été perdue faute de stockage.`);
     }
   }
   return lines.join('\n') || '';
@@ -455,6 +540,43 @@ function describeArmee(ctx) {
     return "Aucune armée constituée.";
   }
   return `${soldiers} soldats, puissance ${power}.`;
+}
+
+/**
+ * Décrit les objets artisanaux (non-matières premières) avec leurs effets mécaniques.
+ */
+function describeCraftedInventory(resources, resourceTypes) {
+  if (!resourceTypes || resourceTypes.length === 0) return '';
+
+  const MATIERES = new Set(['nourriture','bois','pierre','glaise','silex','sable','sel','cuivre','etain','fer','or','charbon','peaux','os']);
+  const map = {};
+  resourceTypes.forEach(t => { map[t.name] = t; });
+
+  const byCategory = {};
+  for (const [name, qty] of Object.entries(resources)) {
+    if (MATIERES.has(name) || !qty || qty <= 0) continue;
+    const t = map[name];
+    const cat = t?.category || 'divers';
+    if (!byCategory[cat]) byCategory[cat] = [];
+    byCategory[cat].push({ name, qty, stat: t?.stat, per_unit: t?.per_unit || 0 });
+  }
+
+  if (Object.keys(byCategory).length === 0) return '';
+
+  const LABELS = { arme: 'Armement', outil: 'Outillage', stockage: 'Stockage', textile: 'Textile', art: 'Art', spirituel: 'Spirituel', divers: 'Divers' };
+  const STAT_LABELS = { military_power: 'combat', production_pct: 'production', food_capacity: 'cap. greniers', moral: 'moral' };
+
+  const lines = ['[ARTISANAT]'];
+  for (const [cat, items] of Object.entries(byCategory)) {
+    const total_effect = items.reduce((s, i) => s + i.qty * i.per_unit, 0);
+    const statLabel = items[0]?.stat ? STAT_LABELS[items[0].stat] || items[0].stat : null;
+    const effectStr = statLabel && total_effect > 0
+      ? ` (+${Math.round(total_effect * (items[0].stat === 'production_pct' ? 100 : 1))}${items[0].stat === 'production_pct' ? '%' : ''} ${statLabel})`
+      : '';
+    const itemList = items.slice(0, 4).map(i => `${i.name}×${i.qty}`).join(', ');
+    lines.push(`${LABELS[cat] || cat} : ${itemList}${effectStr}`);
+  }
+  return lines.join('\n');
 }
 
 /**
@@ -497,12 +619,21 @@ ${reliquesMystere}`
 ${buildEchecsNarratif(ctx.echecs_tick_precedent)}`
     : '';
 
+  const chantiersEnCours = ctx.ongoing_constructions || [];
+  const chantiersText = chantiersEnCours.length > 0
+    ? chantiersEnCours.map(c => `— ${c.name} : ${c.ticks_restants} mois restants (${c.workers} bâtisseurs mobilisés)`).join('\n')
+      + (chantiersEnCours.length >= 2 ? '\nDeux chantiers sont en cours simultanément — tu ne peux pas en lancer un troisième.' : '')
+    : '';
+
   const memoire = getMemoryShort(ctx);
 
-  const voisins = describeNeighborsNarrative(ctx);
+  const voisins = ctx.neighbor_info || describeNeighborsNarrative(ctx);
 
   const outilsText = describeOutils(ctx);
   const hasOutils = outilsText !== 'Aucun outil ni objet fabriqué.';
+
+  // Section artisanat (objets craftés via TRANSFORMER avec effets mécaniques)
+  const craftedSection = describeCraftedInventory(ctx.resources || {}, ctx.resourceTypes || []);
 
   const instruction = `Tu prends des décisions pour les 30 prochains jours. Pas plus.
 Parle à la première personne.
@@ -518,8 +649,10 @@ Sois précis sur ce que tu mets en mouvement.`;
     `[URGENCES]\nCE QUE TU NE PEUX PAS IGNORER CE MOIS-CI :\n${urgences}`,
     `[RÉALITÉ]\n${realite}`,
     hasOutils ? `[OUTILS & OBJETS]\n${outilsText}` : '',
+    craftedSection ? craftedSection : '',
     `CE QUE TON PEUPLE SAIT FAIRE :\n${technologie}`,
     reliquesMystere ? `[RELIQUES MYSTÉRIEUSES]\n${reliquesSection}` : '',
+    chantiersText ? `[CHANTIERS EN COURS]\n${chantiersText}` : '',
     evenements ? `[ÉVÉNEMENTS]\nCE QUI VIENT DE SE PASSER :\n${evenements}` : '',
     echecs ? `[ÉCHECS]\n${echecs}` : '',
     `[MÉMOIRE]\nCE QUE TU N'OUBLIES PAS :\n${memoire}`,
@@ -531,4 +664,4 @@ Sois précis sur ce que tu mets en mouvement.`;
   return sections.join('\n\n');
 }
 
-module.exports = { buildPromptFree };
+module.exports = { buildPromptFree, describeCraftedInventory };

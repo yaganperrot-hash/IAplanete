@@ -54,8 +54,15 @@ Tick démarre à `tick=2` (Mars, printemps) via `civSeed.js`.
 
 ## Ressources
 
-### 14 ressources
+### 14 ressources brutes
 `nourriture bois pierre glaise silex sable sel cuivre etain fer or charbon peaux os`
+
+### Ressources craftées (dynamiques — TRANSFORMER)
+Tout objet produit via TRANSFORMER s'ajoute à `civilizations.resources` (JSON dynamique).
+- Classifié automatiquement par `resourceClassifier.js` → inséré dans `resource_types`
+- Impact mécanique au tick via `applyCraftedBonuses()` : food_capacity, production_pct, military_power, moral
+- Cap stockage nourriture : `getFoodCapacity(civ, craftedFoodBonus)` = `max(500, pop×10 + craftedFoodBonus + buildingBonus)`
+- `stockage_plein` écrit dans last_consequences si perte > 5 unités
 
 - `peaux` + `os` : obtenus via chasse (CHASSER). Questions dans buildDynamicQuestion si stock > 50.
 - `silex` + `glaise` : questions dans buildDynamicQuestion si stock > 80 (stimule l'invention d'usages).
@@ -203,22 +210,29 @@ Erreur 400 si énergie insuffisante.
 ```js
 isIdle || isFamine || foodSurplus < 0 || isUnderAttack || hasAnimalAttack
 || (hasNoHousing && ['automne','hiver'].includes(season))
-|| hasRelicDiscovered || hasFirstContact
+|| hasRelicDiscovered || hasFirstContact || hasIncomingEvent
 ```
 - `foodSurplus < 0` : production < consommation (même si stock > 0)
 - `isFamine` = `nourriture <= 0` (stock vide)
 - `isUnderAttack` = diplomacy.relation = 'guerre' (guerre entre civs)
-- `hasAnimalAttack` = `last_consequences` contient `type: 'attaque_animaux'` ✅ implémenté
+- `hasAnimalAttack` = last_consequences contient `type: 'attaque_animaux'`
+- `hasIncomingEvent` = last_consequences contient l'un de : `emissaire_recu`, `marchands_recus`, `espion_detecte`, `message_diplomatique`, `emissaire_arrive`, `commerce_reussi`, `commerce_echoue`, `espionnage_reussi`, `espionnage_echoue`
 - `CRÉER` à 0 workers rejeté si rôle non passif (`[ECHEC] aucun worker affecté`)
 
 ### `last_consequences` — cycle de vie
 - **Étape 1** : merger avec existant DB (ne plus écraser) — objets structurés survivent jusqu'à Étape 3
 - **Étape 2** : advanceProcesses écrit `relique_decouverte`, constructions terminées
+  - Emissaire arrivé → `emissaire_recu` chez la cible + `emissaire_arrive` chez l'émetteur
+  - Commerce réussi → `marchands_recus` (avec foodGiven/boisGained) chez la cible + `commerce_reussi/echoue` chez l'émetteur
+  - Espion capturé → `espion_detecte` chez la cible + `espionnage_echoue` chez l'émetteur
 - **Étape 2b** : `premier_contact` écrit pour les deux civs (civ ET foundCiv)
-- **updateAnimalGroups** : `attaque_animaux` écrit — `needsDecision` le détecte ✅
-- **case ATTAQUER** : écrit `{ type: 'combat', victoire, adversaire, pertes, description }` pour les deux civs ✅
-- **Étape 3** : LLM lit last_consequences — tous les types visibles
-- Types gérés dans les prompts : `relique_decouverte`, `relique_incomprise`, `relique_utilisee`, `animal_decouvert`, `chasse`, `premier_contact`, `attaque_animaux`, `combat`
+- **updateAnimalGroups** : `attaque_animaux` écrit — `needsDecision` le détecte
+- **case ATTAQUER** : `combat` pour les deux civs (victoire, adversaire, pertes, description)
+- **case DIPLOMATIE** : `message_diplomatique` (action: alliance/paix/commerce/pillage) chez la cible
+- **updateResources** : `stockage_plein` si nourriture perdue par cap dépassée
+- **Étape 3** : LLM lit last_consequences via `formatLastConsequences(ctx)` — reset après appel
+- Tous les types couverts dans `formatLastConsequences` (civPromptFree.js) :
+  `relique_decouverte/utilisee/incomprise/etudiee`, `animal_decouvert`, `attaque_animaux`, `chasse`, `premier_contact`, `combat`, `emissaire_recu`, `marchands_recus`, `espion_detecte`, `message_diplomatique`, `emissaire_arrive`, `commerce_reussi/echoue`, `espionnage_reussi/echoue`, `stockage_plein`
 
 ### Verbs LLM civs
 Verbs dans `VERBES_VALIDES` et `parseEffets` :
@@ -276,6 +290,7 @@ Les contraintes mécaniques (max 2 chantiers) restent — ce sont des faits, pas
 
 ### Limite de constructions simultanées
 **Max 2 constructions `en_cours` par civ** — toute tentative supplémentaire est rejetée (`[ECHEC] Déjà N constructions en cours`).
+`ctx.ongoing_constructions` expose la liste au LLM via section `[CHANTIERS EN COURS]` dans le prompt — le LLM peut planifier sans re-proposer ce qui est déjà lancé.
 
 ### Workers post-construction
 Les constructeurs deviennent auto-workers du bâtiment **sauf** pour les rôles passifs :
@@ -287,6 +302,8 @@ Les constructeurs deviennent auto-workers du bâtiment **sauf** pour les rôles 
 - `mission` : personnes envoyées (retournent à la fin)
 - `espionnage` (resolve_type) : résolution via `resolveSpying`
 - `commerce_expedition` : résolution via `resolveTradeExpedition`
+  → délivre uniquement `marchands_recus` dans `last_consequences` de la cible
+  → **pas d'échange automatique** — la cible décide librement au tick suivant
 - `emissaire` : établit relation diplomatique
 
 ### État
@@ -338,12 +355,35 @@ Appelée à chaque tick avant les décisions LLM.
 
 Voir `skills/relics.md` pour la doc complète.
 
-Fonctions ajoutées dans `civEngine.js` :
+### Pool (`backend/src/data/relicsPool.js`)
+Chaque relique est un outil concret légèrement plus avancé que l'ère de la civ qui le trouve.
+
+```js
+{
+  name: "Couteau à lame persistante",
+  base_form: "un couteau à lame courte, parfaitement tranchant",   // description physique
+  material_era: "cuivre",   // matière dont l'objet est fait
+  type: "objet", domain: "arme", era: "primitif"
+}
+```
+
+Ères : `primitif` (objets cuivre/bronze/ruines), `metal` (objets fer/acier), `avance` (matière inconnue).
+
+### Perception contextuelle (`buildRelicPerception()` — civPromptFree.js)
+Génère une description du point de vue de la civ selon ses ressources connues et biomes proches :
+- Civ avec cuivre en stock → "de la même matière rougeâtre que vos lingots de cuivre, mais travaillée d'une façon que vos artisans ne maîtrisent pas"
+- Civ sans cuivre mais collines → "comme les veines de pierre de vos collines, mais façonnée avec une précision inconnue"
+- Fallback → "plus lourde que le silex, qui ne s'écaille pas quand on frappe"
+
+La relique n'est jamais présentée comme mystique — elle est physique, comparée à ce que la civ connaît déjà.
+
+### Fonctions moteur
+Dans `civEngine.js` :
 - `processRelicUsage()` — détecte utilisation cohérente (matching action/domaine)
 - `applyRelicBonuses()` — applique bonus + stocke dans last_consequences avec attribution
 
-Fonction ajoutée dans `civActionResolver.js` :
-- `discoverRelicsInTerritory()` — déclenché à la fin d'une exploration
+Dans `civActionResolver.js` :
+- `discoverRelicsInTerritory()` — déclenché à la fin d'une exploration, injecte `base_form` et `era` dans last_consequences
 
 ---
 

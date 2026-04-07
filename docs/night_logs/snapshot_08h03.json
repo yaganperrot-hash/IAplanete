@@ -1,0 +1,435 @@
+{
+  "timestamp": "2026-04-07T06:03:51.703Z",
+  "heure": "08:03",
+  "tick": 2,
+  "civs": [
+    {
+      "id": 1,
+      "nom": "Les Conquérants du Feu Sacré",
+      "variant": "V0",
+      "pop": 92,
+      "moral": 68,
+      "frustration": 0,
+      "territory": 29,
+      "army": 10,
+      "military_power": 10,
+      "food": 385,
+      "bois": 140,
+      "pierre": 80,
+      "trade_routes": 0,
+      "known_civs": 0,
+      "status": "alive",
+      "gouvernement": "monarchie",
+      "valeurs": [
+        "expansion",
+        "guerre",
+        "spiritualite"
+      ],
+      "structures": [
+        {
+          "role": "habitation",
+          "name": "Abris collectifs",
+          "count": 3,
+          "workers": 0
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "nom": "Les Gardiens du Mur",
+      "variant": "V4",
+      "pop": 87,
+      "moral": 59,
+      "frustration": 1,
+      "territory": 4,
+      "army": 10,
+      "military_power": 10,
+      "food": 385,
+      "bois": 140,
+      "pierre": 80,
+      "trade_routes": 0,
+      "known_civs": 0,
+      "status": "alive",
+      "gouvernement": "dictature_militaire",
+      "valeurs": [
+        "ordre",
+        "survie",
+        "guerre"
+      ],
+      "structures": [
+        {
+          "role": "habitation",
+          "name": "Abris collectifs",
+          "count": 3,
+          "workers": 0
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "nom": "Le Grand Khaganat",
+      "variant": "V5",
+      "pop": 97,
+      "moral": 59,
+      "frustration": 1,
+      "territory": 8,
+      "army": 0,
+      "military_power": 0,
+      "food": 385,
+      "bois": 130,
+      "pierre": 80,
+      "trade_routes": 0,
+      "known_civs": 0,
+      "status": "alive",
+      "gouvernement": "monarchie",
+      "valeurs": [
+        "expansion",
+        "guerre",
+        "ordre"
+      ],
+      "structures": [
+        {
+          "role": "habitation",
+          "name": "Abris collectifs",
+          "count": 3,
+          "workers": 0
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "nom": "Les Ascètes de la Pierre",
+      "variant": "V8",
+      "pop": 102,
+      "moral": 68,
+      "frustration": 0,
+      "territory": 81,
+      "army": 0,
+      "military_power": 0,
+      "food": 385,
+      "bois": 140,
+      "pierre": 80,
+      "trade_routes": 0,
+      "known_civs": 0,
+      "status": "alive",
+      "gouvernement": "théocratie",
+      "valeurs": [
+        "isolationnisme",
+        "spiritualite",
+        "art"
+      ],
+      "structures": [
+        {
+          "role": "habitation",
+          "name": "Abris collectifs",
+          "count": 3,
+          "workers": 0
+        }
+      ]
+    },
+    {
+      "id": 5,
+      "nom": "Les Mystiques des Brumes",
+      "variant": "V9",
+      "pop": 102,
+      "moral": 68,
+      "frustration": 0,
+      "territory": 81,
+      "army": 0,
+      "military_power": 0,
+      "food": 385,
+      "bois": 150,
+      "pierre": 80,
+      "trade_routes": 0,
+      "known_civs": 0,
+      "status": "alive",
+      "gouvernement": "théocratie",
+      "valeurs": [
+        "spiritualite",
+        "connaissance",
+        "liberte"
+      ],
+      "structures": [
+        {
+          "role": "habitation",
+          "name": "Abris collectifs",
+          "count": 3,
+          "workers": 0
+        }
+      ]
+    },
+    {
+      "id": 6,
+      "nom": "Les Marchands de la Route d'Or",
+      "variant": "V0",
+      "pop": 92,
+      "moral": 48,
+      "frustration": 0,
+      "territory": 0,
+      "army": 10,
+      "military_power": 10,
+      "food": 385,
+      "bois": 140,
+      "pierre": 80,
+      "trade_routes": 0,
+      "known_civs": 0,
+      "status": "alive",
+      "gouvernement": "oligarchie_marchande",
+      "valeurs": [
+        "commerce",
+        "exploration",
+        "liberte"
+      ],
+      "structures": [
+        {
+          "role": "habitation",
+          "name": "Abris collectifs",
+          "count": 3,
+          "workers": 0
+        },
+        {
+          "role": "autre",
+          "name": "10",
+          "count": 1,
+          "workers": 10
+        }
+      ]
+    },
+    {
+      "id": 7,
+      "nom": "La Cité des Sages",
+      "variant": "V9",
+      "pop": 102,
+      "moral": 60,
+      "frustration": 0,
+      "territory": 81,
+      "army": 0,
+      "military_power": 0,
+      "food": 385,
+      "bois": 120,
+      "pierre": 80,
+      "trade_routes": 0,
+      "known_civs": 0,
+      "status": "alive",
+      "gouvernement": "conseil_des_anciens",
+      "valeurs": [
+        "connaissance",
+        "art",
+        "commerce"
+      ],
+      "structures": [
+        {
+          "role": "habitation",
+          "name": "Abris collectifs",
+          "count": 3,
+          "workers": 0
+        }
+      ]
+    },
+    {
+      "id": 8,
+      "nom": "Les Chasseurs du Vent",
+      "variant": "V5",
+      "pop": 99,
+      "moral": 68,
+      "frustration": 0,
+      "territory": 12,
+      "army": 0,
+      "military_power": 0,
+      "food": 385,
+      "bois": 140,
+      "pierre": 80,
+      "trade_routes": 0,
+      "known_civs": 0,
+      "status": "alive",
+      "gouvernement": "tribu",
+      "valeurs": [
+        "exploration",
+        "survie",
+        "liberte"
+      ],
+      "structures": [
+        {
+          "role": "habitation",
+          "name": "Abris collectifs",
+          "count": 3,
+          "workers": 0
+        }
+      ]
+    },
+    {
+      "id": 9,
+      "nom": "L'Empire des Forges",
+      "variant": "V4",
+      "pop": 102,
+      "moral": 59,
+      "frustration": 1,
+      "territory": 81,
+      "army": 0,
+      "military_power": 0,
+      "food": 385,
+      "bois": 150,
+      "pierre": 80,
+      "trade_routes": 0,
+      "known_civs": 0,
+      "status": "alive",
+      "gouvernement": "oligarchie",
+      "valeurs": [
+        "ordre",
+        "connaissance",
+        "survie"
+      ],
+      "structures": [
+        {
+          "role": "habitation",
+          "name": "Abris collectifs",
+          "count": 3,
+          "workers": 0
+        },
+        {
+          "role": "autre",
+          "name": "tâche générale",
+          "count": 1,
+          "workers": 10
+        }
+      ]
+    },
+    {
+      "id": 10,
+      "nom": "Les Pillards de la Côte",
+      "variant": "V8",
+      "pop": 102,
+      "moral": 76,
+      "frustration": 0,
+      "territory": 81,
+      "army": 0,
+      "military_power": 0,
+      "food": 385,
+      "bois": 150,
+      "pierre": 80,
+      "trade_routes": 0,
+      "known_civs": 0,
+      "status": "alive",
+      "gouvernement": "monarchie",
+      "valeurs": [
+        "guerre",
+        "expansion",
+        "liberte"
+      ],
+      "structures": [
+        {
+          "role": "habitation",
+          "name": "Abris collectifs",
+          "count": 3,
+          "workers": 0
+        }
+      ]
+    }
+  ],
+  "eventCounts": {
+    "naissance": 10
+  },
+  "eventsRaw": [
+    {
+      "tick": 0,
+      "type": "naissance",
+      "description": "La civilisation \"Les Conquérants du Feu Sacré\" vient d'entrer dans le monde !"
+    },
+    {
+      "tick": 0,
+      "type": "naissance",
+      "description": "La civilisation \"Les Gardiens du Mur\" vient d'entrer dans le monde !"
+    },
+    {
+      "tick": 0,
+      "type": "naissance",
+      "description": "La civilisation \"Le Grand Khaganat\" vient d'entrer dans le monde !"
+    },
+    {
+      "tick": 0,
+      "type": "naissance",
+      "description": "La civilisation \"Les Ascètes de la Pierre\" vient d'entrer dans le monde !"
+    },
+    {
+      "tick": 0,
+      "type": "naissance",
+      "description": "La civilisation \"Les Mystiques des Brumes\" vient d'entrer dans le monde !"
+    },
+    {
+      "tick": 0,
+      "type": "naissance",
+      "description": "La civilisation \"Les Marchands de la Route d'Or\" vient d'entrer dans le monde !"
+    },
+    {
+      "tick": 0,
+      "type": "naissance",
+      "description": "La civilisation \"La Cité des Sages\" vient d'entrer dans le monde !"
+    },
+    {
+      "tick": 0,
+      "type": "naissance",
+      "description": "La civilisation \"Les Chasseurs du Vent\" vient d'entrer dans le monde !"
+    },
+    {
+      "tick": 0,
+      "type": "naissance",
+      "description": "La civilisation \"L'Empire des Forges\" vient d'entrer dans le monde !"
+    },
+    {
+      "tick": 0,
+      "type": "naissance",
+      "description": "La civilisation \"Les Pillards de la Côte\" vient d'entrer dans le monde !"
+    }
+  ],
+  "relicsDiscovered": [],
+  "diplomacy": [],
+  "wars": [],
+  "trades": [],
+  "unknownActions": [
+    {
+      "tick": 3,
+      "action_type": "fabriquer_poteries",
+      "description_brute": "TRANSFORMER fabriquer_poteries (input:glaise, output:poteries, quantite:1, personnes:10)",
+      "confiance": 0.8,
+      "civ_nom": "Le Grand Khaganat",
+      "variant": "V5"
+    },
+    {
+      "tick": 3,
+      "action_type": "fabriquer_sculptures_en_pierre",
+      "description_brute": "TRANSFORMER fabriquer_sculptures_en_pierre (input:pierres, output:sculptures en pierre, quantite:1, personnes:5)",
+      "confiance": 0.8,
+      "civ_nom": "Les Ascètes de la Pierre",
+      "variant": "V8"
+    },
+    {
+      "tick": 3,
+      "action_type": "fabriquer_pots_en_argile",
+      "description_brute": "TRANSFORMER fabriquer_pots_en_argile (input:argile, output:pots en argile, quantite:1, personnes:5)",
+      "confiance": 0.8,
+      "civ_nom": "Les Ascètes de la Pierre",
+      "variant": "V8"
+    },
+    {
+      "tick": 3,
+      "action_type": "construire_greniers",
+      "description_brute": "TRANSFORMER construire_greniers (input:matériaux de construction, output:greniers, quantite:1, personnes:5)",
+      "confiance": 0.8,
+      "civ_nom": "Les Mystiques des Brumes",
+      "variant": "V9"
+    },
+    {
+      "tick": 3,
+      "action_type": "fabriquer_outils_silex",
+      "description_brute": "TRANSFORMER fabriquer_outils_silex (input:silex, output:haches, lances et couteaux en silex, quantite:1, personnes:5)",
+      "confiance": 0.8,
+      "civ_nom": "Les Chasseurs du Vent",
+      "variant": "V5"
+    }
+  ],
+  "llmErrors": [],
+  "tickRangeChecked": [
+    -78,
+    2
+  ]
+}

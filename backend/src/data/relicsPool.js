@@ -1,150 +1,131 @@
-// Pool de reliques pour la génération aléatoire
-// Chaque entrée : { name, description, type, domain }
+// Pool de reliques — objets concrets légèrement plus avancés que l'ère de la civ qui les trouve.
+// Chaque entrée : { name, base_form, material_era, type, domain, era }
+// base_form  : description de la forme/fonction (sans matière — ajoutée dynamiquement selon le contexte)
+// material_era : matière dont l'objet est fait, calibrée par rapport à ce que la civ connaît
 
 module.exports = [
-  // Objet / Outil
+
+  // ── ERA PRIMITIF (silex/os) → objet en cuivre ou bronze ─────────────────────
+
   {
-    name: "Houe en obsidienne",
-    description: "Une houe en obsidienne, parfaitement taillée. Le tranchant n'a pas souffert du temps.",
-    type: "objet",
-    domain: "outil",
-    era: "primitif"
+    name: "Couteau à lame persistante",
+    base_form: "un couteau à lame courte, parfaitement tranchant",
+    material_era: "cuivre",
+    type: "objet", domain: "arme", era: "primitif"
   },
   {
-    name: "Marteau de pierre runique",
-    description: "Un marteau de pierre gravé de runes lumineuses. Il semble encore chargé d'énergie.",
-    type: "objet",
-    domain: "outil",
-    era: "primitif"
+    name: "Pointe de lance robuste",
+    base_form: "une pointe de lance longue, à double tranchant, dont la base s'emboîte dans un manche",
+    material_era: "cuivre",
+    type: "objet", domain: "arme", era: "primitif"
   },
   {
-    name: "Sceau de forage",
-    description: "Un dispositif mécanique en bronze, capable de percer la roche la plus dure.",
-    type: "objet",
-    domain: "outil",
-    era: "metal"
+    name: "Hache à tranchant durable",
+    base_form: "une hache dont le tranchant tient après des dizaines de coups là où le silex s'écaille",
+    material_era: "cuivre",
+    type: "objet", domain: "outil", era: "primitif"
   },
   {
-    name: "Ciseau de sculpteur",
-    description: "Un ciseau en métal noir, parfaitement affûté. La poignée est incrustée de nacre.",
-    type: "objet",
-    domain: "outil",
-    era: "metal"
-  },
-  // Objet / Arme
-  {
-    name: "Lame courbe gravée",
-    description: "Une lame courbe gravée de symboles inconnus. Équilibrée comme si forgée hier.",
-    type: "objet",
-    domain: "arme",
-    era: "metal"
+    name: "Ciseau de tailleur",
+    base_form: "un ciseau fin, conçu pour creuser la pierre ou le bois avec précision",
+    material_era: "cuivre",
+    type: "objet", domain: "outil", era: "primitif"
   },
   {
-    name: "Arc composite ancestral",
-    description: "Un arc composite en corne et bois, la corde est encore tendue et résistante.",
-    type: "objet",
-    domain: "arme",
-    era: "primitif"
+    name: "Bol à parois minces",
+    base_form: "un récipient aux parois régulières, capable de résister au feu sans se fissurer",
+    material_era: "bronze",
+    type: "objet", domain: "art", era: "primitif"
   },
   {
-    name: "Bouclier de cérémonie",
-    description: "Un bouclier en bronze orné de motifs solaires. Il brille d'un éclat surnaturel.",
-    type: "objet",
-    domain: "arme",
-    era: "metal"
+    name: "Disque gravé de cycles",
+    base_form: "un disque plat gravé de cercles concentriques et de repères régulièrement espacés",
+    material_era: "bronze",
+    type: "objet", domain: "art", era: "primitif"
   },
   {
-    name: "Dague de jade",
-    description: "Une dague finement ouvragée en jade vert, tranchante comme une lame d'acier.",
-    type: "objet",
-    domain: "arme",
-    era: "primitif"
-  },
-  // Art / Art
-  {
-    name: "Fresque sur pierre",
-    description: "Une fresque sur pierre représentant une cité engloutie. Les couleurs sont intactes.",
-    type: "art",
-    domain: "art",
-    era: "primitif"
+    name: "Fondations d'un édifice inconnu",
+    base_form: "des blocs de pierre assemblés sans mortier avec une régularité que vos bâtisseurs ne maîtrisent pas",
+    material_era: "pierre_taillée",
+    type: "construction", domain: "ruines", era: "primitif"
   },
   {
-    name: "Statuette de déesse",
-    description: "Une statuette en ivoire représentant une déesse aux multiples bras. D'une finesse extraordinaire.",
-    type: "art",
-    domain: "art",
-    era: "primitif"
+    name: "Portique taillé",
+    base_form: "deux montants de pierre et un linteau posé à plat — une structure que votre peuple n'a jamais construite",
+    material_era: "pierre_taillée",
+    type: "construction", domain: "ruines", era: "primitif"
   },
   {
-    name: "Mosaïque de verre",
-    description: "Une mosaïque de verre coloré illustrant une bataille céleste. La lumière la fait scintiller.",
-    type: "art",
-    domain: "art",
-    era: "avance"
+    name: "Arc composite",
+    base_form: "un arc dont la courbure est maintenue par une matière collée contre le bois, plus puissant que tout ce que vos chasseurs utilisent",
+    material_era: "cuivre",
+    type: "objet", domain: "arme", era: "primitif"
+  },
+
+  // ── ERA METAL (cuivre/bronze) → objet en fer ou acier ───────────────────────
+
+  {
+    name: "Lame à grain serré",
+    base_form: "une lame longue dont le grain est si fin qu'il ne rouillerait pas même dans l'eau",
+    material_era: "fer",
+    type: "objet", domain: "arme", era: "metal"
   },
   {
-    name: "Parchemin enluminé",
-    description: "Un parchemin recouvert d'enluminures dorées décrivant des rituels anciens.",
-    type: "art",
-    domain: "art",
-    era: "avance"
-  },
-  // Construction / Ruines
-  {
-    name: "Fondations d'un édifice massif",
-    description: "Les fondations d'un édifice massif. Des inscriptions courent sur les blocs de base.",
-    type: "construction",
-    domain: "ruines",
-    era: "primitif"
+    name: "Herminette de charpentier",
+    base_form: "un outil à tranchant incurvé, conçu pour dégrossir les poutres avec une vitesse que vos artisans n'atteignent pas",
+    material_era: "fer",
+    type: "objet", domain: "outil", era: "metal"
   },
   {
-    name: "Portique de pierre",
-    description: "Un portique de pierre encore debout, gravé de scènes mythologiques.",
-    type: "construction",
-    domain: "ruines",
-    era: "primitif"
+    name: "Foret à mèche hélicoïdale",
+    base_form: "un outil dont la spirale creuse le bois ou la pierre en tournant, sans forcer",
+    material_era: "fer",
+    type: "objet", domain: "outil", era: "metal"
   },
   {
-    name: "Aqueduc souterrain",
-    description: "Un aqueduc souterrain parfaitement préservé, l'eau y coule toujours.",
-    type: "construction",
-    domain: "ruines",
-    era: "avance"
+    name: "Bouclier à nervures",
+    base_form: "un bouclier léger dont les nervures renforcent la surface sans en augmenter le poids",
+    material_era: "acier",
+    type: "objet", domain: "arme", era: "metal"
   },
   {
-    name: "Tour d'observation",
-    description: "Une tour de guet en pierre noire, offrant une vue imprenable sur les alentours.",
-    type: "construction",
-    domain: "ruines",
-    era: "avance"
-  },
-  // Mélanges supplémentaires
-  {
-    name: "Calendrier astronomique",
-    description: "Un disque de pierre gravé de constellations et de cycles lunaires.",
-    type: "objet",
-    domain: "art",
-    era: "primitif"
+    name: "Charnière de porte",
+    base_form: "un mécanisme à pivot qui permet à un panneau lourd de s'ouvrir et se fermer sans s'user",
+    material_era: "fer",
+    type: "objet", domain: "outil", era: "metal"
   },
   {
-    name: "Four de fusion",
-    description: "Un four en terre cuite capable de fondre les métaux les plus réfractaires.",
-    type: "construction",
-    domain: "outil",
-    era: "metal"
+    name: "Aqueduc souterrain partiel",
+    base_form: "un canal enterré dans la roche, parfaitement jointoyé, où l'eau circule encore",
+    material_era: "pierre_taillée",
+    type: "construction", domain: "ruines", era: "metal"
   },
   {
-    name: "Stèle commémorative",
-    description: "Une stèle de granit racontant les exploits d'un héros légendaire.",
-    type: "construction",
-    domain: "art",
-    era: "primitif"
+    name: "Tour d'angle en blocs réguliers",
+    base_form: "une tour dont chaque bloc est identique, posé sans mortier mais impossible à désolidariser",
+    material_era: "pierre_taillée",
+    type: "construction", domain: "ruines", era: "metal"
   },
   {
-    name: "Étendard de guerre",
-    description: "Un étendard en soie brodée, symbole d'une ancienne armée disparue.",
-    type: "objet",
-    domain: "arme",
-    era: "avance"
-  }
+    name: "Panneau gravé de scènes",
+    base_form: "une dalle couverte de scènes de la vie quotidienne d'un peuple inconnu, gravées avec une précision que vos artisans n'ont pas",
+    material_era: "fer",
+    type: "art", domain: "art", era: "metal"
+  },
+
+  // ── ERA AVANCÉ (fer/acier) → objet hors de portée ───────────────────────────
+
+  {
+    name: "Ressort en spirale",
+    base_form: "un anneau de métal enroulé sur lui-même qui reprend sa forme après compression",
+    material_era: "inconnu",
+    type: "objet", domain: "outil", era: "avance"
+  },
+  {
+    name: "Feuille de verre soufflé",
+    base_form: "une surface transparente et plane, ni bois ni pierre, qui laisse passer la lumière sans la bloquer",
+    material_era: "inconnu",
+    type: "objet", domain: "art", era: "avance"
+  },
+
 ];

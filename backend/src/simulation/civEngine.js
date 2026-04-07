@@ -7,12 +7,43 @@ const civLLM = require('../llm/civOllamaLLM');
 const {
   resolveEffect, parseEffets, advanceProcesses, buildCivContext,
   initTerritory, discoverAdjacentCivs, discoverRelicsInTerritory, addMemoryEntry, updateResources, getMilitaryPower,
-  normalizeBuildings, calculateProduction, expandTerritory, calculateHoused,
+  normalizeBuildings, calculateProduction, expandTerritory, calculateHoused, getFoodCapacity,
 } = require('./civActionResolver');
 const { calculateMoral, checkWorkerConsistency } = require('./moralSystem');
 const { checkFrontierContact, resolveSpying, resolveTradeExpedition, buildNeighborInfo } = require('./civInteractions');
 
 const parseJ = (v, fb = []) => { try { return JSON.parse(v || JSON.stringify(fb)); } catch { return fb; } };
+
+// ─── Bonus artisanaux (objets craftés via TRANSFORMER) ────────────────────────
+function applyCraftedBonuses(civ, worldId, db) {
+  const resources = parseJ(civ.resources, {});
+  let types = [];
+  try {
+    types = db.prepare('SELECT name, stat, per_unit FROM resource_types WHERE world_id=?').all(worldId);
+  } catch(e) { return { foodBonus: 0, productionPct: 0, militaryBonus: 0, moralBonus: 0 }; }
+
+  const map = {};
+  types.forEach(t => { map[t.name] = t; });
+
+  let foodBonus = 0, productionPct = 0, militaryBonus = 0, moralBonus = 0;
+
+  for (const [name, qty] of Object.entries(resources)) {
+    if (!qty || qty <= 0) continue;
+    const t = map[name];
+    if (!t || !t.stat) continue;
+    if (t.stat === 'food_capacity')  foodBonus     += qty * t.per_unit;
+    if (t.stat === 'production_pct') productionPct += qty * t.per_unit;
+    if (t.stat === 'military_power') militaryBonus += qty * t.per_unit;
+    if (t.stat === 'moral')          moralBonus    += qty * t.per_unit;
+  }
+
+  return {
+    foodBonus:     Math.round(Math.min(foodBonus, 10000)),
+    productionPct: Math.min(productionPct, 0.5),
+    militaryBonus: Math.round(Math.min(militaryBonus, 50)),
+    moralBonus:    Math.min(Math.round(moralBonus), 15),
+  };
+}
 
 // ─── Calendrier mensuel (1 tick = 1 mois) ─────────────────────────────────────
 const MONTHS = [
@@ -693,7 +724,8 @@ class CivEngine {
     // ═══ ÉTAPE 1 : RESSOURCES, DÉMOGRAPHIE & ÉVÉNEMENTS ══════════════════════
     console.log(`[TICK ${currentTick}] === Étape 1 : ressources + événements ===`);
     for (const civ of allCivs) {
-      const { newResources, consequences, births, isFamine, isWoodOut } = updateResources(civ, biomesMap, season);
+      const craftedBonuses = applyCraftedBonuses(civ, this.worldId, db);
+      const { newResources, consequences, births, isFamine, isWoodOut } = updateResources(civ, biomesMap, season, craftedBonuses.foodBonus, craftedBonuses.productionPct);
       const { naturalDeaths, famineDelta, production, consumption, homelessDeaths, homeless, housed } = consequences;
       const pop    = civ.population || 0;
 
@@ -804,9 +836,9 @@ class CivEngine {
       const newSoldiers = Math.min(civ.army_soldiers || 0, Math.floor(newPop * 0.6));
       civ.army_soldiers = newSoldiers;
 
-      // Puissance militaire
+      // Puissance militaire (+ bonus artisanat)
       const baseMilitary = getMilitaryPower(civ.army_soldiers || 0, civ.age_tech);
-      const newMilitary = Math.floor(baseMilitary * (1 + militaryBonus));
+      const newMilitary = Math.floor(baseMilitary * (1 + militaryBonus)) + craftedBonuses.militaryBonus;
 
       // Logs
       console.log(`  [CIV] ${civ.nom} | pop: ${pop}→${newPop} (naiss:+${births}, morts:-${naturalDeaths}, froid:-${homelessDeaths}, famine:${famineDelta}) | saison: ${season}`);
@@ -825,13 +857,17 @@ class CivEngine {
       const existing = parseJ(current.last_consequences, []);
       // Éviter les doublons avec les conséquences déjà ajoutées par checkValueTensionEvents
       const mergedConsequences = [...existing, ...eventMsgs.filter(msg => !existing.includes(msg))];
+      // Ajouter les événements de plafond de stockage
+      if (consequences.foodCapEvents && consequences.foodCapEvents.length > 0) {
+        mergedConsequences.push(...consequences.foodCapEvents);
+      }
 
       db.prepare(`UPDATE civilizations SET
         resources=?, energy=?, army_soldiers=?, population=?, moral=?,
         military_power=?, frustration_ticks=?, last_consequences=?
         WHERE id=?`).run(
         JSON.stringify(finalResources), newEnergy, newSoldiers,
-        Math.max(0, newPop - revoltLoss), Math.max(0, Math.min(100, newMoral + moralBonus)), newMilitary,
+        Math.max(0, newPop - revoltLoss), Math.max(0, Math.min(100, newMoral + moralBonus + craftedBonuses.moralBonus)), newMilitary,
         JSON.stringify(frustration_ticks || {}),
         JSON.stringify(mergedConsequences),
         civ.id
@@ -898,15 +934,74 @@ class CivEngine {
           const latestCiv = db.prepare('SELECT * FROM civilizations WHERE id=?').get(civ.id);
           const result = resolveSpying(latestCiv, proc.target_civ_id, aliveCivs, currentTick);
           events.push({ type: result.success ? 'espionnage' : 'echec', description: `${civ.nom} : ${result.message}`, civ_ids: [civ.id] });
-          if (result.captured && proc.target_civ_id)
+          // Feedback à l'émetteur dans last_consequences
+          const spySenderRow = db.prepare('SELECT last_consequences FROM civilizations WHERE id=?').get(civ.id);
+          if (spySenderRow) {
+            const spySenderLC = parseJ(spySenderRow.last_consequences, []);
+            const targetSpyName = aliveCivs.find(c => c.id === proc.target_civ_id)?.nom || 'cible inconnue';
+            spySenderLC.push({
+              type: result.success ? 'espionnage_reussi' : 'espionnage_echoue',
+              cible: targetSpyName,
+              description: result.success
+                ? `Tes espions sont revenus de ${targetSpyName} avec un rapport.`
+                : `Tes espions envoyés chez ${targetSpyName} ont été capturés.`,
+              rapport: result.report || null,
+            });
+            db.prepare('UPDATE civilizations SET last_consequences=? WHERE id=?').run(JSON.stringify(spySenderLC), civ.id);
+          }
+          if (result.captured && proc.target_civ_id) {
             events.push({ type: 'espionnage', description: result.targetMessage || '', civ_ids: [proc.target_civ_id] });
+            // Notifier la cible dans last_consequences
+            const spyTargetRow = db.prepare('SELECT last_consequences FROM civilizations WHERE id=?').get(proc.target_civ_id);
+            if (spyTargetRow) {
+              const spyTargetLC = parseJ(spyTargetRow.last_consequences, []);
+              spyTargetLC.push({
+                type: 'espion_detecte',
+                expediteur: civ.nom,
+                civ_id: civ.id,
+                description: `Des espions de ${civ.nom} ont été capturés sur votre territoire. Leurs intentions sont hostiles.`,
+              });
+              db.prepare('UPDATE civilizations SET last_consequences=? WHERE id=?').run(JSON.stringify(spyTargetLC), proc.target_civ_id);
+              addMemoryEntry(proc.target_civ_id, 'diplomatie', `An ${year} — Espions de ${civ.nom} capturés`);
+            }
+          }
         } else if (proc.resolve_type === 'commerce_expedition') {
           const latestCiv = db.prepare('SELECT * FROM civilizations WHERE id=?').get(civ.id);
           const result = resolveTradeExpedition(latestCiv, proc.target_civ_id, aliveCivs, currentTick);
           events.push({ type: result.success ? 'commerce' : 'echec', description: `${civ.nom} : ${result.message}`, civ_ids: [civ.id] });
+          // Feedback à l'émetteur dans last_consequences
+          const tradeSenderRow = db.prepare('SELECT last_consequences FROM civilizations WHERE id=?').get(civ.id);
+          if (tradeSenderRow) {
+            const tradeSenderLC = parseJ(tradeSenderRow.last_consequences, []);
+            const tradeTargetNameSender = aliveCivs.find(c => c.id === proc.target_civ_id)?.nom || 'inconnu';
+            tradeSenderLC.push({
+              type: result.success ? 'commerce_reussi' : 'commerce_echoue',
+              cible: tradeTargetNameSender,
+              description: result.message,
+            });
+            db.prepare('UPDATE civilizations SET last_consequences=? WHERE id=?').run(JSON.stringify(tradeSenderLC), civ.id);
+          }
           if (result.success) {
-            const targetName = aliveCivs.find(c => c.id === proc.target_civ_id)?.nom || 'inconnu';
+            const tradTargetId = proc.target_civ_id;
+            const targetName = aliveCivs.find(c => c.id === tradTargetId)?.nom || 'inconnu';
             addMemoryEntry(civ.id, 'diplomatie', `An ${year} — Route commerciale ouverte avec ${targetName}`);
+            // Notifier la cible : marchands reçus
+            if (tradTargetId) {
+              const tradeTargetRow = db.prepare('SELECT last_consequences FROM civilizations WHERE id=?').get(tradTargetId);
+              if (tradeTargetRow) {
+                const tradeTargetLC = parseJ(tradeTargetRow.last_consequences, []);
+                tradeTargetLC.push({
+                  type: 'marchands_recus',
+                  expediteur: civ.nom,
+                  civ_id: civ.id,
+                  foodRecu: result.foodGiven || 0,
+                  boisDonne: result.boisGained || 0,
+                  description: `Des marchands de ${civ.nom} sont arrivés : ils vous ont apporté ${result.foodGiven || 0} nourriture en échange de ${result.boisGained || 0} bois.`,
+                });
+                db.prepare('UPDATE civilizations SET last_consequences=? WHERE id=?').run(JSON.stringify(tradeTargetLC), tradTargetId);
+                addMemoryEntry(tradTargetId, 'diplomatie', `An ${year} — Marchands reçus de ${civ.nom}`);
+              }
+            }
           }
         } else if (proc.resolve_type === 'emissaire') {
           const targetId = proc.target_civ_id;
@@ -917,6 +1012,30 @@ class CivEngine {
             const targetName = aliveCivs.find(c => c.id === targetId)?.nom || 'inconnu';
             events.push({ type: 'diplomatie', description: `${civ.nom} établit un contact avec ${targetName}.`, civ_ids: [civ.id, targetId] });
             addMemoryEntry(civ.id, 'diplomatie', `An ${year} — Émissaire envoyé à ${targetName}`);
+            // Feedback à l'émetteur dans last_consequences
+            const emissaireSenderRow = db.prepare('SELECT last_consequences FROM civilizations WHERE id=?').get(civ.id);
+            if (emissaireSenderRow) {
+              const emissaireSenderLC = parseJ(emissaireSenderRow.last_consequences, []);
+              emissaireSenderLC.push({
+                type: 'emissaire_arrive',
+                cible: targetName,
+                description: `Ton émissaire est arrivé chez ${targetName}. Un contact diplomatique a été établi.`,
+              });
+              db.prepare('UPDATE civilizations SET last_consequences=? WHERE id=?').run(JSON.stringify(emissaireSenderLC), civ.id);
+            }
+            // Notifier la cible : elle reçoit l'émissaire
+            const emissaireTargetRow = db.prepare('SELECT last_consequences FROM civilizations WHERE id=?').get(targetId);
+            if (emissaireTargetRow) {
+              const emissaireTargetLC = parseJ(emissaireTargetRow.last_consequences, []);
+              emissaireTargetLC.push({
+                type: 'emissaire_recu',
+                expediteur: civ.nom,
+                civ_id: civ.id,
+                description: `Un émissaire de ${civ.nom} est arrivé. Ils souhaitent établir une relation diplomatique.`,
+              });
+              db.prepare('UPDATE civilizations SET last_consequences=? WHERE id=?').run(JSON.stringify(emissaireTargetLC), targetId);
+              addMemoryEntry(targetId, 'diplomatie', `An ${year} — Émissaire reçu de ${civ.nom}`);
+            }
           }
         }
       }
@@ -997,7 +1116,8 @@ class CivEngine {
       const hasRelicDiscovered = lastConseqs.some(c => c.type === 'relique_decouverte' || c.type === 'relique_incomprise');
       const hasFirstContact = lastConseqs.some(c => c.type === 'premier_contact');
       const hasAnimalAttack = lastConseqs.some(c => c.type === 'attaque_animaux');
-      const needsDecision = isIdle || isFamine || isUnderAttack || hasAnimalAttack || (hasNoHousing && ['automne', 'hiver'].includes(season)) || hasRelicDiscovered || hasFirstContact || foodSurplus < 0;
+      const hasIncomingEvent = lastConseqs.some(c => ['emissaire_recu', 'marchands_recus', 'espion_detecte', 'message_diplomatique', 'emissaire_arrive', 'commerce_reussi', 'commerce_echoue', 'espionnage_reussi', 'espionnage_echoue'].includes(c.type));
+      const needsDecision = isIdle || isFamine || isUnderAttack || hasAnimalAttack || (hasNoHousing && ['automne', 'hiver'].includes(season)) || hasRelicDiscovered || hasFirstContact || hasIncomingEvent || foodSurplus < 0;
 
       if (!needsDecision) {
         console.log(`  [CIV] ${civ.nom}: en cours (${activeCount} processus) → pas d'appel LLM`);

@@ -336,6 +336,22 @@ function migrate() {
       // Table déjà existante → ignorer
     }
   
+    // Table resource_types (système d'artisanat)
+    try {
+      db.prepare(`CREATE TABLE IF NOT EXISTS resource_types (
+        name        TEXT NOT NULL,
+        world_id    INTEGER NOT NULL,
+        category    TEXT,
+        stat        TEXT,
+        per_unit    REAL DEFAULT 0,
+        first_seen_tick INTEGER,
+        PRIMARY KEY (name, world_id)
+      )`).run();
+      console.log('✓ TABLE resource_types');
+    } catch (e) {
+      // Table déjà existante → ignorer
+    }
+
     console.log('✓ Migrations SQLite appliquées');
 }
 

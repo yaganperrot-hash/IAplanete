@@ -42,6 +42,11 @@ puis résolues par `resolveEffect()`.
 
 Types vraiment inconnus (ni dans la table, ni transformation) → loggués dans `unknown_actions` (table DB).
 
+### TRANSFORMER — détail
+- Consomme `ressource_entree` (quantite), produit `ressource_sortie` dans `resources`
+- Appelle `classifyResource(output)` → INSERT OR IGNORE dans `resource_types`
+- Impact mécanique au tick suivant via `applyCraftedBonuses()` selon la classification
+
 ---
 
 ## Verbes — détails
@@ -94,6 +99,18 @@ Types vraiment inconnus (ni dans la table, ni transformation) → loggués dans 
 - Mémoire `savoir` : "An Y — Relique étudiée : X (domain)"
 - Écrit `{ type: 'relique_etudiee' }` dans `last_consequences`
 
+### ENVOYER_MARCHANDS
+- Lance processus `commerce_expedition` vers civ cible
+- À la résolution : `resolveTradeExpedition()` délivre `marchands_recus` dans `last_consequences` de la cible
+- La cible décide librement au tick suivant (accepter, négocier, renvoyer)
+- Pas d'échange automatique côté moteur — la liberté de la cible est totale
+
+### DIPLOMATIE commerce
+- Échange proportionnel (~15%) de la ressource la plus abondante de chaque civ (≥30 unités)
+- Si les deux civs ont un surplus → échange s'effectue immédiatement
+- Si l'une des deux n'a pas de surplus → aucun échange (pas d'échec forcé)
+- Écrit `message_diplomatique { action: 'commerce' }` dans `last_consequences` de la cible
+
 ### LOI
 - Effet moral : ±5
 
@@ -125,6 +142,7 @@ Types vraiment inconnus (ni dans la table, ni transformation) → loggués dans 
   // Bâtiments et processus
   structures,                 // bâtiments actifs avec prod_per_tick
   active_processes,           // chantiers/missions en cours
+  ongoing_constructions,      // [ { name, ticks_restants, workers } ] — constructions en cours uniquement
 
   // Militaire
   army_soldiers, army_power,
@@ -136,6 +154,7 @@ Types vraiment inconnus (ni dans la table, ni transformation) → loggués dans 
 
   // Diplomatie
   neighbors,                  // civs connues : { nom, relation, military_power, population }
+  neighbor_info,              // string riche — ▸ nom, frontière, observations, rapports espions, commerce (depuis knowledge_about)
 
   // Événements
   last_consequences,          // événements tick précédent
@@ -160,6 +179,11 @@ Types vraiment inconnus (ni dans la table, ni transformation) → loggués dans 
 
   // Narratif (prompt-free)
   last_narrative,             // texte brut du dernier tick LLM (string)
+
+  // Artisanat
+  resourceTypes,              // [{ name, category, stat, per_unit }] — table resource_types
+  craftedFoodBonus,           // bonus food_capacity total des objets stockage en stock
+  foodCap,                    // cap nourriture calculé via getFoodCapacity()
 }
 ```
 

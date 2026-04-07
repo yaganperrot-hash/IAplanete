@@ -134,55 +134,42 @@ function resolveSpying(civ, targetCivId, allCivs, currentTick) {
 
 /**
  * Résout la fin d'une expédition commerciale.
+ * Ne fait plus d'échange automatique — livre les marchands à la cible qui décide.
  */
 function resolveTradeExpedition(civA, targetCivId, allCivs, currentTick) {
   const civB = allCivs.find(c => c.id === targetCivId || String(c.id) === String(targetCivId));
   if (!civB) return { success: false, message: 'Cible introuvable' };
 
-  // Accepte si pas en guerre et pas isolationniste
-  const bValeurs = parseJ(civB.valeurs, []);
-  const dipRow = db.prepare(
-    "SELECT relation FROM diplomacy WHERE world_id=? AND ((civ_a_id=? AND civ_b_id=?) OR (civ_a_id=? AND civ_b_id=?))"
-  ).get(civB.world_id || civA.world_id, civA.id, civB.id, civB.id, civA.id);
-  const atWar = dipRow?.relation === 'guerre';
+  // Mettre à jour le knowledge de l'expéditeur
+  const knowledge = getKnowledge(civA);
+  const key = String(civB.id);
+  if (!knowledge[key]) {
+    knowledge[key] = {
+      nom: civB.nom, discoveredAt: currentTick, source: 'commerce',
+      frontierLength: 0, observations: [], spyReports: [], tradeReports: [], diplomacyReports: [],
+    };
+  }
+  knowledge[key].tradeReports.push({ tick: currentTick, text: `Des marchands envoyés chez ${civB.nom} (tick ${currentTick}).` });
+  saveKnowledge(civA.id, knowledge);
 
-  if (atWar || bValeurs.includes('isolationnisme')) {
-    return { success: false, message: `Tes marchands ont été refoulés par ${civB.nom}.` };
+  // Livrer l'arrivée des marchands dans les last_consequences de la cible
+  const targetRow = db.prepare('SELECT last_consequences FROM civilizations WHERE id=?').get(civB.id);
+  if (targetRow) {
+    const targetLC = parseJ(targetRow.last_consequences, []);
+    targetLC.push({
+      type: 'marchands_recus',
+      expediteur: civA.nom,
+      civ_id: civA.id,
+      description: `Des marchands de ${civA.nom} sont arrivés avec des propositions d'échange. Tu peux accepter, négocier ou les renvoyer.`,
+    });
+    db.prepare('UPDATE civilizations SET last_consequences=? WHERE id=?').run(JSON.stringify(targetLC), civB.id);
+    addMemoryEntry(civB.id, 'diplomatie', `An ${getCurrentYear(currentTick)} — Marchands reçus de ${civA.nom}`);
   }
 
-  // Échange simple : nourriture contre bois/pierre
-  const resA = parseJ(civA.resources, {});
-  const resB = parseJ(civB.resources, {});
-  const foodGiven = Math.min(resA.nourriture || 0, 50);
-  const boisGained = Math.min(resB.bois || 0, 30);
-
-  if (foodGiven > 0 && boisGained > 0) {
-    // Appliquer l'échange
-    resA.nourriture = (resA.nourriture || 0) - foodGiven;
-    resA.bois = (resA.bois || 0) + boisGained;
-    db.prepare('UPDATE civilizations SET resources=?, active_trade_routes=active_trade_routes+1 WHERE id=?')
-      .run(JSON.stringify(resA), civA.id);
-
-    resB.nourriture = (resB.nourriture || 0) + foodGiven;
-    resB.bois = (resB.bois || 0) - boisGained;
-    db.prepare('UPDATE civilizations SET resources=? WHERE id=?').run(JSON.stringify(resB), civB.id);
-
-    const report = `Échange avec ${civB.nom} : donné ${foodGiven} nourriture, reçu ${boisGained} bois.`;
-    const knowledge = getKnowledge(civA);
-    const key = String(civB.id);
-    if (!knowledge[key]) {
-      knowledge[key] = {
-        nom: civB.nom, discoveredAt: currentTick, source: 'commerce',
-        frontierLength: 0, observations: [], spyReports: [], tradeReports: [], diplomacyReports: [],
-      };
-    }
-    knowledge[key].tradeReports.push({ tick: currentTick, text: report });
-    saveKnowledge(civA.id, knowledge);
-
-    return { success: true, message: report };
-  }
-
-  return { success: false, message: `Commerce avec ${civB.nom} : échange impossible (ressources insuffisantes).` };
+  return {
+    success: true,
+    message: `Tes marchands sont arrivés chez ${civB.nom}. Ils attendent une réponse.`,
+  };
 }
 
 /**

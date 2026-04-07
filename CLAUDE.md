@@ -130,7 +130,9 @@ EFFETS :
 
 ## 8. PROBLÈMES CONNUS OUVERTS
 
-> Aucun problème ouvert connu à ce jour.
+> Bugs mineurs non bloquants :
+> - Moral guerre : infrastructure militaire ≠ activité réelle (civ satisfaite même sans combats récents)
+> - IA répète parfois les mêmes actions (partiellement atténué par prompt narratif libre)
 
 ### Résolus (ne pas re-ouvrir)
 | Problème | Résolu |
@@ -146,6 +148,9 @@ EFFETS :
 | Tension de valeur non transmise au LLM | ✅ Résolu |
 | Moral guerre — infra ≠ activité réelle | ✅ satisfied exige army > 0 + combat récent (<20 ticks) |
 | IA qui répète les mêmes actions | ✅ section [ÉCHECS] civPromptFree + prompt narratif libre |
+| Civs contactées/attaquées ne reçoivent rien | ✅ 2026-04-06 — système complet emissaire_recu/marchands_recus/espion_detecte/message_diplomatique |
+| TRANSFORMER sans impact mécanique | ✅ 2026-04-06 — resourceClassifier + resource_types + applyCraftedBonuses + food cap |
+| nightMonitor structures (no such table) | ✅ 2026-04-06 — parse JSON buildings au lieu de table inexistante |
 
 ---
 

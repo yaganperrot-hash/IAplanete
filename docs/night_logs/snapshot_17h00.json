@@ -1,0 +1,437 @@
+{
+  "timestamp": "2026-04-07T15:00:00.058Z",
+  "heure": "17:00",
+  "tick": 129,
+  "civs": [
+    {
+      "id": 1,
+      "nom": "Les Conquérants du Feu Sacré",
+      "variant": "V0",
+      "pop": 74,
+      "moral": 68,
+      "frustration": 0,
+      "territory": 34,
+      "army": 44,
+      "military_power": 73,
+      "food": 199,
+      "bois": 0,
+      "pierre": 24,
+      "trade_routes": 0,
+      "known_civs": 0,
+      "status": "alive",
+      "gouvernement": "monarchie",
+      "valeurs": [
+        "expansion",
+        "guerre",
+        "spiritualite"
+      ],
+      "structures": [
+        {
+          "role": "autre",
+          "name": "construction",
+          "count": 10,
+          "workers": 42
+        },
+        {
+          "role": "habitation",
+          "name": "Abris collectifs",
+          "count": 3,
+          "workers": 0
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "nom": "Les Gardiens du Mur",
+      "variant": "V4",
+      "pop": 167,
+      "moral": 84,
+      "frustration": 0,
+      "territory": 58,
+      "army": 85,
+      "military_power": 112,
+      "food": 1822,
+      "bois": 0,
+      "pierre": 20,
+      "trade_routes": 0,
+      "known_civs": 0,
+      "status": "alive",
+      "gouvernement": "dictature_militaire",
+      "valeurs": [
+        "ordre",
+        "survie",
+        "guerre"
+      ],
+      "structures": [
+        {
+          "role": "autre",
+          "name": "citoyens disponibles",
+          "count": 12,
+          "workers": 53
+        },
+        {
+          "role": "agriculture",
+          "name": "2 secteur agricole",
+          "count": 4,
+          "workers": 32
+        },
+        {
+          "role": "habitation",
+          "name": "Abris collectifs",
+          "count": 3,
+          "workers": 0
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "nom": "Le Grand Khaganat",
+      "variant": "V5",
+      "pop": 176,
+      "moral": 73,
+      "frustration": 0,
+      "territory": 13,
+      "army": 90,
+      "military_power": 110,
+      "food": 2255,
+      "bois": 0,
+      "pierre": 80,
+      "trade_routes": 0,
+      "known_civs": 0,
+      "status": "alive",
+      "gouvernement": "monarchie",
+      "valeurs": [
+        "expansion",
+        "guerre",
+        "ordre"
+      ],
+      "structures": [
+        {
+          "role": "autre",
+          "name": "45 agriculture",
+          "count": 8,
+          "workers": 50
+        },
+        {
+          "role": "agriculture",
+          "name": "60 travailleurs agricoles",
+          "count": 5,
+          "workers": 43
+        },
+        {
+          "role": "habitation",
+          "name": "Abris collectifs",
+          "count": 3,
+          "workers": 0
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "nom": "Les Ascètes de la Pierre",
+      "variant": "V8",
+      "pop": 170,
+      "moral": 72,
+      "frustration": 0,
+      "territory": 162,
+      "army": 70,
+      "military_power": 74,
+      "food": 251,
+      "bois": 0,
+      "pierre": 65,
+      "trade_routes": 0,
+      "known_civs": 1,
+      "status": "alive",
+      "gouvernement": "théocratie",
+      "valeurs": [
+        "isolationnisme",
+        "spiritualite",
+        "art"
+      ],
+      "structures": [
+        {
+          "role": "autre",
+          "name": "tâche générale",
+          "count": 18,
+          "workers": 96
+        },
+        {
+          "role": "habitation",
+          "name": "Abris collectifs",
+          "count": 3,
+          "workers": 0
+        }
+      ]
+    },
+    {
+      "id": 5,
+      "nom": "Les Mystiques des Brumes",
+      "variant": "V9",
+      "pop": 179,
+      "moral": 82,
+      "frustration": 0,
+      "territory": 149,
+      "army": 70,
+      "military_power": 77,
+      "food": 1985,
+      "bois": 0,
+      "pierre": 69,
+      "trade_routes": 0,
+      "known_civs": 0,
+      "status": "alive",
+      "gouvernement": "théocratie",
+      "valeurs": [
+        "spiritualite",
+        "connaissance",
+        "liberte"
+      ],
+      "structures": [
+        {
+          "role": "autre",
+          "name": "construction",
+          "count": 7,
+          "workers": 48
+        },
+        {
+          "role": "habitation",
+          "name": "Abris collectifs",
+          "count": 3,
+          "workers": 0
+        },
+        {
+          "role": "agriculture",
+          "name": "10 travailleurs agricoles",
+          "count": 3,
+          "workers": 30
+        },
+        {
+          "role": "religieux",
+          "name": "temple",
+          "count": 1,
+          "workers": 5
+        }
+      ]
+    },
+    {
+      "id": 6,
+      "nom": "Les Marchands de la Route d'Or",
+      "variant": "V0",
+      "pop": 49,
+      "moral": 2,
+      "frustration": 106,
+      "territory": 0,
+      "army": 29,
+      "military_power": 36,
+      "food": 1090,
+      "bois": 0,
+      "pierre": 78,
+      "trade_routes": 0,
+      "known_civs": 0,
+      "status": "alive",
+      "gouvernement": "oligarchie_marchande",
+      "valeurs": [
+        "commerce",
+        "exploration",
+        "liberte"
+      ],
+      "structures": [
+        {
+          "role": "autre",
+          "name": "10",
+          "count": 10,
+          "workers": 78
+        },
+        {
+          "role": "habitation",
+          "name": "Abris collectifs",
+          "count": 3,
+          "workers": 0
+        }
+      ]
+    },
+    {
+      "id": 7,
+      "nom": "La Cité des Sages",
+      "variant": "V9",
+      "pop": 186,
+      "moral": 75,
+      "frustration": 0,
+      "territory": 255,
+      "army": 81,
+      "military_power": 86,
+      "food": 1027,
+      "bois": 0,
+      "pierre": 73,
+      "trade_routes": 0,
+      "known_civs": 0,
+      "status": "alive",
+      "gouvernement": "conseil_des_anciens",
+      "valeurs": [
+        "connaissance",
+        "art",
+        "commerce"
+      ],
+      "structures": [
+        {
+          "role": "autre",
+          "name": "artisans expérimentés",
+          "count": 17,
+          "workers": 111
+        },
+        {
+          "role": "habitation",
+          "name": "Abris collectifs",
+          "count": 3,
+          "workers": 0
+        }
+      ]
+    },
+    {
+      "id": 8,
+      "nom": "Les Chasseurs du Vent",
+      "variant": "V5",
+      "pop": 49,
+      "moral": 1,
+      "frustration": 106,
+      "territory": 121,
+      "army": 29,
+      "military_power": 34,
+      "food": 415,
+      "bois": 0,
+      "pierre": 77,
+      "trade_routes": 0,
+      "known_civs": 0,
+      "status": "alive",
+      "gouvernement": "tribu",
+      "valeurs": [
+        "exploration",
+        "survie",
+        "liberte"
+      ],
+      "structures": [
+        {
+          "role": "autre",
+          "name": "tâche générale",
+          "count": 8,
+          "workers": 42
+        },
+        {
+          "role": "habitation",
+          "name": "Abris collectifs",
+          "count": 3,
+          "workers": 0
+        },
+        {
+          "role": "production",
+          "name": "5 production de poteries en glaise",
+          "count": 2,
+          "workers": 2
+        }
+      ]
+    },
+    {
+      "id": 9,
+      "nom": "L'Empire des Forges",
+      "variant": "V4",
+      "pop": 179,
+      "moral": 80,
+      "frustration": 0,
+      "territory": 172,
+      "army": 72,
+      "military_power": 82,
+      "food": 1985,
+      "bois": 0,
+      "pierre": 72,
+      "trade_routes": 0,
+      "known_civs": 1,
+      "status": "alive",
+      "gouvernement": "oligarchie",
+      "valeurs": [
+        "ordre",
+        "connaissance",
+        "survie"
+      ],
+      "structures": [
+        {
+          "role": "autre",
+          "name": "tâche générale",
+          "count": 9,
+          "workers": 67
+        },
+        {
+          "role": "agriculture",
+          "name": "travailleurs agricoles",
+          "count": 4,
+          "workers": 28
+        },
+        {
+          "role": "habitation",
+          "name": "Abris collectifs",
+          "count": 3,
+          "workers": 0
+        },
+        {
+          "role": "production",
+          "name": "production d'armes en silex",
+          "count": 1,
+          "workers": 4
+        }
+      ]
+    },
+    {
+      "id": 10,
+      "nom": "Les Pillards de la Côte",
+      "variant": "V8",
+      "pop": 45,
+      "moral": 86,
+      "frustration": 0,
+      "territory": 264,
+      "army": 19,
+      "military_power": 54,
+      "food": 265,
+      "bois": 0,
+      "pierre": 9,
+      "trade_routes": 0,
+      "known_civs": 0,
+      "status": "alive",
+      "gouvernement": "monarchie",
+      "valeurs": [
+        "guerre",
+        "expansion",
+        "liberte"
+      ],
+      "structures": [
+        {
+          "role": "autre",
+          "name": "construction",
+          "count": 5,
+          "workers": 21
+        },
+        {
+          "role": "habitation",
+          "name": "Abris collectifs",
+          "count": 3,
+          "workers": 0
+        }
+      ]
+    }
+  ],
+  "eventCounts": {},
+  "eventsRaw": [],
+  "relicsDiscovered": [],
+  "diplomacy": [
+    {
+      "civ_a_id": 4,
+      "civ_b_id": 9,
+      "relation": "neutre"
+    }
+  ],
+  "wars": [],
+  "trades": [],
+  "unknownActions": [],
+  "llmErrors": [],
+  "tickRangeChecked": [
+    129,
+    129
+  ]
+}

@@ -1,6 +1,7 @@
 // Résolution des effets libres des civilisations (Option
 const { MAP_WIDTH, MAP_HEIGHT } = require('./mapGenerator');
 const { db } = require('../config/db');
+const { classify: classifyResource } = require('./resourceClassifier');
 
 const OCEAN_BIOMES = ['ocean_deep', 'ocean', 'reef'];
 const FOOD_BIOMES  = ['prairie', 'tropical_forest', 'temperate_forest', 'savanna', 'coast', 'swamp'];
@@ -202,6 +203,15 @@ function getMilitaryPower(army_soldiers, age_tech) {
   return Math.round((army_soldiers || 0) * (EQUIPMENT_MULTIPLIER[equip] || 1.0));
 }
 
+function getFoodCapacity(civ, craftedFoodBonus) {
+  const pop = civ.population || 0;
+  const buildings = normalizeBuildings(civ.buildings);
+  const buildingBonus = buildings
+    .filter(b => /grenier|entrepôt|silo|réserve|cave|cellier|grange/.test((b.name || '').toLowerCase()))
+    .reduce((sum, b) => sum + 300 + (b.workers || 0) * 20, 0);
+  return Math.max(500, pop * 10 + (craftedFoodBonus || 0) + buildingBonus);
+}
+
 // ─── Calculer la production d'une structure ───────────────────────────────────
 function calculateProduction(structure, biomesMap) {
   const rateInfo = PRODUCTION_RATES[structure.category];
@@ -222,7 +232,7 @@ function calculateProduction(structure, biomesMap) {
 }
 
 // ─── Mise à jour des ressources d'une civ (tick) ─────────────────────────────
-function updateResources(civ, biomesMap, season = 'ete') {
+function updateResources(civ, biomesMap, season = 'ete', craftedFoodBonus = 0, craftedProductionPct = 0) {
   const stored    = parseJ(civ.resources, {});
   const resources = { ...ZERO_RESOURCES, ...stored };
   const buildings = normalizeBuildings(civ.buildings);
@@ -239,7 +249,7 @@ function updateResources(civ, biomesMap, season = 'ete') {
     const { resource, amount } = calculateProduction(struct, biomesMap);
     if (!resource || amount <= 0) continue;
     const mod = getSeasonMod(struct.category, season);
-    const modAmount = Math.round(amount * mod);
+    const modAmount = Math.round(amount * mod * (1 + craftedProductionPct));
     if (modAmount > 0) production[resource] = (production[resource] || 0) + modAmount;
   }
   // NOTE : plus de cueillette automatique — 0 production sans travailleurs affectés
@@ -292,11 +302,25 @@ function updateResources(civ, biomesMap, season = 'ete') {
       ? -Math.max(1, Math.round(pop * Math.min(0.03, (overRatio - 1) * 0.05)))
       : surplus < 0 ? -Math.max(1, Math.round(pop * 0.01)) : 0;
 
+  // ── Plafond de stockage nourriture ──────────────────────────────────────────
+  const consequences = [];
+  const foodCap = getFoodCapacity(civ, craftedFoodBonus);
+  if (resources.nourriture > foodCap) {
+    const wasted = Math.round(resources.nourriture - foodCap);
+    resources.nourriture = foodCap;
+    if (wasted > 5) {
+      consequences.push({
+        type: 'stockage_plein',
+        description: `Greniers pleins — ${wasted} unités de nourriture perdues faute de stockage.`
+      });
+    }
+  }
+
   return {
     newResources: resources,
     consequences: {
       births, naturalDeaths, famineDelta, surplus, production, consumption,
-      homelessDeaths, homeless, housed, isWoodOut,
+      homelessDeaths, homeless, housed, isWoodOut, foodCapEvents: consequences,
     },
     deaths: naturalDeaths + Math.abs(famineDelta) + homelessDeaths,
     births,
@@ -304,6 +328,7 @@ function updateResources(civ, biomesMap, season = 'ete') {
     isWoodOut,
     capacity,
     overPop,
+    foodCap,
   };
 }
 
@@ -555,6 +580,8 @@ function expandTerritory(civ, direction, biomesMap, worldId, amount = 5) {
 }
 
 // ─── Découverte de reliques dans le territoire ─────────────────────────────────
+const RELICS_POOL = require('../data/relicsPool');
+
 function discoverRelicsInTerritory(civId, worldId, tick, events) {
   const relics = db.prepare(`
     SELECT r.* FROM relics r
@@ -582,16 +609,21 @@ function discoverRelicsInTerritory(civId, worldId, tick, events) {
     const civRow = db.prepare('SELECT last_consequences FROM civilizations WHERE id=?').get(civId);
     const lastConsequences = parseJ(civRow.last_consequences, []);
 
+    // Récupérer le base_form depuis le pool (correspondance par nom)
+    const poolEntry = RELICS_POOL.find(p => p.name === relic.name);
+    const base_form = poolEntry?.base_form || relic.description || relic.name;
+
     if (diff === 1) {
       // Un cran au-dessus : incomprise, inspire
       lastConsequences.push({
         type: 'relique_incomprise',
         nom: relic.name,
+        base_form,
         description: relic.description,
         domain: relic.domain,
+        era: relic.era,
         relic_id: relic.id,
       });
-      // Mémoire
       addMemoryEntry(civId, 'savoir', `An ${year} — Relique incomprise : ${relic.name}`);
       events.push({
         type: 'relique',
@@ -603,8 +635,10 @@ function discoverRelicsInTerritory(civId, worldId, tick, events) {
       lastConsequences.push({
         type: 'relique_decouverte',
         nom: relic.name,
+        base_form,
         description: relic.description,
         domain: relic.domain,
+        era: relic.era,
         relic_id: relic.id,
       });
       events.push({
@@ -999,17 +1033,57 @@ function resolveEffect(effect, civ, allCivs, worldId, biomesMap, events, current
         db.prepare('INSERT OR REPLACE INTO diplomacy (world_id, civ_a_id, civ_b_id, relation) VALUES (?,?,?,?)')
           .run(worldId, pairMin, pairMax, 'alliance');
         events.push({ type: 'diplomatie', description: `${civ.nom} propose une alliance à ${targetCiv.nom} !`, civ_ids: [civ.id, targetCiv.id] });
+        // Notifier la cible
+        const lcAlliance = parseJ(targetCiv.last_consequences, []);
+        lcAlliance.push({ type: 'message_diplomatique', action: 'alliance', expediteur: civ.nom, civ_id: civ.id, description: `${civ.nom} vous propose une alliance. Accepterez-vous ?` });
+        db.prepare('UPDATE civilizations SET last_consequences=? WHERE id=?').run(JSON.stringify(lcAlliance), targetCiv.id);
+        addMemoryEntry(targetCiv.id, 'diplomatie', `An ${Math.floor(currentTick/12)+1} — ${civ.nom} propose une alliance`);
       } else if (/commerce/.test(actionLow)) {
         db.prepare('INSERT OR REPLACE INTO diplomacy (world_id, civ_a_id, civ_b_id, relation) VALUES (?,?,?,?)')
           .run(worldId, pairMin, pairMax, 'commerce');
-        const tradeRes = parseJ(civ.resources, ZERO_RESOURCES);
-        tradeRes.or = Math.min(9999, (tradeRes.or || 0) + 10);
-        updates.resources = JSON.stringify(tradeRes);
-        events.push({ type: 'diplomatie', description: `${civ.nom} ouvre une route commerciale avec ${targetCiv.nom}.`, civ_ids: [civ.id, targetCiv.id] });
+
+        // Échange proportionnel : chaque civ donne ~15% de ses ressources les plus abondantes
+        const resA = parseJ(civ.resources, ZERO_RESOURCES);
+        const resB = parseJ(targetCiv.resources, ZERO_RESOURCES);
+
+        // Trouver la ressource la plus abondante de chaque côté (hors nourriture si on en a peu)
+        const TRADEABLE = ['nourriture', 'bois', 'pierre', 'fer', 'cuivre', 'or', 'silex', 'charbon', 'peaux'];
+        const bestA = TRADEABLE.filter(r => (resA[r] || 0) > 30).sort((a, b) => (resB[b] || 0) - (resB[a] || 0))[0];
+        const bestB = TRADEABLE.filter(r => (resB[r] || 0) > 30 && r !== bestA).sort((a, b) => (resA[b] || 0) - (resA[a] || 0))[0];
+
+        let tradeDesc = `${civ.nom} ouvre une route commerciale avec ${targetCiv.nom}`;
+        if (bestA && bestB) {
+          const qtyA = Math.floor((resA[bestA] || 0) * 0.15);
+          const qtyB = Math.floor((resB[bestB] || 0) * 0.15);
+          resA[bestA] = Math.max(0, (resA[bestA] || 0) - qtyA);
+          resA[bestB] = (resA[bestB] || 0) + qtyB;
+          resB[bestB] = Math.max(0, (resB[bestB] || 0) - qtyB);
+          resB[bestA] = (resB[bestA] || 0) + qtyA;
+          db.prepare('UPDATE civilizations SET resources=?, active_trade_routes=active_trade_routes+1 WHERE id=?').run(JSON.stringify(resB), targetCiv.id);
+          updates.resources = JSON.stringify(resA);
+          updates.active_trade_routes = (civ.active_trade_routes || 0) + 1;
+          tradeDesc += ` : échangé ${qtyA} ${bestA} contre ${qtyB} ${bestB}`;
+        }
+
+        events.push({ type: 'commerce', description: tradeDesc + '.', civ_ids: [civ.id, targetCiv.id] });
+        // Notifier la cible
+        const lcCommerce = parseJ(targetCiv.last_consequences, []);
+        lcCommerce.push({
+          type: 'commerce_reussi', expediteur: civ.nom, civ_id: civ.id,
+          description: `${civ.nom} a finalisé un échange commercial avec vous.`,
+        });
+        db.prepare('UPDATE civilizations SET last_consequences=? WHERE id=?').run(JSON.stringify(lcCommerce), targetCiv.id);
+        addMemoryEntry(civ.id, 'diplomatie', `An ${Math.floor(currentTick/12)+1} — Commerce avec ${targetCiv.nom}`);
+        addMemoryEntry(targetCiv.id, 'diplomatie', `An ${Math.floor(currentTick/12)+1} — Commerce avec ${civ.nom}`);
       } else if (/paix/.test(actionLow)) {
         db.prepare('INSERT OR REPLACE INTO diplomacy (world_id, civ_a_id, civ_b_id, relation) VALUES (?,?,?,?)')
           .run(worldId, pairMin, pairMax, 'neutre');
         events.push({ type: 'diplomatie', description: `${civ.nom} propose la paix à ${targetCiv.nom}.`, civ_ids: [civ.id, targetCiv.id] });
+        // Notifier la cible
+        const lcPaix = parseJ(targetCiv.last_consequences, []);
+        lcPaix.push({ type: 'message_diplomatique', action: 'paix', expediteur: civ.nom, civ_id: civ.id, description: `${civ.nom} vous envoie une offre de paix.` });
+        db.prepare('UPDATE civilizations SET last_consequences=? WHERE id=?').run(JSON.stringify(lcPaix), targetCiv.id);
+        addMemoryEntry(targetCiv.id, 'diplomatie', `An ${Math.floor(currentTick/12)+1} — ${civ.nom} propose la paix`);
       } else if (/pillage|piller/.test(actionLow)) {
         const stolenFood = randInt(20, 50);
         const stolenBois = randInt(10, 20);
@@ -1023,6 +1097,11 @@ function resolveEffect(effect, civ, allCivs, worldId, biomesMap, events, current
         db.prepare('INSERT OR REPLACE INTO diplomacy (world_id, civ_a_id, civ_b_id, relation) VALUES (?,?,?,?)')
           .run(worldId, pairMin, pairMax, 'guerre');
         events.push({ type: 'pillage', description: `${civ.nom} pille ${targetCiv.nom} et vole ${stolenFood} nourriture et ${stolenBois} bois !`, civ_ids: [civ.id, targetCiv.id] });
+        // Notifier la cible
+        const lcPillage = parseJ(targetCiv.last_consequences, []);
+        lcPillage.push({ type: 'message_diplomatique', action: 'pillage', expediteur: civ.nom, civ_id: civ.id, description: `${civ.nom} a pillé votre territoire ! Vous avez perdu ${stolenFood} nourriture et ${stolenBois} bois.` });
+        db.prepare('UPDATE civilizations SET last_consequences=? WHERE id=?').run(JSON.stringify(lcPillage), targetCiv.id);
+        addMemoryEntry(targetCiv.id, 'diplomatie', `An ${Math.floor(currentTick/12)+1} — Pillage par ${civ.nom}`);
       }
       break;
     }
@@ -1434,6 +1513,20 @@ function resolveEffect(effect, civ, allCivs, worldId, biomesMap, events, current
       
       // 6. Événement de transformation
       events.push({ type: 'transformation', description: `${civ.nom} transforme ${quantite} ${input} en ${quantite} ${output}.`, civ_ids: [civ.id] });
+
+      // 7. Classifier et enregistrer le type de ressource output si inconnu
+      try {
+        const existing = db.prepare('SELECT name FROM resource_types WHERE name=? AND world_id=?').get(output, worldId);
+        if (!existing) {
+          const cls = classifyResource(output);
+          db.prepare('INSERT OR IGNORE INTO resource_types (name, world_id, category, stat, per_unit, first_seen_tick) VALUES (?,?,?,?,?,?)')
+            .run(output, worldId, cls.category, cls.stat, cls.per_unit, currentTick);
+          if (cls.category !== 'divers') {
+            console.log(`[CLASSIFIER] "${output}" → ${cls.category} (${cls.stat} +${cls.per_unit}/unit)`);
+          }
+        }
+      } catch(e) { /* table pas encore migrée */ }
+
       break;
     }
 
@@ -1634,10 +1727,41 @@ function buildCivContext(civ, allCivs, worldId, currentTick, biomesMap, season =
     .sort((a, b) => a.distance - b.distance)
     .slice(0, 4);
 
+  // Info voisins enrichie (knowledge_about — rapports espions, commerce, observations)
+  // Inlinée ici pour éviter la dépendance circulaire avec civInteractions
+  const knowledge = parseJ(civ.knowledge_about, {});
+  const neighborInfoLines = [];
+  for (const [id, info] of Object.entries(knowledge)) {
+    const targetCiv = allCivs.find(c => c.id === parseInt(id) && c.status === 'alive');
+    if (!targetCiv) continue;
+    const rel = relMap[targetCiv.id] || 'neutre';
+    const relLabel = rel === 'guerre' ? '⚔️ EN GUERRE' : rel === 'alliance' ? '🤝 Alliés' : rel === 'commerce' ? '💰 Commerce' : 'Neutres';
+    neighborInfoLines.push(`▸ ${info.nom || targetCiv.nom} — ${relLabel} (frontière: ${info.frontierLength || 0} cases)`);
+    for (const obs of (info.observations || []).slice(-2)) neighborInfoLines.push(`  Observation: ${obs.text}`);
+    for (const spy of (info.spyReports || []).slice(-2)) neighborInfoLines.push(`  Rapport espion: ${spy.text}`);
+    for (const trade of (info.tradeReports || []).slice(-1)) neighborInfoLines.push(`  Commerce: ${trade.text}`);
+    if (!(info.observations || []).length && !(info.spyReports || []).length)
+      neighborInfoLines.push(`  [Contact frontalier uniquement — aucun rapport détaillé]`);
+  }
+  for (const id of discoveredIds) {
+    if (knowledge[String(id)]) continue;
+    const targetCiv = allCivs.find(c => c.id === id && c.status === 'alive');
+    if (!targetCiv) continue;
+    neighborInfoLines.push(`▸ ${targetCiv.nom} (aperçu, aucune information détaillée)`);
+  }
+  const neighbor_info = neighborInfoLines.length
+    ? neighborInfoLines.join('\n')
+    : "Aucun autre peuple n'a encore été rencontré. Sommes-nous seuls ?";
+
   // Processus actifs
   const active_processes = db.prepare("SELECT * FROM civ_processes WHERE civ_id=? AND world_id=? AND state='en_cours'")
     .all(civ.id, worldId)
     .map(p => ({ type: p.type, target: p.target, progress: p.progress, max_ticks: p.max_ticks, workers: p.workers }));
+
+  // Chantiers en cours (construction uniquement) avec ticks restants
+  const ongoing_constructions = active_processes
+    .filter(p => p.type === 'construction')
+    .map(p => ({ name: p.target, ticks_restants: Math.max(0, p.max_ticks - p.progress), workers: p.workers }));
 
   // Main-d'œuvre libre
   const activeWorkers     = buildings.reduce((s, b) => s + (b.workers || 0), 0);
@@ -1729,13 +1853,39 @@ const active_events = parseJ(civ.active_events, []);
 const echecs_tick_precedent = parseJ(civ.last_echecs, []);
 
 // V4 — Reliques découvertes
-const reliques_decouvertes = db.prepare('SELECT id, name, description, type, domain, x, y, taken, used FROM relics WHERE world_id=? AND discovered_by=?').all(worldId, civ.id);
+const reliques_decouvertes = db.prepare('SELECT id, name, description, type, domain, era, x, y, taken, used, discovered_at_tick FROM relics WHERE world_id=? AND discovered_by=?').all(worldId, civ.id);
 // Reliques actives (prises et non utilisées)
-const reliques_actives = db.prepare('SELECT id, name, description, type, domain, x, y, taken, used FROM relics WHERE world_id=? AND discovered_by=? AND taken=1 AND used=0').all(worldId, civ.id);
+const reliques_actives_raw = db.prepare('SELECT id, name, description, type, domain, era, x, y, taken, used, discovered_at_tick FROM relics WHERE world_id=? AND discovered_by=? AND taken=1 AND used=0').all(worldId, civ.id);
+// Enrichir avec base_form du pool
+const _relicsPoolRef = (() => { try { return require('../data/relicsPool'); } catch { return []; } })();
+const reliques_actives = reliques_actives_raw.map(r => {
+  const poolEntry = _relicsPoolRef.find(p => p.name === r.name);
+  return { ...r, base_form: poolEntry?.base_form || r.description || r.name };
+});
 // Reliques utilisées (pour describeTechnology)
-const reliques_used = db.prepare('SELECT id, name, description, type, domain, x, y, taken, used FROM relics WHERE world_id=? AND discovered_by=? AND used=1').all(worldId, civ.id);
-// Reliques mystère (prises mais non utilisées)
+const reliques_used = db.prepare('SELECT id, name, description, type, domain, era, x, y, taken, used FROM relics WHERE world_id=? AND discovered_by=? AND used=1').all(worldId, civ.id);
+// Reliques mystère (prises mais non utilisées) — avec base_form enrichi
 const reliques_mystere = reliques_actives;
+
+// Resource types (artisanat)
+let resourceTypes = [];
+try {
+  resourceTypes = db.prepare('SELECT name, category, stat, per_unit FROM resource_types WHERE world_id=?').all(worldId);
+} catch(e) {}
+
+// Calcul craftedFoodBonus pour le cap nourriture dans le prompt
+let craftedFoodBonusCtx = 0;
+try {
+  const rtMap = {};
+  resourceTypes.forEach(t => { rtMap[t.name] = t; });
+  for (const [name, qty] of Object.entries(currentResources)) {
+    if (!qty || qty <= 0) continue;
+    const t = rtMap[name];
+    if (t && t.stat === 'food_capacity') craftedFoodBonusCtx += qty * (t.per_unit || 0);
+  }
+} catch(e) {}
+
+const foodCapCtx = getFoodCapacity({ population: civ.population, buildings: civ.buildings }, craftedFoodBonusCtx);
 
 // Groupes animaux découverts
 const animal_groups = db.prepare('SELECT * FROM animal_groups WHERE world_id = ?').all(worldId)
@@ -1789,6 +1939,11 @@ const animal_groups = db.prepare('SELECT * FROM animal_groups WHERE world_id = ?
     resources: currentResources,
     outils: { hache_silex: currentResources.hache_silex, lance_silex: currentResources.lance_silex, couteau_silex: currentResources.couteau_silex, poteries: currentResources.poteries },
     last_narrative: civ.last_narrative || '',
+    resourceTypes,
+    craftedFoodBonus: craftedFoodBonusCtx,
+    foodCap: foodCapCtx,
+    neighbor_info,
+    ongoing_constructions,
   };
 }
 
@@ -1798,6 +1953,7 @@ module.exports = {
   getTerritoryCapacity, BIOME_CARRYING_CAPACITY,
   normalizeBuildings, categorizeStructure, calculateProduction, updateResources,
   getEquipmentLabel, getMilitaryPower, calculateHoused, getSeasonMod,
+  getFoodCapacity, classifyResource,
   CATEGORY_EFFECTS, CATEGORY_EMOJI, TECH_AGES, RESOURCES, ZERO_RESOURCES,
   PRODUCTION_RATES, BIOME_BONUS, CREATION_COSTS, SEASON_MODS,
 };

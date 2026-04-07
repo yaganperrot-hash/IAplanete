@@ -53,8 +53,12 @@ CE QUE TU NE PEUX PAS IGNORER CE MOIS-CI :
 CE QUE TON PEUPLE SAIT FAIRE :
 {describeTechnology(ctx)}
 
+[CHANTIERS EN COURS — conditionnel si ongoing_constructions non vide]
+{ctx.ongoing_constructions} → "X est en construction (N mois restants, Y personnes)."
+→ rappelle au LLM la limite 2 chantiers simultanés + évite de relancer ce qui est déjà en cours
+
 [RELIQUES MYSTÉRIEUSES — conditionnel si taken=1 AND used=0]
-{describeReliquesMysterieuses(ctx)}
+{describeReliquesMysterieuses(ctx)}  ← description perceptive via buildRelicPerception()
 
 [ÉVÉNEMENTS — conditionnel si last_consequences non vide]
 {formatLastConsequences(ctx)}   ← traduit last_consequences[] en texte narratif
@@ -66,7 +70,9 @@ CE QUE TON PEUPLE SAIT FAIRE :
 {getMemoryShort(ctx)}
 
 [VOISINS]
-{describeNeighborsNarrative(ctx)}
+{ctx.neighbor_info || describeNeighborsNarrative(ctx)}
+← neighbor_info : données tactiques riches (frontière, observations, espions, commerce) depuis knowledge_about
+← describeNeighborsNarrative : fallback simplifié si knowledge_about vide
 
 ---
 
@@ -91,11 +97,12 @@ Chaque civ a une `tension` (désir inavoué) et une `voix` (style narratif).
 |---|---|
 | `buildUrgencesNarratives(ctx)` | Morts de froid, famine, moral < 20, sans-abri |
 | `describeResourcesNarrative(ctx)` | 2-3 phrases qualitatives, pas de chiffres |
-| `describeTechnology(ctx)` | Ce que la civ sait faire (structures + reliques used) |
-| `describeReliquesMysterieuses(ctx)` | Reliques taken=1 AND used=0 |
+| `describeTechnology(ctx)` | Ce que la civ sait faire (structures + reliques used) — filtre par `s.category` (pas `s.production`) |
+| `describeCraftedInventory(resources, resourceTypes)` | Artisanat groupé par catégorie avec effets (+X combat, +Y% prod...) |
+| `describeReliquesMysterieuses(ctx)` | Reliques taken=1 AND used=0 — description via buildRelicPerception() contextualisée aux ressources/biomes de la civ |
 | `buildEchecsNarratif(echecs)` | Traduction des échecs en phrases dramatiques |
 | `describeNeighborsNarrative(ctx)` | Voisins en qualitatif (guerre/commerce/neutre) |
-| `formatLastConsequences(ctx)` | Traduit `last_consequences[]` en texte narratif pour [ÉVÉNEMENTS] |
+| `formatLastConsequences(ctx)` | Traduit `last_consequences[]` en texte narratif — tous types couverts |
 
 ---
 
@@ -152,6 +159,9 @@ JSON repair activé : si parse échoue → troncature au dernier `}` complet + f
 
 Fallback → `civMockLLM.js` si Ollama unavailable ou timeout.
 
+La section `[ARTISANAT]` est injectée si `describeCraftedInventory` retourne un contenu non vide.
+La nourriture affiche sa cap : `(1317/1760 max)` avec warning `⚠️ greniers presque pleins` à ≥90%.
+
 ---
 
 ## Condition d'appel LLM (civEngine.js)
@@ -163,6 +173,7 @@ Déclenché si au moins une condition vraie :
 - `hasNoHousing` en automne/hiver
 - `foodSurplus < 0`
 - `hasRelicDiscovered`, `hasFirstContact`
+- `hasIncomingEvent` : last_consequences contient `emissaire_recu`, `marchands_recus`, `espion_detecte`, `message_diplomatique`, `emissaire_arrive`, `commerce_reussi/echoue`, `espionnage_reussi/echoue`
 
 ---
 

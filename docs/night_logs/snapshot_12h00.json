@@ -1,0 +1,1131 @@
+{
+  "timestamp": "2026-04-07T10:00:00.002Z",
+  "heure": "12:00",
+  "tick": 57,
+  "civs": [
+    {
+      "id": 1,
+      "nom": "Les Conquérants du Feu Sacré",
+      "variant": "V0",
+      "pop": 108,
+      "moral": 68,
+      "frustration": 0,
+      "territory": 34,
+      "army": 61,
+      "military_power": 66,
+      "food": 170,
+      "bois": 0,
+      "pierre": 76,
+      "trade_routes": 0,
+      "known_civs": 0,
+      "status": "alive",
+      "gouvernement": "monarchie",
+      "valeurs": [
+        "expansion",
+        "guerre",
+        "spiritualite"
+      ],
+      "structures": [
+        {
+          "role": "autre",
+          "name": "construction",
+          "count": 9,
+          "workers": 41
+        },
+        {
+          "role": "habitation",
+          "name": "Abris collectifs",
+          "count": 3,
+          "workers": 0
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "nom": "Les Gardiens du Mur",
+      "variant": "V4",
+      "pop": 92,
+      "moral": 68,
+      "frustration": 0,
+      "territory": 44,
+      "army": 54,
+      "military_power": 63,
+      "food": 385,
+      "bois": 0,
+      "pierre": 76,
+      "trade_routes": 0,
+      "known_civs": 0,
+      "status": "alive",
+      "gouvernement": "dictature_militaire",
+      "valeurs": [
+        "ordre",
+        "survie",
+        "guerre"
+      ],
+      "structures": [
+        {
+          "role": "autre",
+          "name": "citoyens disponibles",
+          "count": 10,
+          "workers": 48
+        },
+        {
+          "role": "habitation",
+          "name": "Abris collectifs",
+          "count": 3,
+          "workers": 0
+        },
+        {
+          "role": "agriculture",
+          "name": "2 secteur agricole",
+          "count": 1,
+          "workers": 2
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "nom": "Le Grand Khaganat",
+      "variant": "V5",
+      "pop": 153,
+      "moral": 76,
+      "frustration": 0,
+      "territory": 13,
+      "army": 55,
+      "military_power": 74,
+      "food": 1841,
+      "bois": 0,
+      "pierre": 80,
+      "trade_routes": 0,
+      "known_civs": 0,
+      "status": "alive",
+      "gouvernement": "monarchie",
+      "valeurs": [
+        "expansion",
+        "guerre",
+        "ordre"
+      ],
+      "structures": [
+        {
+          "role": "autre",
+          "name": "45 agriculture",
+          "count": 7,
+          "workers": 46
+        },
+        {
+          "role": "habitation",
+          "name": "Abris collectifs",
+          "count": 3,
+          "workers": 0
+        },
+        {
+          "role": "agriculture",
+          "name": "60 travailleurs agricoles",
+          "count": 3,
+          "workers": 22
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "nom": "Les Ascètes de la Pierre",
+      "variant": "V8",
+      "pop": 166,
+      "moral": 70,
+      "frustration": 0,
+      "territory": 127,
+      "army": 47,
+      "military_power": 48,
+      "food": 312,
+      "bois": 0,
+      "pierre": 73,
+      "trade_routes": 0,
+      "known_civs": 1,
+      "status": "alive",
+      "gouvernement": "théocratie",
+      "valeurs": [
+        "isolationnisme",
+        "spiritualite",
+        "art"
+      ],
+      "structures": [
+        {
+          "role": "autre",
+          "name": "tâche générale",
+          "count": 13,
+          "workers": 83
+        },
+        {
+          "role": "habitation",
+          "name": "Abris collectifs",
+          "count": 3,
+          "workers": 0
+        }
+      ]
+    },
+    {
+      "id": 5,
+      "nom": "Les Mystiques des Brumes",
+      "variant": "V9",
+      "pop": 173,
+      "moral": 81,
+      "frustration": 0,
+      "territory": 129,
+      "army": 40,
+      "military_power": 46,
+      "food": 1413,
+      "bois": 0,
+      "pierre": 69,
+      "trade_routes": 0,
+      "known_civs": 0,
+      "status": "alive",
+      "gouvernement": "théocratie",
+      "valeurs": [
+        "spiritualite",
+        "connaissance",
+        "liberte"
+      ],
+      "structures": [
+        {
+          "role": "autre",
+          "name": "construction",
+          "count": 7,
+          "workers": 55
+        },
+        {
+          "role": "habitation",
+          "name": "Abris collectifs",
+          "count": 3,
+          "workers": 0
+        },
+        {
+          "role": "agriculture",
+          "name": "10 travailleurs agricoles",
+          "count": 3,
+          "workers": 30
+        },
+        {
+          "role": "religieux",
+          "name": "temple",
+          "count": 1,
+          "workers": 5
+        }
+      ]
+    },
+    {
+      "id": 6,
+      "nom": "Les Marchands de la Route d'Or",
+      "variant": "V0",
+      "pop": 126,
+      "moral": 13,
+      "frustration": 35,
+      "territory": 0,
+      "army": 43,
+      "military_power": 47,
+      "food": 498,
+      "bois": 0,
+      "pierre": 78,
+      "trade_routes": 0,
+      "known_civs": 0,
+      "status": "alive",
+      "gouvernement": "oligarchie_marchande",
+      "valeurs": [
+        "commerce",
+        "exploration",
+        "liberte"
+      ],
+      "structures": [
+        {
+          "role": "autre",
+          "name": "10",
+          "count": 10,
+          "workers": 78
+        },
+        {
+          "role": "habitation",
+          "name": "Abris collectifs",
+          "count": 3,
+          "workers": 0
+        }
+      ]
+    },
+    {
+      "id": 7,
+      "nom": "La Cité des Sages",
+      "variant": "V9",
+      "pop": 143,
+      "moral": 69,
+      "frustration": 0,
+      "territory": 174,
+      "army": 45,
+      "military_power": 49,
+      "food": 388,
+      "bois": 0,
+      "pierre": 77,
+      "trade_routes": 0,
+      "known_civs": 0,
+      "status": "alive",
+      "gouvernement": "conseil_des_anciens",
+      "valeurs": [
+        "connaissance",
+        "art",
+        "commerce"
+      ],
+      "structures": [
+        {
+          "role": "autre",
+          "name": "artisans expérimentés",
+          "count": 12,
+          "workers": 69
+        },
+        {
+          "role": "habitation",
+          "name": "Abris collectifs",
+          "count": 3,
+          "workers": 0
+        }
+      ]
+    },
+    {
+      "id": 8,
+      "nom": "Les Chasseurs du Vent",
+      "variant": "V5",
+      "pop": 74,
+      "moral": 33,
+      "frustration": 35,
+      "territory": 85,
+      "army": 44,
+      "military_power": 48,
+      "food": 177,
+      "bois": 0,
+      "pierre": 80,
+      "trade_routes": 0,
+      "known_civs": 0,
+      "status": "alive",
+      "gouvernement": "tribu",
+      "valeurs": [
+        "exploration",
+        "survie",
+        "liberte"
+      ],
+      "structures": [
+        {
+          "role": "autre",
+          "name": "tâche générale",
+          "count": 8,
+          "workers": 42
+        },
+        {
+          "role": "habitation",
+          "name": "Abris collectifs",
+          "count": 3,
+          "workers": 0
+        },
+        {
+          "role": "production",
+          "name": "5 production de poteries en glaise",
+          "count": 2,
+          "workers": 2
+        }
+      ]
+    },
+    {
+      "id": 9,
+      "nom": "L'Empire des Forges",
+      "variant": "V4",
+      "pop": 121,
+      "moral": 86,
+      "frustration": 0,
+      "territory": 162,
+      "army": 55,
+      "military_power": 57,
+      "food": 1333,
+      "bois": 0,
+      "pierre": 76,
+      "trade_routes": 0,
+      "known_civs": 1,
+      "status": "alive",
+      "gouvernement": "oligarchie",
+      "valeurs": [
+        "ordre",
+        "connaissance",
+        "survie"
+      ],
+      "structures": [
+        {
+          "role": "autre",
+          "name": "tâche générale",
+          "count": 4,
+          "workers": 25
+        },
+        {
+          "role": "habitation",
+          "name": "Abris collectifs",
+          "count": 3,
+          "workers": 0
+        },
+        {
+          "role": "agriculture",
+          "name": "travailleurs agricoles",
+          "count": 2,
+          "workers": 18
+        }
+      ]
+    },
+    {
+      "id": 10,
+      "nom": "Les Pillards de la Côte",
+      "variant": "V8",
+      "pop": 34.5,
+      "moral": 76,
+      "frustration": 0,
+      "territory": 219,
+      "army": 20,
+      "military_power": 45,
+      "food": 150,
+      "bois": 0,
+      "pierre": 15,
+      "trade_routes": 0,
+      "known_civs": 0,
+      "status": "alive",
+      "gouvernement": "monarchie",
+      "valeurs": [
+        "guerre",
+        "expansion",
+        "liberte"
+      ],
+      "structures": [
+        {
+          "role": "autre",
+          "name": "construction",
+          "count": 5,
+          "workers": 21
+        },
+        {
+          "role": "habitation",
+          "name": "Abris collectifs",
+          "count": 3,
+          "workers": 0
+        }
+      ]
+    }
+  ],
+  "eventCounts": {
+    "catastrophe": 6,
+    "exploration": 91,
+    "echec": 129,
+    "recrutement": 14,
+    "mission": 18,
+    "affectation": 20,
+    "bonus": 4,
+    "transformation": 51,
+    "diplomatie": 6,
+    "espionnage": 1,
+    "relique": 1
+  },
+  "eventsRaw": [
+    {
+      "tick": 56,
+      "type": "recrutement",
+      "description": "Les Gardiens du Mur recrute 5 soldats. Population -5, armée +5."
+    },
+    {
+      "tick": 56,
+      "type": "transformation",
+      "description": "Les Gardiens du Mur transforme 10 matière première pour armes en silex en 10 armes en silex."
+    },
+    {
+      "tick": 56,
+      "type": "transformation",
+      "description": "Les Gardiens du Mur transforme 1 matière première pour armes de défense en 1 haches en silex."
+    },
+    {
+      "tick": 56,
+      "type": "echec",
+      "description": "Les Ascètes de la Pierre voulait construire \"construction\" mais manque de bois (besoin: 10, dispo: 0)."
+    },
+    {
+      "tick": 56,
+      "type": "mission",
+      "description": "Les Ascètes de la Pierre envoie 3 émissaires vers L'Empire des Forges."
+    },
+    {
+      "tick": 56,
+      "type": "affectation",
+      "description": "Les Mystiques des Brumes affecte 10 personnes → maitres_artisans."
+    },
+    {
+      "tick": 56,
+      "type": "echec",
+      "description": "Les Mystiques des Brumes voulait construire \"construction\" mais manque de bois (besoin: 10, dispo: 0)."
+    },
+    {
+      "tick": 56,
+      "type": "affectation",
+      "description": "Les Mystiques des Brumes affecte 10 personnes → travailleurs_generaux."
+    },
+    {
+      "tick": 56,
+      "type": "transformation",
+      "description": "Les Mystiques des Brumes transforme 1 silex en 1 lances."
+    },
+    {
+      "tick": 56,
+      "type": "echec",
+      "description": "Les Marchands de la Route d'Or : pas assez de main-d'œuvre libre pour \"5\" (libre: 0)."
+    },
+    {
+      "tick": 56,
+      "type": "echec",
+      "description": "Les Marchands de la Route d'Or : pas assez de main-d'œuvre libre pour \"tâche générale\" (libre: 0)."
+    },
+    {
+      "tick": 56,
+      "type": "echec",
+      "description": "Les Marchands de la Route d'Or : pas assez de main-d'œuvre libre pour \"9\" (libre: 0)."
+    },
+    {
+      "tick": 56,
+      "type": "echec",
+      "description": "Les Marchands de la Route d'Or : pas assez de main-d'œuvre libre pour \"5\" (libre: 0)."
+    },
+    {
+      "tick": 56,
+      "type": "echec",
+      "description": "La Cité des Sages voulait construire \"construction\" mais manque de bois (besoin: 10, dispo: 0)."
+    },
+    {
+      "tick": 56,
+      "type": "transformation",
+      "description": "La Cité des Sages transforme 1 silex en 1 outils en silex."
+    },
+    {
+      "tick": 56,
+      "type": "transformation",
+      "description": "La Cité des Sages transforme 1 silex en 1 armes en silex améliorées."
+    },
+    {
+      "tick": 56,
+      "type": "transformation",
+      "description": "Les Chasseurs du Vent transforme 1 glaise en 1 poteries."
+    },
+    {
+      "tick": 56,
+      "type": "echec",
+      "description": "Les Chasseurs du Vent : pas assez de main-d'œuvre libre pour \"armée\" (libre: 0)."
+    },
+    {
+      "tick": 56,
+      "type": "transformation",
+      "description": "Les Pillards de la Côte transforme 1 pierre en 1 haches_silex."
+    },
+    {
+      "tick": 57,
+      "type": "exploration",
+      "description": "Les éclaireurs de Le Grand Khaganat rentrent (nord) : +0 territoires."
+    },
+    {
+      "tick": 57,
+      "type": "exploration",
+      "description": "Les éclaireurs de Le Grand Khaganat rentrent (nord) : +0 territoires."
+    },
+    {
+      "tick": 57,
+      "type": "diplomatie",
+      "description": "Les Ascètes de la Pierre établit un contact avec L'Empire des Forges."
+    },
+    {
+      "tick": 57,
+      "type": "exploration",
+      "description": "Les éclaireurs de Les Ascètes de la Pierre rentrent (nord) : +5 territoires."
+    },
+    {
+      "tick": 57,
+      "type": "exploration",
+      "description": "Les éclaireurs de Les Chasseurs du Vent rentrent (nord) : +1 territoires."
+    },
+    {
+      "tick": 57,
+      "type": "transformation",
+      "description": "Les Conquérants du Feu Sacré transforme 1 silex en 1 armes en silex."
+    },
+    {
+      "tick": 57,
+      "type": "exploration",
+      "description": "Les Conquérants du Feu Sacré envoie 1 éclaireurs vers exploration nord."
+    },
+    {
+      "tick": 57,
+      "type": "transformation",
+      "description": "Les Conquérants du Feu Sacré transforme 1 pierre en 1 nouvelles structures."
+    },
+    {
+      "tick": 57,
+      "type": "echec",
+      "description": "Les Gardiens du Mur voulait construire \"construction\" mais manque de bois (besoin: 10, dispo: 0)."
+    },
+    {
+      "tick": 57,
+      "type": "transformation",
+      "description": "Les Gardiens du Mur transforme 1 glaise en 1 poteries."
+    },
+    {
+      "tick": 57,
+      "type": "exploration",
+      "description": "Les Gardiens du Mur envoie 4 éclaireurs vers exploration nord."
+    },
+    {
+      "tick": 57,
+      "type": "echec",
+      "description": "Le Grand Khaganat voulait construire \"nouveaux\" mais manque de bois (besoin: 10, dispo: 0)."
+    },
+    {
+      "tick": 57,
+      "type": "echec",
+      "description": "Le Grand Khaganat voulait construire \"nouvelles\" mais manque de bois (besoin: 10, dispo: 0)."
+    },
+    {
+      "tick": 57,
+      "type": "echec",
+      "description": "Les Ascètes de la Pierre : pas assez de argile pour transformer (besoin: 1, dispo: 0)."
+    },
+    {
+      "tick": 57,
+      "type": "echec",
+      "description": "Les Ascètes de la Pierre voulait construire \"construction\" mais manque de bois (besoin: 10, dispo: 0)."
+    },
+    {
+      "tick": 57,
+      "type": "mission",
+      "description": "Les Ascètes de la Pierre envoie 3 émissaires vers L'Empire des Forges."
+    },
+    {
+      "tick": 57,
+      "type": "exploration",
+      "description": "Les Mystiques des Brumes envoie 5 éclaireurs vers exploration forêts environnantes."
+    },
+    {
+      "tick": 57,
+      "type": "echec",
+      "description": "Les Marchands de la Route d'Or voulait construire \"construction\" mais n'a affecté aucun constructeur."
+    },
+    {
+      "tick": 57,
+      "type": "transformation",
+      "description": "Les Marchands de la Route d'Or transforme 1 glaise en 1 poteries."
+    },
+    {
+      "tick": 57,
+      "type": "echec",
+      "description": "Les Marchands de la Route d'Or : pas assez de main-d'œuvre libre pour \"armée\" (libre: 0)."
+    },
+    {
+      "tick": 57,
+      "type": "transformation",
+      "description": "Les Marchands de la Route d'Or transforme 1 silex en 1 armes en silex."
+    },
+    {
+      "tick": 57,
+      "type": "affectation",
+      "description": "La Cité des Sages affecte 8 personnes → 5."
+    },
+    {
+      "tick": 57,
+      "type": "exploration",
+      "description": "La Cité des Sages envoie 5 éclaireurs vers exploration nord."
+    },
+    {
+      "tick": 57,
+      "type": "echec",
+      "description": "La Cité des Sages voulait construire \"construction\" mais manque de bois (besoin: 10, dispo: 0)."
+    },
+    {
+      "tick": 57,
+      "type": "affectation",
+      "description": "Les Chasseurs du Vent affecte 2 personnes → 5."
+    },
+    {
+      "tick": 57,
+      "type": "affectation",
+      "description": "Les Chasseurs du Vent affecte 5 personnes → 5."
+    },
+    {
+      "tick": 57,
+      "type": "affectation",
+      "description": "Les Chasseurs du Vent affecte 2 personnes → 5."
+    },
+    {
+      "tick": 57,
+      "type": "affectation",
+      "description": "Les Chasseurs du Vent affecte 5 personnes → 4."
+    },
+    {
+      "tick": 57,
+      "type": "echec",
+      "description": "Les Chasseurs du Vent : pas assez de main-d'œuvre libre pour \"3\" (libre: 0)."
+    },
+    {
+      "tick": 57,
+      "type": "echec",
+      "description": "L'Empire des Forges voulait construire \"construction\" mais manque de bois (besoin: 10, dispo: 0)."
+    },
+    {
+      "tick": 57,
+      "type": "transformation",
+      "description": "L'Empire des Forges transforme 1 silex en 1 haches_silex."
+    }
+  ],
+  "relicsDiscovered": [
+    {
+      "name": "Marteau de pierre runique",
+      "type": "objet",
+      "domain": "outil",
+      "discovered_at_tick": 55,
+      "taken": 1,
+      "used": 0,
+      "bonus_remaining": 0,
+      "owner_nom": "Les Mystiques des Brumes",
+      "owner_variant": "V9"
+    }
+  ],
+  "diplomacy": [
+    {
+      "civ_a_id": 4,
+      "civ_b_id": 9,
+      "relation": "neutre"
+    }
+  ],
+  "wars": [],
+  "trades": [],
+  "unknownActions": [
+    {
+      "tick": 45,
+      "action_type": "fabriquer_silex",
+      "description_brute": "TRANSFORMER fabriquer_silex (input:silex, output:armes en silex, quantite:1, personnes:5)",
+      "confiance": 0.8,
+      "civ_nom": "Le Grand Khaganat",
+      "variant": "V5"
+    },
+    {
+      "tick": 45,
+      "action_type": "fabriquer_outils_silex",
+      "description_brute": "TRANSFORMER fabriquer_outils_silex (input:silex, output:outils en silex, quantite:1, personnes:5)",
+      "confiance": 0.8,
+      "civ_nom": "La Cité des Sages",
+      "variant": "V9"
+    },
+    {
+      "tick": 45,
+      "action_type": "fabriquer_armes_silex",
+      "description_brute": "TRANSFORMER fabriquer_armes_silex (input:silex, output:armes en silex améliorées, quantite:1, personnes:5)",
+      "confiance": 0.8,
+      "civ_nom": "La Cité des Sages",
+      "variant": "V9"
+    },
+    {
+      "tick": 45,
+      "action_type": "fabriquer_couvertures",
+      "description_brute": "TRANSFORMER fabriquer_couvertures (input:matières premières disponibles, output:couvertures supplémentaires, quantite:1, personnes:5)",
+      "confiance": 0.8,
+      "civ_nom": "La Cité des Sages",
+      "variant": "V9"
+    },
+    {
+      "tick": 45,
+      "action_type": "fabriquer_outils_silex",
+      "description_brute": "TRANSFORMER fabriquer_outils_silex (input:silex, output:outils en silex améliorés, quantite:1, personnes:5)",
+      "confiance": 0.8,
+      "civ_nom": "Les Pillards de la Côte",
+      "variant": "V8"
+    },
+    {
+      "tick": 46,
+      "action_type": "fabriquer_couverture",
+      "description_brute": "TRANSFORMER fabriquer_couverture (input:glaise, output:couverture, quantite:1, personnes:5)",
+      "confiance": 0.8,
+      "civ_nom": "La Cité des Sages",
+      "variant": "V9"
+    },
+    {
+      "tick": 46,
+      "action_type": "fabriquer_poterie",
+      "description_brute": "TRANSFORMER fabriquer_poterie (input:glaise, output:poterie, quantite:1, personnes:5)",
+      "confiance": 0.8,
+      "civ_nom": "La Cité des Sages",
+      "variant": "V9"
+    },
+    {
+      "tick": 46,
+      "action_type": "distribuer_armes",
+      "description_brute": "TRANSFORMER distribuer_armes (input:outils en silex, armes améliorées en silex, output:armes distribuées aux soldats, quantite:1, personnes:5)",
+      "confiance": 0.8,
+      "civ_nom": "La Cité des Sages",
+      "variant": "V9"
+    },
+    {
+      "tick": 46,
+      "action_type": "fabriquer_poteries",
+      "description_brute": "TRANSFORMER fabriquer_poteries (input:glaise, output:poteries, quantite:1, personnes:5)",
+      "confiance": 0.8,
+      "civ_nom": "Les Chasseurs du Vent",
+      "variant": "V5"
+    },
+    {
+      "tick": 46,
+      "action_type": "fabriquer_silex_ameliores",
+      "description_brute": "TRANSFORMER fabriquer_silex_ameliores (input:minéraux, output:armes en silex améliorées, quantite:1, personnes:1)",
+      "confiance": 0.8,
+      "civ_nom": "Les Pillards de la Côte",
+      "variant": "V8"
+    },
+    {
+      "tick": 47,
+      "action_type": "fabriquer_poteries_glaise",
+      "description_brute": "TRANSFORMER fabriquer_poteries_glaise (input:matière première, output:poteries en glaise, quantite:1, personnes:2)",
+      "confiance": 0.8,
+      "civ_nom": "Les Chasseurs du Vent",
+      "variant": "V5"
+    },
+    {
+      "tick": 47,
+      "action_type": "envoyer_diplomate",
+      "description_brute": "TRANSFORMER envoyer_diplomate (input:pierre, output:Les Ascètes de la Pierre, quantite:1, personnes:1)",
+      "confiance": 0.8,
+      "civ_nom": "L'Empire des Forges",
+      "variant": "V4"
+    },
+    {
+      "tick": 48,
+      "action_type": "fabriquer_couverture",
+      "description_brute": "TRANSFORMER fabriquer_couverture (input:matériaux de fabrication, output:couvertures, vêtements chauds, quantite:1, personnes:5)",
+      "confiance": 0.8,
+      "civ_nom": "Le Grand Khaganat",
+      "variant": "V5"
+    },
+    {
+      "tick": 48,
+      "action_type": "fabriquer_outils_silex",
+      "description_brute": "TRANSFORMER fabriquer_outils_silex (input:matières premières pour outils en silex, output:outils en silex, quantite:1, personnes:5)",
+      "confiance": 0.8,
+      "civ_nom": "Le Grand Khaganat",
+      "variant": "V5"
+    },
+    {
+      "tick": 48,
+      "action_type": "fabriquer_poteries",
+      "description_brute": "TRANSFORMER fabriquer_poteries (input:glaise, output:poteries, quantite:1, personnes:5)",
+      "confiance": 0.8,
+      "civ_nom": "Les Mystiques des Brumes",
+      "variant": "V9"
+    },
+    {
+      "tick": 49,
+      "action_type": "fabriquer_haches_lances_silex",
+      "description_brute": "TRANSFORMER fabriquer_haches_lances_silex (input:silex, output:haches et lances en silex améliorées, quantite:5, personnes:5)",
+      "confiance": 0.8,
+      "civ_nom": "Les Pillards de la Côte",
+      "variant": "V8"
+    },
+    {
+      "tick": 49,
+      "action_type": "produire_poteries_glaise",
+      "description_brute": "TRANSFORMER produire_poteries_glaise (input:glaise, output:poteries en glaise, quantite:1, personnes:5)",
+      "confiance": 0.8,
+      "civ_nom": "Les Pillards de la Côte",
+      "variant": "V8"
+    },
+    {
+      "tick": 50,
+      "action_type": "fabriquer_silex",
+      "description_brute": "TRANSFORMER fabriquer_silex (input:silex, output:armes en silex, quantite:1, personnes:5)",
+      "confiance": 0.8,
+      "civ_nom": "Les Conquérants du Feu Sacré",
+      "variant": "V0"
+    },
+    {
+      "tick": 50,
+      "action_type": "fabriquer_silex",
+      "description_brute": "TRANSFORMER fabriquer_silex (input:pierre, output:armes en silex, haches en silex, quantite:1, personnes:5)",
+      "confiance": 0.8,
+      "civ_nom": "Les Gardiens du Mur",
+      "variant": "V4"
+    },
+    {
+      "tick": 50,
+      "action_type": "fabriquer_couteaux_silex",
+      "description_brute": "TRANSFORMER fabriquer_couteaux_silex (input:silex, output:couteaux en silex, quantite:1, personnes:5)",
+      "confiance": 0.8,
+      "civ_nom": "Les Marchands de la Route d'Or",
+      "variant": "V0"
+    },
+    {
+      "tick": 50,
+      "action_type": "fabriquer_silex",
+      "description_brute": "TRANSFORMER fabriquer_silex (input:pierre, glaise, output:haches en silex améliorées, lances en silex améliorées, outils en silex améliorés, quantite:1, personnes:5)",
+      "confiance": 0.8,
+      "civ_nom": "Les Pillards de la Côte",
+      "variant": "V8"
+    },
+    {
+      "tick": 51,
+      "action_type": "fabriquer_haches_silex",
+      "description_brute": "TRANSFORMER fabriquer_haches_silex (input:silex, output:haches en silex supplémentaires, quantite:1, personnes:1)",
+      "confiance": 0.8,
+      "civ_nom": "Le Grand Khaganat",
+      "variant": "V5"
+    },
+    {
+      "tick": 51,
+      "action_type": "fabriquer_silex",
+      "description_brute": "TRANSFORMER fabriquer_silex (input:pierre, output:haches, couteaux en silex, quantite:1, personnes:5)",
+      "confiance": 0.8,
+      "civ_nom": "Les Ascètes de la Pierre",
+      "variant": "V8"
+    },
+    {
+      "tick": 51,
+      "action_type": "fabriquer_poteries",
+      "description_brute": "TRANSFORMER fabriquer_poteries (input:glaise, output:nouvelles poteries, quantite:1, personnes:5)",
+      "confiance": 0.8,
+      "civ_nom": "Les Marchands de la Route d'Or",
+      "variant": "V0"
+    },
+    {
+      "tick": 51,
+      "action_type": "fabriquer_outils_silex",
+      "description_brute": "TRANSFORMER fabriquer_outils_silex (input:pierre, glaise, silex, output:outils en silex, quantite:1, personnes:10)",
+      "confiance": 0.8,
+      "civ_nom": "La Cité des Sages",
+      "variant": "V9"
+    },
+    {
+      "tick": 51,
+      "action_type": "fabriquer_armes_silex",
+      "description_brute": "TRANSFORMER fabriquer_armes_silex (input:silex, output:armes en silex, quantite:1, personnes:5)",
+      "confiance": 0.8,
+      "civ_nom": "Les Pillards de la Côte",
+      "variant": "V8"
+    },
+    {
+      "tick": 52,
+      "action_type": "fabriquer_haches_silex",
+      "description_brute": "TRANSFORMER fabriquer_haches_silex (input:silex, output:haches en silex, quantite:1, personnes:5)",
+      "confiance": 0.8,
+      "civ_nom": "Les Mystiques des Brumes",
+      "variant": "V9"
+    },
+    {
+      "tick": 52,
+      "action_type": "fabriquer_poteries",
+      "description_brute": "TRANSFORMER fabriquer_poteries (input:glaise, output:poteries, quantite:1, personnes:5)",
+      "confiance": 0.8,
+      "civ_nom": "Les Marchands de la Route d'Or",
+      "variant": "V0"
+    },
+    {
+      "tick": 52,
+      "action_type": "fabriquer_armes_silex",
+      "description_brute": "TRANSFORMER fabriquer_armes_silex (input:silex, output:armes en silex améliorées, quantite:1, personnes:5)",
+      "confiance": 0.8,
+      "civ_nom": "La Cité des Sages",
+      "variant": "V9"
+    },
+    {
+      "tick": 53,
+      "action_type": "fabriquer_silex",
+      "description_brute": "TRANSFORMER fabriquer_silex (input:silex, output:outils en silex armes en silex, quantite:1, personnes:5)",
+      "confiance": 0.8,
+      "civ_nom": "Les Pillards de la Côte",
+      "variant": "V8"
+    },
+    {
+      "tick": 54,
+      "action_type": "fabriquer_armes_silex",
+      "description_brute": "TRANSFORMER fabriquer_armes_silex (input:silex, output:armes en silex, quantite:1, personnes:5)",
+      "confiance": 0.8,
+      "civ_nom": "Le Grand Khaganat",
+      "variant": "V5"
+    },
+    {
+      "tick": 54,
+      "action_type": "fabriquer_poteries_en_glaise",
+      "description_brute": "TRANSFORMER fabriquer_poteries_en_glaise (input:glaise, output:poteries en glaise, quantite:1, personnes:1)",
+      "confiance": 0.8,
+      "civ_nom": "Les Ascètes de la Pierre",
+      "variant": "V8"
+    },
+    {
+      "tick": 54,
+      "action_type": "fabriquer_sculptures_en_pierre",
+      "description_brute": "TRANSFORMER fabriquer_sculptures_en_pierre (input:pierre, output:sculptures en pierre, quantite:1, personnes:1)",
+      "confiance": 0.8,
+      "civ_nom": "Les Ascètes de la Pierre",
+      "variant": "V8"
+    },
+    {
+      "tick": 55,
+      "action_type": "fabriquer_silex",
+      "description_brute": "TRANSFORMER fabriquer_silex (input:silex, output:outils en silex, armes en silex, quantite:+3%, personnes:5)",
+      "confiance": 0.8,
+      "civ_nom": "La Cité des Sages",
+      "variant": "V9"
+    },
+    {
+      "tick": 55,
+      "action_type": "fabriquer_poteries_eau",
+      "description_brute": "TRANSFORMER fabriquer_poteries_eau (input:glaise, output:poteries pour eau, quantite:1, personnes:5)",
+      "confiance": 0.8,
+      "civ_nom": "Les Chasseurs du Vent",
+      "variant": "V5"
+    },
+    {
+      "tick": 55,
+      "action_type": "stocker_vivres",
+      "description_brute": "TRANSFORMER stocker_vivres (input:nourriture séchée, output:vivres pour explorateurs et tribu, quantite:1, personnes:5)",
+      "confiance": 0.8,
+      "civ_nom": "Les Chasseurs du Vent",
+      "variant": "V5"
+    },
+    {
+      "tick": 55,
+      "action_type": "fabriquer_outils_armes_silex",
+      "description_brute": "TRANSFORMER fabriquer_outils_armes_silex (input:silex, output:outils et armes en silex améliorées, quantite:1, personnes:5)",
+      "confiance": 0.8,
+      "civ_nom": "Les Chasseurs du Vent",
+      "variant": "V5"
+    },
+    {
+      "tick": 56,
+      "action_type": "fabriquer_poterie",
+      "description_brute": "TRANSFORMER fabriquer_poterie (input:argile, output:poteries et récipients, quantite:1, personnes:5)",
+      "confiance": 0.8,
+      "civ_nom": "Les Conquérants du Feu Sacré",
+      "variant": "V0"
+    },
+    {
+      "tick": 56,
+      "action_type": "fabriquer_armes_silex",
+      "description_brute": "TRANSFORMER fabriquer_armes_silex (input:matière première pour armes en silex, output:armes en silex, quantite:10, personnes:5)",
+      "confiance": 0.8,
+      "civ_nom": "Les Gardiens du Mur",
+      "variant": "V4"
+    },
+    {
+      "tick": 56,
+      "action_type": "fabriquer_armes_defense",
+      "description_brute": "TRANSFORMER fabriquer_armes_defense (input:matière première pour armes de défense, output:haches en silex, lances en silex et objets combinés, quantite:1, personnes:5)",
+      "confiance": 0.8,
+      "civ_nom": "Les Gardiens du Mur",
+      "variant": "V4"
+    },
+    {
+      "tick": 56,
+      "action_type": "fabriquer_lances",
+      "description_brute": "TRANSFORMER fabriquer_lances (input:silex, output:lances, quantite:1, personnes:5)",
+      "confiance": 0.8,
+      "civ_nom": "Les Mystiques des Brumes",
+      "variant": "V9"
+    },
+    {
+      "tick": 56,
+      "action_type": "fabriquer_silex",
+      "description_brute": "TRANSFORMER fabriquer_silex (input:silex, output:outils en silex, quantite:1, personnes:5)",
+      "confiance": 0.8,
+      "civ_nom": "La Cité des Sages",
+      "variant": "V9"
+    },
+    {
+      "tick": 56,
+      "action_type": "fabriquer_silex",
+      "description_brute": "TRANSFORMER fabriquer_silex (input:silex, output:armes en silex améliorées, quantite:1, personnes:5)",
+      "confiance": 0.8,
+      "civ_nom": "La Cité des Sages",
+      "variant": "V9"
+    },
+    {
+      "tick": 56,
+      "action_type": "fabriquer_poteries",
+      "description_brute": "TRANSFORMER fabriquer_poteries (input:glaise, output:poteries, quantite:1, personnes:5)",
+      "confiance": 0.8,
+      "civ_nom": "Les Chasseurs du Vent",
+      "variant": "V5"
+    },
+    {
+      "tick": 56,
+      "action_type": "fabriquer_outils_silex",
+      "description_brute": "TRANSFORMER fabriquer_outils_silex (input:pierre, glaise, output:haches_silex, couteaux_silex, lance_silex, quantite:1, personnes:5)",
+      "confiance": 0.8,
+      "civ_nom": "Les Pillards de la Côte",
+      "variant": "V8"
+    },
+    {
+      "tick": 57,
+      "action_type": "fabriquer_armes_silex",
+      "description_brute": "TRANSFORMER fabriquer_armes_silex (input:silex, output:armes en silex, quantite:1, personnes:5)",
+      "confiance": 0.8,
+      "civ_nom": "Les Conquérants du Feu Sacré",
+      "variant": "V0"
+    },
+    {
+      "tick": 57,
+      "action_type": "planifier_structures",
+      "description_brute": "TRANSFORMER planifier_structures (input:pierre, glaise, output:nouvelles structures, quantite:1, personnes:5)",
+      "confiance": 0.8,
+      "civ_nom": "Les Conquérants du Feu Sacré",
+      "variant": "V0"
+    },
+    {
+      "tick": 57,
+      "action_type": "fabriquer_poteries",
+      "description_brute": "TRANSFORMER fabriquer_poteries (input:glaise, output:poteries, quantite:1, personnes:5)",
+      "confiance": 0.8,
+      "civ_nom": "Les Gardiens du Mur",
+      "variant": "V4"
+    },
+    {
+      "tick": 57,
+      "action_type": "fabriquer_poteries",
+      "description_brute": "TRANSFORMER fabriquer_poteries (input:glaise, output:poteries, quantite:1, personnes:5)",
+      "confiance": 0.8,
+      "civ_nom": "Les Marchands de la Route d'Or",
+      "variant": "V0"
+    },
+    {
+      "tick": 57,
+      "action_type": "fabriquer_armes_silex",
+      "description_brute": "TRANSFORMER fabriquer_armes_silex (input:silex, output:armes en silex, quantite:1, personnes:5)",
+      "confiance": 0.8,
+      "civ_nom": "Les Marchands de la Route d'Or",
+      "variant": "V0"
+    },
+    {
+      "tick": 57,
+      "action_type": "fabriquer_silex",
+      "description_brute": "TRANSFORMER fabriquer_silex (input:silex, output:haches_silex, lance_silex, couteaux_silex, quantite:1, personnes:5)",
+      "confiance": 0.8,
+      "civ_nom": "L'Empire des Forges",
+      "variant": "V4"
+    },
+    {
+      "tick": 58,
+      "action_type": "fabriquer_outils_silex",
+      "description_brute": "TRANSFORMER fabriquer_outils_silex (input:silex, output:outils et armes en silex, quantite:5, personnes:5)",
+      "confiance": 0.8,
+      "civ_nom": "Les Conquérants du Feu Sacré",
+      "variant": "V0"
+    },
+    {
+      "tick": 58,
+      "action_type": "fabriquer_armes_silex",
+      "description_brute": "TRANSFORMER fabriquer_armes_silex (input:silex, output:armes supplémentaires, quantite:1, personnes:5)",
+      "confiance": 0.8,
+      "civ_nom": "Le Grand Khaganat",
+      "variant": "V5"
+    }
+  ],
+  "llmErrors": [],
+  "tickRangeChecked": [
+    43,
+    57
+  ]
+}

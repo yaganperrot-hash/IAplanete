@@ -14,12 +14,67 @@
 
 ## Bugs ouverts (vrais)
 
+### [2026-04-07] describeTechnology() filtre cassé — section technologie toujours vide
+- **Symptôme** : Section "CE QUE TON PEUPLE SAIT FAIRE" retourne "aucune technique maîtrisée" même avec 30+ bâtiments construits.
+- **Cause** : `describeTechnology()` filtrait `s.production === 'savoir'` et `s.production === 'production'`. Les structures n'ont pas de champ `production` — le bon champ est `s.category`.
+- **Fix** : Filtres remplacés par `s.category === 'savoir'`, `'production'`, `'extraction'`, `'bois'`, `'commerce'`.
+- **Fichiers** : `civPromptFree.js`
+- **Statut** : ✅ Résolu (2026-04-07)
+
+### [2026-04-07] Voisins — mauvaise fonction dans le prompt (info simplifiée au lieu de tactique)
+- **Symptôme** : Le LLM ne voit que "Arkanis existe" au lieu des rapports d'espions, longueur de frontière, historique commerce.
+- **Cause** : `buildPromptFree()` appelait `describeNeighborsNarrative(ctx)` (simplifié) au lieu d'utiliser `knowledge_about`. `buildNeighborInfo()` de civInteractions.js ne pouvait pas être importé (dépendance circulaire).
+- **Fix** : Logique inline dans `buildCivContext()` → `ctx.neighbor_info` avec données complètes. Prompt utilise `ctx.neighbor_info || describeNeighborsNarrative(ctx)`.
+- **Fichiers** : `civActionResolver.js`, `civPromptFree.js`
+- **Statut** : ✅ Résolu (2026-04-07)
+
+### [2026-04-07] Chantiers en cours invisibles au LLM — re-lancement de constructions déjà en cours
+- **Symptôme** : Le LLM relance des chantiers déjà en cours car il ne sait pas qu'ils existent. Le 3e chantier est rejeté en ECHEC sans que le LLM puisse planifier en conséquence.
+- **Cause** : `buildCivContext()` exposait `active_processes` mais pas les chantiers de construction filtrés et formatés. Aucune section dédiée dans le prompt.
+- **Fix** : `ctx.ongoing_constructions` ajouté. Section `[CHANTIERS EN COURS]` dans le prompt si non vide.
+- **Fichiers** : `civActionResolver.js`, `civPromptFree.js`
+- **Statut** : ✅ Résolu (2026-04-07)
+
+### [2026-04-07] Commerce — échange fixe + vérifications code → pas de liberté IA
+- **Symptôme** : Aucun échange commercial abouti. `resolveTradeExpedition()` vérifiait isolationnisme/guerre de la cible et imposait un échange fixe 50 nourriture / 30 bois. Si l'une des deux civs n'avait pas exactement ces montants → échec silencieux. La cible ne savait jamais que des marchands étaient arrivés.
+- **Cause** : Architecture décisionniste côté moteur — le code décidait à la place des civs.
+- **Fix** : `resolveTradeExpedition()` délivre uniquement `marchands_recus` à la cible. Case DIPLOMATIE commerce → échange proportionnel (~15%) des ressources les plus abondantes des deux civs.
+- **Fichiers** : `civInteractions.js`, `civActionResolver.js`
+- **Statut** : ✅ Résolu (2026-04-07)
+
+### [2026-04-07] Reliques — descriptions abstraites non contextualisées
+- **Symptôme** : Les reliques décrites comme "un artefact mystérieux qui semble très puissant" → le LLM ne sait pas quoi en faire.
+- **Cause** : Pool de reliques abstrait, sans description physique. Pas de référence aux matériaux connus de la civ.
+- **Fix** : `relicsPool.js` réécrit avec `base_form` (description physique concrète) et `material_era`. `buildRelicPerception()` génère description perceptive : référence aux ressources/biomes connus de la civ.
+- **Fichiers** : `relicsPool.js`, `civPromptFree.js`, `civActionResolver.js`
+- **Statut** : ✅ Résolu (2026-04-07)
+
+### [2026-04-06] Civs contactées / attaquées ne reçoivent rien dans last_consequences
+- **Symptôme** : Une civ envoie un émissaire, des marchands ou attaque → la civ cible n'en sait rien au tick suivant → loop diplomatique sans réponse.
+- **Cause** : Toutes les actions inter-civs écrivaient dans `events[]` (Socket.io) mais jamais dans `last_consequences` de la cible.
+- **Fix** : Système complet de notifications : `emissaire_recu`, `marchands_recus`, `espion_detecte`, `message_diplomatique` (alliance/paix/commerce/pillage). Feedback émetteur aussi : `emissaire_arrive`, `commerce_reussi/echoue`, `espionnage_reussi/echoue`. `needsDecision` étendu pour tous ces types.
+- **Fichiers** : `civEngine.js`, `civActionResolver.js`, `civPromptFree.js`, `civInteractions.js`
+- **Statut** : ✅ Résolu (2026-04-06)
+
+### [2026-04-06] TRANSFORMER sans impact mécanique
+- **Symptôme** : 206 transformations en 129 ticks (poteries, haches, couvertures...) mais aucun effet sur le jeu. Les objets craftés s'accumulent dans `resources` sans modifier la food cap, la production, l'armée ou le moral.
+- **Cause** : Pas de classification des ressources, pas de table de mapping nom→effet, pas d'application de bonus au tick.
+- **Fix** : `resourceClassifier.js` (regex → catégorie/stat/per_unit), table `resource_types`, `applyCraftedBonuses` dans civEngine.js, food cap dynamique dans `getFoodCapacity`, `describeCraftedInventory` dans civPromptFree.js.
+- **Fichiers** : `resourceClassifier.js` (NEW), `civActionResolver.js`, `civEngine.js`, `civPromptFree.js`, `migrate.js`
+- **Statut** : ✅ Résolu (2026-04-06)
+
+### [2026-04-06] `relique_etudiee` non couverte par formatLastConsequences
+- **Symptôme** : civEngine.js écrit `{ type: 'relique_etudiee' }` dans last_consequences mais civPromptFree.js n'avait pas de case pour ce type → section [ÉVÉNEMENTS] silencieuse.
+- **Fix** : Case `relique_etudiee` ajouté dans `formatLastConsequences`.
+- **Fichiers** : `civPromptFree.js`
+- **Statut** : ✅ Résolu (2026-04-06)
+
 ### [2026-04-05] `no such table: structures` — nightMonitor crash snapshot
-- **Symptôme** : `ERREUR snapshot: no such table: structures` — tous les snapshots horaires échouent.
-- **Cause** : La tâche Deepseek d'ajout des types de construction dans nightMonitor a requêté une table `structures` qui n'existe pas. Le vrai nom de la table est différent (à confirmer via `sqlite_master`).
-- **Fix attendu** : Soit corriger le nom de table, soit protéger la query dans un try/catch pour ne pas bloquer le snapshot.
+- **Symptôme** : `ERREUR snapshot: no such table: structures` — section bâtiments vide dans les rapports.
+- **Cause** : Query `FROM structures` — cette table n'existe pas. Les bâtiments sont dans la colonne JSON `buildings` de `civilizations`.
+- **Fix** : Query supprimée. Remplacement par parsing du JSON `c.buildings` de chaque civ, groupement par `category/role` avec count et workers.
 - **Fichiers** : `nightMonitor.js`
-- **Statut** : 🟡 Partiel (simulation lancée sans la section structures)
+- **Statut** : ✅ Résolu (2026-04-06)
 
 ### [2026-04-05] Pop stagnante — naissances bloquées par condition surplus
 - **Symptôme** : Population ~100 après 130 ticks (~11 ans). Greniers pleins mais 0 naissances.
